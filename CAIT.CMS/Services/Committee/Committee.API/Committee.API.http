@@ -1,0 +1,6 @@
+@Committee.API_HostAddress = http://localhost:5181
+
+GET {{Committee.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
