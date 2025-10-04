@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  committeedb:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+
+  committeeapi:
+    image: ${DOCKER_REGISTRY-}committeeapi
+    build:
+      context: .
+      dockerfile: Services/Committee/CommitteeAPI/Dockerfile

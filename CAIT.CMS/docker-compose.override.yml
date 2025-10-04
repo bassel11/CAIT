@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+
+  committeedb:
+    container_name: committeedb
+    environment:
+      SA_PASSWORD: "cms12345"
+      ACCEPT_EULA: "Y"
+    restart: always
+    ports:
+      - "1433:1433"
+    volumes:
+      - committee-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'cms12345' -Q 'select 1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+
+  committeeapi:
+    container_name: committeeapi
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "ConnectionStrings__OrderingConnectionString=Server=CommitteeDb;Database=CommitteeDb;User Id=cms;Password=cms12345;TrustServerCertificate=True" 
+    depends_on:
+      - committeedb
+    ports:
+      - "8003:8080"
+
+# Add this section to define the named volume
+volumes:
+  committee-data:
