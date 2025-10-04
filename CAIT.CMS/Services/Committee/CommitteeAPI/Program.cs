@@ -1,6 +1,7 @@
 ﻿using CommitteeAPI.Extensions;
 using CommitteeApplication.Behaviour;
 using CommitteeApplication.Handlers;
+using CommitteeApplication.Mappers;
 using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Data;
 using CommitteeInfrastructure.Repositories;
@@ -22,7 +23,8 @@ builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>))
 builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
 
 // 3️⃣ تسجيل AutoMapper
-builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+//builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+builder.Services.AddAutoMapper(typeof(CommitteeMappingProfile).Assembly);
 
 // 4️⃣ تسجيل MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AddCommitteeCommandHandler).Assembly));

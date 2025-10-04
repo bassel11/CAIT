@@ -20,14 +20,14 @@ namespace CommitteeInfrastructure.Data
         public DbSet<CommitteeDecision> CommitteeDecisions { get; set; }
 
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                // Connection string مباشرة → LocalDB
-                optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=CommitteeDb;Trusted_Connection=True;");
-            }
-        }
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    if (!optionsBuilder.IsConfigured)
+        //    {
+        //        // Connection string مباشرة → LocalDB
+        //        optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=CommitteeDb;Trusted_Connection=True;");
+        //    }
+        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
