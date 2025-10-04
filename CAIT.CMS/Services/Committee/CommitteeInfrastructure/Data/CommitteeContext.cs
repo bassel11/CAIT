@@ -28,6 +28,16 @@ namespace CommitteeInfrastructure.Data
                 optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=CommitteeDb;Trusted_Connection=True;");
             }
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // إصلاح تحذير الخاصية Budget
+            modelBuilder.Entity<Committee>()
+                .Property(c => c.Budget)
+                .HasPrecision(18, 2); // <-- يمكنك تعديل الدقة والقياس حسب حاجتك
+        }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             return base.SaveChangesAsync(cancellationToken);

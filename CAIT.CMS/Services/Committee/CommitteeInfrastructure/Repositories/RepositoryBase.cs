@@ -1,11 +1,7 @@
 ﻿using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 
 namespace CommitteeInfrastructure.Repositories
 {
@@ -42,7 +38,7 @@ namespace CommitteeInfrastructure.Repositories
 
         public async Task<T> UpdateAsync(T entity)
         {
-            _dbContext.Set<T>().Add(entity);
+            _dbContext.Entry(entity).State = EntityState.Modified;
             await _dbContext.SaveChangesAsync();
             return entity;
         }
