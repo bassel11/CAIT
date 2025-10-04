@@ -22,7 +22,7 @@ services:
     container_name: committeeapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - "ConnectionStrings__OrderingConnectionString=Server=CommitteeDb;Database=CommitteeDb;User Id=cms;Password=cms12345;TrustServerCertificate=True" 
+      - "ConnectionStrings__OrderingConnectionString=Server=committeedb;Database=CommitteeDb;User Id=cms;Password=cms12345;TrustServerCertificate=True" 
     depends_on:
       - committeedb
     ports:
