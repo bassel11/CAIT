@@ -13,9 +13,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Services/Committee/CommitteeAPI/CommitteeAPI.csproj", "Services/Committee/CommitteeAPI/"]
-COPY ["Services/Committee/CommitteeApplication/CommitteeApplication.csproj", "Services/Committee/CommitteeApplication/"]
-COPY ["Services/Committee/CommitteeCore/CommitteeCore.csproj", "Services/Committee/CommitteeCore/"]
-COPY ["Services/Committee/CommitteeInfrastructure/CommitteeInfrastructure.csproj", "Services/Committee/CommitteeInfrastructure/"]
 RUN dotnet restore "./Services/Committee/CommitteeAPI/CommitteeAPI.csproj"
 COPY . .
 WORKDIR "/src/Services/Committee/CommitteeAPI"
