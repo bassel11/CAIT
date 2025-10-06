@@ -5,7 +5,7 @@ services:
   committeedb:
     container_name: committeedb
     environment:
-      SA_PASSWORD: "cms12345"
+      SA_PASSWORD: "P@ssw0rd"
       ACCEPT_EULA: "Y"
     restart: always
     ports:
@@ -13,7 +13,7 @@ services:
     volumes:
       - committee-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'cms12345' -Q 'select 1'"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'P@ssw0rd' -Q 'select 1'"]
       interval: 10s
       timeout: 10s
       retries: 3
@@ -22,12 +22,19 @@ services:
     container_name: committeeapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - "ConnectionStrings__OrderingConnectionString=Server=committeedb;Database=CommitteeDb;User Id=cms;Password=cms12345;TrustServerCertificate=True" 
+      - "ConnectionStrings__CommitteeConnectionString=Server=committeedb;Database=CommitteeDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True" 
     depends_on:
       - committeedb
     ports:
       - "8003:8080"
 
 # Add this section to define the named volume
+  ocelotapigateway:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "8010:8080"
+
 volumes:
   committee-data:
+

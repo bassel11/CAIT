@@ -9,3 +9,10 @@ services:
     build:
       context: .
       dockerfile: Services/Committee/CommitteeAPI/Dockerfile
+
+  ocelotapigateway:
+    image: ${DOCKER_REGISTRY-}ocelotapigateway
+    build:
+      context: .
+      dockerfile: ApiGateways/OcelotApiGateway/Dockerfile
+

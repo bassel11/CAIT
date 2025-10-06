@@ -1,5 +1,6 @@
 {
   "Routes": [
+    // Committee API 
     {
       "DownstreamPathTemplate": "/api/committee/{everything}",
       "DownstreamScheme": "http",
@@ -10,7 +11,7 @@
         }
       ],
       "UpstreamPathTemplate": "/committee/{everything}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete" ]
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
     }
   ],
   "GlobalConfiguration": {
