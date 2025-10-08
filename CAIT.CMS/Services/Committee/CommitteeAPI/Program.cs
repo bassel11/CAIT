@@ -7,57 +7,100 @@ using CommitteeInfrastructure.Data;
 using CommitteeInfrastructure.Repositories;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// تسجيل DbContext مع Connection String من appsettings.json
+// ==========================
+// 1️⃣ Database Context
+// ==========================
 builder.Services.AddDbContext<CommitteeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CommitteeConnectionString"))
 );
 
-// 2️⃣ تسجيل Repositories للـ Dependency Injection
+// ==========================
+// 2️⃣ Repositories
+// ==========================
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
 builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
 
-// 3️⃣ تسجيل AutoMapper
-//builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+// ==========================
+// 3️⃣ AutoMapper
+// ==========================
 builder.Services.AddAutoMapper(typeof(CommitteeMappingProfile).Assembly);
 
-// 4️⃣ تسجيل MediatR
+// ==========================
+// 4️⃣ MediatR
+// ==========================
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AddCommitteeCommandHandler).Assembly));
 
-// 5️⃣ تسجيل FluentValidation
+// ==========================
+// 5️⃣ FluentValidation
+// ==========================
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
-// 6️⃣ تسجيل Pipeline Behaviours
+// ==========================
+// 6️⃣ Pipeline Behaviours
+// ==========================
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
 
+// ==========================
+// 7️⃣ JWT Authentication
+// ==========================
+var jwtConfig = builder.Configuration.GetSection("Jwt");
 
-// 2️⃣ تسجيل الـ Repositories للـ Dependency Injection
-builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
-builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtConfig["Issuer"],      // من Identity Service
+        ValidAudience = jwtConfig["Audience"],  // من Identity Service
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtConfig["Key"]))
+    };
+});
 
+// ==========================
+// 8️⃣ Authorization
+// ==========================
+builder.Services.AddAuthorization();
+
+// ==========================
+// 9️⃣ Controllers & Swagger
+// ==========================
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-
-//Apply db migration
+// ==========================
+// 10️⃣ Apply Migrations & Seed
+// ==========================
 app.MigrateDatabase<CommitteeContext>((context, services) =>
 {
     var logger = services.GetService<ILogger<CommitteeContextSeed>>();
     CommitteeContextSeed.SeedAsync(context, logger).Wait();
 });
 
-
-// Configure the HTTP request pipeline.
+// ==========================
+// 11️⃣ HTTP Pipeline
+// ==========================
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -67,6 +110,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// ✅ Authentication must come before Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

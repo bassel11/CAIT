@@ -2,6 +2,7 @@
 using CommitteeApplication.Queries;
 using CommitteeApplication.Responses;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
@@ -9,6 +10,7 @@ namespace CommitteeAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+
     public class CommitteeController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -21,6 +23,7 @@ namespace CommitteeAPI.Controllers
         }
 
         [HttpGet("{id}", Name = "GetCommitteesById")]
+        [Authorize]
         [ProducesResponseType(typeof(IEnumerable<CommitteeResponse>), (int)HttpStatusCode.OK)]
         public async Task<ActionResult<IEnumerable<CommitteeResponse>>> GetCommitteesById(Guid id)
         {
