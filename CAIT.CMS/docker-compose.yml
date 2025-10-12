@@ -4,6 +4,9 @@ services:
   committeedb:
     image: mcr.microsoft.com/mssql/server:2019-latest
 
+  identitydb:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+
   committeeapi:
     image: ${DOCKER_REGISTRY-}committeeapi
     build:
@@ -15,4 +18,10 @@ services:
     build:
       context: .
       dockerfile: ApiGateways/OcelotApiGateway/Dockerfile
+
+  identityapi:
+    image: ${DOCKER_REGISTRY-}identityapi
+    build:
+      context: .
+      dockerfile: Services/Identity/Identity.API/Dockerfile
 

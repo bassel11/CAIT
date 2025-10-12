@@ -1,44 +1,87 @@
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// -------------------------------
 // Ocelot Configuration
-//ocelot configuration
+// -------------------------------
 builder.Host.ConfigureAppConfiguration((env, config) =>
 {
-    config.AddJsonFile($"ocelot.{env.HostingEnvironment.EnvironmentName}.json", true, true);
+    config.AddJsonFile($"ocelot.{env.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 });
 
+// -------------------------------
+// JWT Authentication Configuration
+// -------------------------------
+var jwtSettings = builder.Configuration.GetSection("Jwt");
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer("Bearer", options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],      // "identity.api"
+        ValidAudience = jwtSettings["Audience"],  // "committee.clients"
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtSettings["Key"])) // نفس Key في IdentityAPI
+    };
+});
+
+// -------------------------------
+// Services
+// -------------------------------
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOcelot();
 
+// -------------------------------
+// Build App
+// -------------------------------
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// -------------------------------
+// Middleware Pipeline
+// -------------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseRouting();
 
 app.UseHttpsRedirection();
 
+// Authentication & Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapGet("/", async context => { await context.Response.WriteAsync("Hello Ocelot"); });
+    endpoints.MapGet("/", async context =>
+    {
+        await context.Response.WriteAsync("Hello Ocelot Gateway");
+    });
 });
 
+// Ocelot Middleware
 await app.UseOcelot();
+
 await app.RunAsync();

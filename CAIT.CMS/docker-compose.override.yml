@@ -18,6 +18,22 @@ services:
       timeout: 10s
       retries: 3
 
+  identitydb:
+    container_name: identitydb
+    environment:
+      SA_PASSWORD: "P@ssw0rd"
+      ACCEPT_EULA: "Y"
+    restart: always
+    ports:
+      - "1434:1433"
+    volumes:
+      - identity-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'P@ssw0rd' -Q 'select 1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+
   committeeapi:
     container_name: committeeapi
     environment:
@@ -30,11 +46,22 @@ services:
 
 # Add this section to define the named volume
   ocelotapigateway:
+    container_name: ocelotapigateway
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "8010:8080"
 
+  identityapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "ConnectionStrings__IdentityConnectionString=Server=identitydb;Database=IdentityDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True" 
+    depends_on:
+      - identitydb
+    ports:
+      - "8004:8080"
 volumes:
   committee-data:
+  identity-data:
+
 

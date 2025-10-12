@@ -1,6 +1,6 @@
 {
   "Routes": [
-    // Committee API 
+    // committee api
     {
       "DownstreamPathTemplate": "/api/committee/{everything}",
       "DownstreamScheme": "http",
@@ -11,6 +11,22 @@
         }
       ],
       "UpstreamPathTemplate": "/committee/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      }
+    },
+    // identity api
+    {
+      "DownstreamPathTemplate": "/api/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "identityapi",
+          "Port": 8080
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
     }
   ],

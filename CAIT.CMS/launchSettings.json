@@ -5,7 +5,8 @@
       "commandVersion": "1.0",
       "serviceActions": {
         "committeeapi": "StartDebugging",
-        "ocelotapigateway": "StartDebugging"
+        "ocelotapigateway": "StartDebugging",
+        "identity.api": "StartDebugging"
       }
     }
   }
