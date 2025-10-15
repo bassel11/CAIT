@@ -1,11 +1,6 @@
 ﻿using Identity.Application.DTOs;
-using Identity.Core.Entities;
-using Microsoft.AspNetCore.Identity;
+using Identity.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace Identity.API.Controllers
 {
@@ -13,67 +8,56 @@ namespace Identity.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IConfiguration _config;
-        private readonly ILogger<AuthController> _logger;
+        private readonly IAuthService _authService;
+        private readonly ILdapAuthService _ldapAuthService;
 
-        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService)
         {
-            _userManager = userManager;
-            _config = config;
-            _logger = logger;
+            _authService = authService;
+            _ldapAuthService = ldapAuthService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            //TODO: Consider Moving this into its own dedicated mapper
-            var user = new ApplicationUser
-            {
-                UserName = dto.Email,
-                Email = dto.Email,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            _logger.LogInformation($"User {dto.Email} registration attempted.");
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-            return Ok(new { message = "Registration Successful" });
+            var result = await _authService.RegisterAsync(dto);
+            if (!result.Success) return BadRequest(result.Errors);
+            return Ok(result.Response);
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-                return Unauthorized();
-
-            var token = GenerateToken(user);
-            _logger.LogInformation($"User {dto.Email} logged in successfully.");
-            return Ok(new { token });
+            var result = await _authService.LoginAsync(dto);
+            if (!result.Success) return Unauthorized(result.Error);
+            return Ok(result.Response);
         }
 
-        private string GenerateToken(ApplicationUser user)
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto dto)
         {
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim("uid", user.Id)
-            };
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var result = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
+            if (!result.Success) return Unauthorized(result.Error);
+            return Ok(result.Response);
+        }
 
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:DurationInMinutes"])),
-                signingCredentials: creds);
-            _logger.LogInformation($"JWT Token generated for user {user.Email}");
-            return new JwtSecurityTokenHandler().WriteToken(token);
+        [HttpPost("login-ldap")]
+        public async Task<IActionResult> LoginLdap(LdapLoginDto dto)
+        {
+            // استدعاء خدمة LDAP للتحقق من المستخدم
+            var ldapResult = await _ldapAuthService.AuthenticateAsync(dto.Username, dto.Password);
+
+            if (!ldapResult.Success)
+                return Unauthorized(ldapResult.Error);
+
+            // بناء الرد
+            var response = new LdapLoginResponseDto
+            {
+                Success = true,
+                ExternalId = ldapResult.ExternalId
+            };
+
+            return Ok(response);
         }
 
     }

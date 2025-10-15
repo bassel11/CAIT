@@ -1,5 +1,7 @@
-﻿using Identity.Core.Entities;
+﻿using Identity.Application.Interfaces;
+using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
+using Identity.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +42,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
+
 builder.Services.AddAuthorization();
+
+// Register Services 
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 
 // Add services to the container.
@@ -51,6 +59,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+
+// Apply migrations and seed roles/admin
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+    dbContext.Database.Migrate(); // Apply migrations
+
+    await IdentitySeed.SeedRolesAndAdminAsync(services); // Seed roles & admin
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

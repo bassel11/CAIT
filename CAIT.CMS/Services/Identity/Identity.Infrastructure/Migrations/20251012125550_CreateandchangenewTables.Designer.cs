@@ -4,6 +4,7 @@ using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251012125550_CreateandchangenewTables")]
+    partial class CreateandchangenewTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,29 +68,15 @@ namespace Identity.Infrastructure.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<string>("AdAccount")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AdDomain")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<int>("AuthType")
                         .HasColumnType("int");
-
-                    b.Property<Guid?>("AzureObjectId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("AzureTenantId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -95,9 +84,6 @@ namespace Identity.Infrastructure.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("ExternalId")
                         .HasColumnType("nvarchar(max)");
@@ -154,9 +140,6 @@ namespace Identity.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .HasDatabaseName("IX_Users_Email");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -164,12 +147,6 @@ namespace Identity.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.HasIndex("AdDomain", "AdAccount")
-                        .HasDatabaseName("IX_Users_AD");
-
-                    b.HasIndex("AzureTenantId", "AzureObjectId")
-                        .HasDatabaseName("IX_Users_Entra");
 
                     b.ToTable("Users", (string)null);
                 });
