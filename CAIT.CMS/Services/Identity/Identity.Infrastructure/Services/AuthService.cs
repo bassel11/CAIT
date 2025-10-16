@@ -4,11 +4,6 @@ using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using static Identity.Core.Entities.ApplicationUser;
 
 namespace Identity.Infrastructure.Services
@@ -17,12 +12,17 @@ namespace Identity.Infrastructure.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _dbContext;
-        private readonly IConfiguration _config;
-        public AuthService(UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IConfiguration config)
+        private readonly IJwtTokenService _jwtTokenService;
+        private readonly IRefreshTokenService _refreshTokenService;
+        private readonly IEmailService _emailService;
+        public AuthService(UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IJwtTokenService jwtTokenService,
+            IRefreshTokenService refreshTokenService, IEmailService emailService)
         {
             _userManager = userManager;
             _dbContext = dbContext;
-            _config = config;
+            _jwtTokenService = jwtTokenService;
+            _refreshTokenService = refreshTokenService;
+            _emailService = emailService;
         }
 
         public async Task<(bool Success, LoginResponseDto? Response, IEnumerable<string>? Errors)> RegisterAsync(RegisterDto dto)
@@ -45,8 +45,8 @@ namespace Identity.Infrastructure.Services
             // Assign default role
             await _userManager.AddToRoleAsync(user, "Member");
 
-            var token = GenerateJwtToken(user, out var expiry);
-            var refreshToken = await GenerateRefreshTokenAsync(user);
+            var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             var response = new LoginResponseDto
             {
@@ -58,23 +58,44 @@ namespace Identity.Infrastructure.Services
             return (true, response, null);
         }
 
-        public async Task<(bool Success, LoginResponseDto? Response, string? Error)> LoginAsync(LoginDto dto)
+        public async Task<(bool Success, LoginResponseDto? Response, string? Error, string? UserId)> LoginAsync(LoginDto dto)
         {
-            var user = await _userManager.FindByEmailAsync(dto.Email);
+            // البحث عن المستخدم مع مراعاة نوع المصادقة Database فقط
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.Email == dto.Email && u.AuthType == ApplicationUser.AuthenticationType.Database);
+
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-                return (false, null, "Invalid credentials");
+                return (false, null, "Invalid credentials", null);
 
-            if (!user.IsActive) return (false, null, "User is inactive");
+            if (!user.IsActive)
+                return (false, null, "User is inactive", null);
 
-            var token = GenerateJwtToken(user, out var expiry);
-            var refreshToken = await GenerateRefreshTokenAsync(user);
+            // التحقق من تفعيل MFA
+            if (user.MFAEnabled)
+            {
+                // توليد كود مؤقت 6 أرقام
+                var code = new Random().Next(100000, 999999).ToString();
+                user.MFACode = code;
+                user.MFACodeExpiry = DateTime.UtcNow.AddMinutes(5); // صلاحية الكود 5 دقائق
+                await _userManager.UpdateAsync(user);
+
+                // إرسال الكود عبر البريد أو SMS
+                await _emailService.SendMfaCodeAsync(user.Email, code); // أو SMS حسب إعداداتك
+
+                // إعادة النتيجة تشير إلى ضرورة إدخال الكود
+                return (true, null, "MFARequired", user.Id.ToString());
+            }
+
+            // إذا لم يكن MFA مفعلًا، توليد JWT مباشرة
+            var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             return (true, new LoginResponseDto
             {
                 Token = token,
                 RefreshToken = refreshToken,
                 TokenExpiry = expiry
-            }, null);
+            }, null, null);
         }
 
         public async Task<(bool Success, LoginResponseDto? Response, string? Error)> RefreshTokenAsync(string token, string refreshToken)
@@ -87,8 +108,8 @@ namespace Identity.Infrastructure.Services
                 return (false, null, "Invalid or expired refresh token");
 
             var user = storedToken.User;
-            var newToken = GenerateJwtToken(user, out var expiry);
-            var newRefreshToken = await GenerateRefreshTokenAsync(user);
+            var newToken = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var newRefreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             // Revoke old refresh token
             storedToken.Revoked = true;
@@ -102,53 +123,7 @@ namespace Identity.Infrastructure.Services
             }, null);
         }
 
-        #region Private Methods
 
-        private string GenerateJwtToken(ApplicationUser user, out DateTime expiry)
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim("uid", user.Id.ToString())
-            };
-
-            // Add roles
-            var roles = _userManager.GetRolesAsync(user).Result;
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var tokenExpiryMinutes = Convert.ToDouble(_config["Jwt:DurationInMinutes"]);
-            expiry = DateTime.UtcNow.AddMinutes(tokenExpiryMinutes);
-
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: expiry,
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        private async Task<string> GenerateRefreshTokenAsync(ApplicationUser user)
-        {
-            var refreshToken = new RefreshToken
-            {
-                UserId = user.Id,
-                Token = Guid.NewGuid().ToString(),
-                ExpiryDate = DateTime.UtcNow.AddDays(7)
-            };
-            _dbContext.RefreshTokens.Add(refreshToken);
-            await _dbContext.SaveChangesAsync();
-            return refreshToken.Token;
-        }
-
-        #endregion
     }
+
 }

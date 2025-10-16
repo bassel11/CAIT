@@ -32,6 +32,10 @@ namespace Identity.Core.Entities
 
         // ---------- Security & Status ----------
         public bool MFAEnabled { get; set; } = false;
+
+        //public string? MFASecret { get; set; }  // لتخزين مفتاح TOTP
+        public string? MFACode { get; set; }          // الكود المؤقت
+        public DateTime? MFACodeExpiry { get; set; }  // انتهاء صلاحية الكود
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

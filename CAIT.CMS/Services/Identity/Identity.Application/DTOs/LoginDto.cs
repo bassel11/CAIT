@@ -2,7 +2,9 @@
 {
     public class LoginDto
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string Username { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Password { get; set; } = null!;
+        public int AuthType { get; set; } = 0; // 0 = Database, 1 = LDAP ...
     }
 }

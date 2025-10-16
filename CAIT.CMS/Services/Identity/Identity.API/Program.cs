@@ -42,7 +42,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IMfaService, MfaService>();
 
 builder.Services.AddAuthorization();
 
