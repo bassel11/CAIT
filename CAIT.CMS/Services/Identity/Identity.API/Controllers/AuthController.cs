@@ -60,7 +60,8 @@ namespace Identity.API.Controllers
             {
                 result.Success,
                 result.Response,
-                result.Error
+                result.Error,
+                result.UserId
             });
         }
 
