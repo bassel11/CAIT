@@ -2,10 +2,10 @@
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,14 +20,17 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-//Add Jwt Authentication
+// ---------------- JWT Config ----------------
 var jwtConfig = builder.Configuration.GetSection("Jwt");
+var azureConfig = builder.Configuration.GetSection("AzureAd");
+
+
+// ---------------- Authentication ----------------
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = "BearerPolicy";
 })
-.AddJwtBearer(options =>
+.AddJwtBearer("LocalJwt", options =>
 {
     options.RequireHttpsMetadata = false;
     options.TokenValidationParameters = new TokenValidationParameters
@@ -36,24 +39,61 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtConfig["Issuer"],   // ,
-        ValidAudience = jwtConfig["Audience"], // ,
+        ValidIssuer = jwtConfig["Issuer"],
+        ValidAudience = jwtConfig["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig["Key"]))
+    };
+})
+.AddJwtBearer("AzureAD", options =>
+{
+    var azureSection = builder.Configuration.GetSection("AzureAd");
+    var authority = $"{azureSection["Instance"]}{azureSection["TenantId"]}/v2.0";
+
+    options.Authority = authority;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidAudience = azureSection["Audience"],
+        ValidIssuers = azureSection.GetSection("ValidIssuers").Get<string[]>(), // ← استخدم ValidIssuers
+        NameClaimType = "preferred_username",
+        RoleClaimType = "roles"
+    };
+})
+.AddPolicyScheme("BearerPolicy", "BearerPolicy", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        var authHeader = context.Request.Headers["Authorization"].ToString();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            return "LocalJwt";
+
+        var token = authHeader.Substring("Bearer ".Length).Trim();
+        try
+        {
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+            if (jwt.Issuer?.Contains("login.microsoftonline.com") == true)
+                return "AzureAD";
+        }
+        catch { }
+        return "LocalJwt";
     };
 });
 
+builder.Services.AddAuthorization();
+
+
+// ---------------- Dependency Injection ----------------
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMfaService, MfaService>();
-
-builder.Services.AddAuthorization();
-
-// Register Services 
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-
+// ✅ New Azure Service
+builder.Services.AddScoped<IAzureAuthService, AzureAuthService>();
 
 // Add services to the container.
 

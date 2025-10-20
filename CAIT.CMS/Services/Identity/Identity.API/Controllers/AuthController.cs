@@ -12,12 +12,14 @@ namespace Identity.API.Controllers
         private readonly IAuthService _authService;
         private readonly ILdapAuthService _ldapAuthService;
         private readonly IMfaService _mfaService;
+        private readonly IAzureAuthService _azureAuthService;
 
-        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService, IMfaService mfaService)
+        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService, IMfaService mfaService, IAzureAuthService azureAuthService)
         {
             _authService = authService;
             _ldapAuthService = ldapAuthService;
             _mfaService = mfaService;
+            _azureAuthService = azureAuthService;
         }
 
         [HttpPost("register")]
@@ -47,6 +49,17 @@ namespace Identity.API.Controllers
                 case ApplicationUser.AuthenticationType.Database:
                     result = await _authService.LoginAsync(dto);
                     break;
+
+                case ApplicationUser.AuthenticationType.AzureAD:
+
+                    var authHeader = Request.Headers["Authorization"].ToString();
+                    if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer "))
+                        return BadRequest("Missing or invalid Authorization header");
+
+                    var token = authHeader.Substring("Bearer ".Length).Trim();
+                    result = await _azureAuthService.ExchangeAzureTokenAsync(token);
+                    break;
+
 
                 default:
                     return BadRequest("Unsupported authentication type");
