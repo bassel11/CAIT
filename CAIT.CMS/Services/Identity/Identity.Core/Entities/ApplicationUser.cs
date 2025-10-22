@@ -16,6 +16,7 @@ namespace Identity.Core.Entities
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
 
+        public DateTime? ExpirationDate { get; set; } // تاريخ انتهاء صلاحية الحساب
         // مصدر المصادقة
         public AuthenticationType AuthType { get; set; } = AuthenticationType.Database;
 

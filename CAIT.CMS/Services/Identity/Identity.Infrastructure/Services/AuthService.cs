@@ -80,6 +80,10 @@ namespace Identity.Infrastructure.Services
             if (!user.IsActive)
                 return (false, null, "User is inactive", null);
 
+            if (user.ExpirationDate.HasValue && user.ExpirationDate < DateTime.UtcNow)
+                return (false, null, "Account expired", null);
+            //return Unauthorized("Account expired");
+
             // التحقق من تفعيل MFA
             if (user.MFAEnabled)
             {
@@ -191,7 +195,32 @@ namespace Identity.Infrastructure.Services
             return (true, null);
         }
 
+        public async Task<(bool Success, string? Error)> DeactivateUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
 
+            if (!user.IsActive)
+                return (false, "User is already deactivated");
+
+            // تعطيل المستخدم
+            user.IsActive = false;
+            await _userManager.UpdateAsync(user);
+
+            // تسجيل العملية في الـ Audit
+            //await _auditService.LogAsync(new AuditLog
+            //{
+            //    UserId = User.Identity.Name,
+            //    Action = "DeactivateUser",
+            //    TargetUserId = user.Id,
+            //    Timestamp = DateTime.UtcNow,
+            //    Description = $"User {user.UserName} has been deactivated"
+            //});
+
+            return (true, null);
+
+        }
     }
 
 }

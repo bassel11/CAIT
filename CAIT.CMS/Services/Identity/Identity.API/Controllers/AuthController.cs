@@ -25,6 +25,7 @@ namespace Identity.API.Controllers
             _azureB2BService = azureB2BService;
         }
 
+        // register
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
@@ -115,6 +116,8 @@ namespace Identity.API.Controllers
             return BadRequest("Unsupported authentication type");
         }
 
+
+        // verify-mfa
         [HttpPost("verify-mfa")]
         public async Task<IActionResult> VerifyMfa(VerifyMfaDto dto)
         {
@@ -127,22 +130,8 @@ namespace Identity.API.Controllers
         }
 
 
-        [HttpPost("change-password")]
-        [Authorize(AuthenticationSchemes = "BearerPolicy")]
-        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
-        {
-            var userId = User.FindFirst("uid")?.Value;   // sub
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized("Invalid user context");
 
-            var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
-            if (!result.Success)
-                return BadRequest(result.Error);
-
-            return Ok(new { Message = "Password changed successfully" });
-        }
-
-
+        // enable mfa
         [HttpPost("enable-mfa")]
         [Authorize(AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> EnableMfaForDatabaseUser(EnableMfaDto dto)
@@ -158,5 +147,36 @@ namespace Identity.API.Controllers
         }
 
 
+        // change password
+        [HttpPost("change-password")]
+        [Authorize(AuthenticationSchemes = "BearerPolicy")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            var userId = User.FindFirst("uid")?.Value;   // sub
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Invalid user context");
+
+            var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+            if (!result.Success)
+                return BadRequest(result.Error);
+
+            return Ok(new { Message = "Password changed successfully" });
+        }
+
+        // Dectivate User Only for SuperAdmin Roles
+        [HttpPost("deactivateUser")]
+        //[Authorize(Roles = "SuperAdmin")] // فقط المشرف الأعلى يمكنه تعطيل المستخدمين
+        public async Task<IActionResult> DeactivateUser(DeactivateUserDto dto)
+        {
+
+            if (string.IsNullOrEmpty(dto.UserId))
+                return Unauthorized("Invalid user");
+
+            var result = await _authService.DeactivateUserAsync(dto.UserId);
+            if (!result.Success)
+                return BadRequest(result.Error);
+
+            return Ok(new { Message = "Deactivate User successfully" });
+        }
     }
 }
