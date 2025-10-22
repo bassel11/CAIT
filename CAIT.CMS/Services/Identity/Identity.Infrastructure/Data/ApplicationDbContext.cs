@@ -22,6 +22,8 @@ namespace Identity.Infrastructure.Data
 
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<UserPasswordHistory> UserPasswordHistories => Set<UserPasswordHistory>();
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -118,6 +120,28 @@ namespace Identity.Infrastructure.Data
                 // ---- Default Values ----
                 entity.Property(u => u.CreatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            // =====================================================
+            // 🔹 UserPasswordHistory Configuration ✅
+            // =====================================================
+            builder.Entity<UserPasswordHistory>(entity =>
+            {
+                entity.ToTable("UserPasswordHistories");
+
+                entity.HasKey(p => p.Id);
+
+                entity.Property(p => p.PasswordHash)
+                      .IsRequired()
+                      .HasMaxLength(512);
+
+                entity.Property(p => p.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.HasOne(p => p.User)
+                      .WithMany()
+                      .HasForeignKey(p => p.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

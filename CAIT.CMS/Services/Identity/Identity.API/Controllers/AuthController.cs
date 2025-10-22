@@ -1,6 +1,7 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Core.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
@@ -13,13 +14,15 @@ namespace Identity.API.Controllers
         private readonly ILdapAuthService _ldapAuthService;
         private readonly IMfaService _mfaService;
         private readonly IAzureAuthService _azureAuthService;
+        private readonly IAzureB2BService _azureB2BService;
 
-        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService, IMfaService mfaService, IAzureAuthService azureAuthService)
+        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService, IMfaService mfaService, IAzureAuthService azureAuthService, IAzureB2BService azureB2BService)
         {
             _authService = authService;
             _ldapAuthService = ldapAuthService;
             _mfaService = mfaService;
             _azureAuthService = azureAuthService;
+            _azureB2BService = azureB2BService;
         }
 
         [HttpPost("register")]
@@ -52,14 +55,24 @@ namespace Identity.API.Controllers
 
                 case ApplicationUser.AuthenticationType.AzureAD:
 
-                    var authHeader = Request.Headers["Authorization"].ToString();
-                    if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer "))
+                    var authADHeader = Request.Headers["Authorization"].ToString();
+                    if (string.IsNullOrWhiteSpace(authADHeader) || !authADHeader.StartsWith("Bearer "))
                         return BadRequest("Missing or invalid Authorization header");
 
-                    var token = authHeader.Substring("Bearer ".Length).Trim();
-                    result = await _azureAuthService.ExchangeAzureTokenAsync(token);
+                    var Azuretoken = authADHeader.Substring("Bearer ".Length).Trim();
+                    result = await _azureAuthService.ExchangeAzureTokenAsync(Azuretoken);
                     break;
 
+                case ApplicationUser.AuthenticationType.B2BGuest:
+
+                    var authB2BHeader = Request.Headers["Authorization"].ToString();
+                    if (string.IsNullOrWhiteSpace(authB2BHeader) || !authB2BHeader.StartsWith("Bearer "))
+                        return BadRequest("Missing or invalid Authorization header");
+
+                    var B2Btoken = authB2BHeader.Substring("Bearer ".Length).Trim();
+                    result = await _azureB2BService.ExchangeB2BTokenAsync(B2Btoken);
+
+                    break;
 
                 default:
                     return BadRequest("Unsupported authentication type");
@@ -112,5 +125,38 @@ namespace Identity.API.Controllers
 
             return Ok(result.Response);
         }
+
+
+        [HttpPost("change-password")]
+        [Authorize(AuthenticationSchemes = "BearerPolicy")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            var userId = User.FindFirst("uid")?.Value;   // sub
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Invalid user context");
+
+            var result = await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+            if (!result.Success)
+                return BadRequest(result.Error);
+
+            return Ok(new { Message = "Password changed successfully" });
+        }
+
+
+        [HttpPost("enable-mfa")]
+        [Authorize(AuthenticationSchemes = "BearerPolicy")]
+        public async Task<IActionResult> EnableMfaForDatabaseUser(EnableMfaDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.UserId))
+                return BadRequest("UserId is required");
+
+            var result = await _mfaService.EnableMfaAsync(dto.UserId, "Email"); // أو طريقة أخرى حسب النظام
+            if (!result.Success)
+                return BadRequest(result.Error);
+
+            return Ok(new { Message = $"MFA enabled successfully for user {dto.UserId}" });
+        }
+
+
     }
 }

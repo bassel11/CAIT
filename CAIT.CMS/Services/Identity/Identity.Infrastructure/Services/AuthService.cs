@@ -45,6 +45,16 @@ namespace Identity.Infrastructure.Services
             // Assign default role
             await _userManager.AddToRoleAsync(user, "Member");
 
+            // 🟢 حفظ كلمة المرور الجديدة في سجل UserPasswordHistory
+            var passwordHistory = new UserPasswordHistory
+            {
+                UserId = user.Id,
+                PasswordHash = user.PasswordHash!,   // تم توليدها تلقائياً من Identity
+                CreatedAt = DateTime.UtcNow
+            };
+            _dbContext.UserPasswordHistories.Add(passwordHistory);
+            await _dbContext.SaveChangesAsync();
+
             var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
             var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
@@ -121,6 +131,64 @@ namespace Identity.Infrastructure.Services
                 RefreshToken = newRefreshToken,
                 TokenExpiry = expiry
             }, null);
+        }
+
+
+        // Change User Pasword
+        public async Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || user.AuthType != ApplicationUser.AuthenticationType.Database)
+                return (false, "User not found or invalid authentication type");
+
+            //  التحقق من كلمة المرور الحالية
+            var isCurrentValid = await _userManager.CheckPasswordAsync(user, currentPassword);
+            if (!isCurrentValid)
+                return (false, "Current password is incorrect");
+
+            //  التحقق من أن الجديدة ليست نفس الحالية
+            if (await _userManager.CheckPasswordAsync(user, newPassword))
+                return (false, "New password cannot be the same as the current password");
+
+            //  التحقق من أن كلمة المرور الجديدة لم تُستخدم مسبقاً
+            var passwordHasher = new PasswordHasher<ApplicationUser>();
+            var previousPasswords = await _dbContext.UserPasswordHistories
+                .Where(h => h.UserId == user.Id)
+                .OrderByDescending(h => h.CreatedAt)
+                .Take(5) // 👈 التحقق من آخر 5 كلمات مرور
+                .ToListAsync();
+
+            foreach (var oldPassword in previousPasswords)
+            {
+                var verification = passwordHasher.VerifyHashedPassword(user, oldPassword.PasswordHash, newPassword);
+                if (verification == PasswordVerificationResult.Success)
+                    return (false, "You cannot reuse a previously used password");
+            }
+
+            //  إذا اجتاز التحقق، غيّر كلمة المرور
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            if (!result.Succeeded)
+                return (false, string.Join(", ", result.Errors.Select(e => e.Description)));
+
+            //  حفظ كلمة المرور الجديدة في سجل التاريخ
+            var newHistory = new UserPasswordHistory
+            {
+                UserId = user.Id,
+                PasswordHash = user.PasswordHash!,
+                CreatedAt = DateTime.UtcNow
+            };
+            _dbContext.UserPasswordHistories.Add(newHistory);
+
+            //  الإبقاء على آخر 5 فقط
+            if (previousPasswords.Count >= 5)
+            {
+                var toRemove = previousPasswords.Skip(4); // احتفظ بـ 5 فقط
+                _dbContext.UserPasswordHistories.RemoveRange(toRemove);
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            return (true, null);
         }
 
 

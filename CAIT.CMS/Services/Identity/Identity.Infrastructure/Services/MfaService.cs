@@ -54,5 +54,27 @@ namespace Identity.Infrastructure.Services
                 TokenExpiry = expiry
             }, null);
         }
+
+
+
+        public async Task<(bool Success, string? Error)> EnableMfaAsync(string userId, string deliveryMethod)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || user.AuthType != ApplicationUser.AuthenticationType.Database)
+                return (false, "User not found or invalid type");
+
+            user.MFAEnabled = true;
+            user.MFACode = null;
+            user.MFACodeExpiry = null;
+            await _userManager.UpdateAsync(user);
+
+            // Optional: send notification
+            await _emailService.SendEmailAsync(user.Email, "MFA Enabled",
+                "Multi-factor authentication has been enabled on your account.");
+
+            return (true, null);
+        }
+
+
     }
 }

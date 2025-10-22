@@ -23,6 +23,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>()
 // ---------------- JWT Config ----------------
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 var azureConfig = builder.Configuration.GetSection("AzureAd");
+var azureB2BConfig = builder.Configuration.GetSection("AzureB2B");
 
 
 // ---------------- Authentication ----------------
@@ -44,6 +45,7 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig["Key"]))
     };
 })
+// Azure AD internal
 .AddJwtBearer("AzureAD", options =>
 {
     var azureSection = builder.Configuration.GetSection("AzureAd");
@@ -61,6 +63,7 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = "roles"
     };
 })
+// Policy scheme to select the right bearer
 .AddPolicyScheme("BearerPolicy", "BearerPolicy", options =>
 {
     options.ForwardDefaultSelector = context =>
@@ -81,6 +84,53 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Azure B2B
+//.AddJwtBearer("AzureB2B", options =>
+//{
+//    var authority = $"{azureB2BConfig["Instance"]}{azureB2BConfig["TenantId"]}/v2.0";
+
+//    options.Authority = authority;
+//    options.TokenValidationParameters = new TokenValidationParameters
+//    {
+//        ValidateIssuer = true,
+//        ValidateAudience = true,
+//        ValidateLifetime = true,
+//        ValidAudience = azureB2BConfig["Audience"],
+//        ValidIssuers = azureB2BConfig.GetSection("ValidIssuers").Get<string[]>(),
+//        NameClaimType = "preferred_username",
+//        RoleClaimType = "roles"
+//    };
+//})
+
+// Policy scheme to select the right bearer
+//.AddPolicyScheme("BearerPolicy", "BearerPolicy", options =>
+//{
+//    options.ForwardDefaultSelector = context =>
+//    {
+//        var authHeader = context.Request.Headers["Authorization"].ToString();
+//        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+//            return "LocalJwt";
+
+//        var token = authHeader.Substring("Bearer ".Length).Trim();
+//        try
+//        {
+//            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+
+//            if (jwt.Issuer?.Contains("login.microsoftonline.com") == true)
+//            {
+//                var userType = jwt.Claims.FirstOrDefault(c => c.Type == "userType")?.Value;
+//                if (userType == "Guest")
+//                    return "AzureB2B"; // Guest external user
+//                else
+//                    return "AzureAD"; // Internal user
+//            }
+//        }
+//        catch { }
+
+//        return "LocalJwt";
+//    };
+//});
+
 builder.Services.AddAuthorization();
 
 
@@ -91,9 +141,9 @@ builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMfaService, MfaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-
-// ✅ New Azure Service
 builder.Services.AddScoped<IAzureAuthService, AzureAuthService>();
+builder.Services.AddScoped<IAzureB2BService, AzureB2BService>();
+
 
 // Add services to the container.
 
