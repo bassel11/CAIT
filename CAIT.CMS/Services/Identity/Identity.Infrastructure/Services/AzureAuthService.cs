@@ -115,6 +115,10 @@ namespace Identity.Infrastructure.Services
             // Find or create user
             var user = await _userManager.Users.FirstOrDefaultAsync(u => u.AzureObjectId == Guid.Parse(oid));
 
+            // التحقق من صلاحية الحساب
+            if (user.ExpirationDate.HasValue && user.ExpirationDate < DateTime.UtcNow)
+                return (false, null, "Account expired", null);
+
             if (user == null)
             {
                 user = new ApplicationUser

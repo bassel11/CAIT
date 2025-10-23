@@ -1,9 +1,12 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 using static Identity.Core.Entities.ApplicationUser;
 
 namespace Identity.Infrastructure.Services
@@ -82,23 +85,35 @@ namespace Identity.Infrastructure.Services
 
             if (user.ExpirationDate.HasValue && user.ExpirationDate < DateTime.UtcNow)
                 return (false, null, "Account expired", null);
-            //return Unauthorized("Account expired");
 
-            // التحقق من تفعيل MFA
+            // التحقق من MFA
             if (user.MFAEnabled)
             {
-                // توليد كود مؤقت 6 أرقام
-                var code = new Random().Next(100000, 999999).ToString();
-                user.MFACode = code;
-                user.MFACodeExpiry = DateTime.UtcNow.AddMinutes(5); // صلاحية الكود 5 دقائق
-                await _userManager.UpdateAsync(user);
+                switch (user.MFAMethod)
+                {
+                    case MFAMethod.Email:
+                        // توليد كود مؤقت وإرساله عبر البريد
+                        var code = GenerateNumericCode(6);
+                        user.MFACodeHash = HashCode(code, user.SecurityStamp);
+                        user.MFACodeExpiry = DateTime.UtcNow.AddMinutes(5);
+                        await _userManager.UpdateAsync(user);
 
-                // إرسال الكود عبر البريد أو SMS
-                await _emailService.SendMfaCodeAsync(user.Email, code); // أو SMS حسب إعداداتك
+                        await _emailService.SendMfaCodeAsync(user.Email, code);
+                        break;
 
-                // إعادة النتيجة تشير إلى ضرورة إدخال الكود
+                    case MFAMethod.TOTP:
+                        // TOTP يعتمد على Authenticator app، لا حاجة لإنشاء كود جديد
+                        break;
+
+                    default:
+                        return (false, null, "Unsupported MFA method", user.Id.ToString());
+                }
+
+                // العودة لتخبر العميل أن MFA مطلوب
                 return (true, null, "MFARequired", user.Id.ToString());
             }
+
+
 
             // إذا لم يكن MFA مفعلًا، توليد JWT مباشرة
             var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
@@ -221,6 +236,22 @@ namespace Identity.Infrastructure.Services
             return (true, null);
 
         }
+
+        private string HashCode(string code, string salt)
+        {
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(salt));
+            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(code));
+            return Convert.ToBase64String(hash);
+        }
+
+        private string GenerateNumericCode(int digits = 6)
+        {
+            var bytes = new byte[4];
+            RandomNumberGenerator.Fill(bytes);
+            uint random = BitConverter.ToUInt32(bytes, 0) % (uint)Math.Pow(10, digits);
+            return random.ToString($"D{digits}");
+        }
+
     }
 
 }

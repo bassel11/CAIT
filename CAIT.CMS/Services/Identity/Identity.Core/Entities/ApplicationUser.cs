@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Identity.Core.Enums;
+using Microsoft.AspNetCore.Identity;
 
 namespace Identity.Core.Entities
 {
@@ -34,8 +35,13 @@ namespace Identity.Core.Entities
         // ---------- Security & Status ----------
         public bool MFAEnabled { get; set; } = false;
 
+        public MFAMethod MFAMethod { get; set; } = MFAMethod.None;
+        public string? AuthenticatorKey { get; set; } // المفتاح الخاص بـ TOTP
+
         //public string? MFASecret { get; set; }  // لتخزين مفتاح TOTP
         public string? MFACode { get; set; }          // الكود المؤقت
+
+        public string? MFACodeHash { get; set; }  //  الكود المؤقت المشفر
         public DateTime? MFACodeExpiry { get; set; }  // انتهاء صلاحية الكود
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

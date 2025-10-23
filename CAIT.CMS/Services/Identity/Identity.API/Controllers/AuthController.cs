@@ -1,6 +1,7 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -129,22 +130,41 @@ namespace Identity.API.Controllers
             return Ok(result.Response);
         }
 
-
-
         // enable mfa
         [HttpPost("enable-mfa")]
-        [Authorize(AuthenticationSchemes = "BearerPolicy")]
-        public async Task<IActionResult> EnableMfaForDatabaseUser(EnableMfaDto dto)
+        //   [Authorize(AuthenticationSchemes = "BearerPolicy")]
+        public async Task<IActionResult> EnableMfaForDatabaseUser([FromBody] EnableMfaDto dto)
         {
             if (string.IsNullOrEmpty(dto.UserId))
                 return BadRequest("UserId is required");
 
-            var result = await _mfaService.EnableMfaAsync(dto.UserId, "Email"); // أو طريقة أخرى حسب النظام
+            // 🔹 تحقق من أن طريقة الـ MFA صالحة
+            if (!Enum.IsDefined(typeof(MFAMethod), dto.DeliveryMethod))
+                return BadRequest("Invalid DeliveryMethod. Allowed values: None, Email, TOTP.");
+
+            var result = await _mfaService.EnableMfaAsync(dto.UserId, dto.DeliveryMethod);
             if (!result.Success)
                 return BadRequest(result.Error);
 
-            return Ok(new { Message = $"MFA enabled successfully for user {dto.UserId}" });
+            // إرجاع الاستجابة مع QR فقط إذا كانت TOTP
+            if (dto.DeliveryMethod == MFAMethod.TOTP)
+            {
+                return Ok(new
+                {
+                    Message = $"{dto.DeliveryMethod}-based MFA enabled successfully for user {dto.UserId}",
+                    QrCodeUri = result.QrCodeUrl
+                });
+            }
+            else
+            {
+                return Ok(new
+                {
+                    Message = $"{dto.DeliveryMethod}-based MFA {(dto.DeliveryMethod == MFAMethod.None ? "disabled" : "enabled")} successfully for user {dto.UserId}"
+                });
+            }
+
         }
+
 
 
         // change password

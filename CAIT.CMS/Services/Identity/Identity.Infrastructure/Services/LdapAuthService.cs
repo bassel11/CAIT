@@ -116,6 +116,10 @@ namespace Identity.Infrastructure.Services
                                              .FirstOrDefaultAsync(u => u.Email == email
                                              && u.AuthType == ApplicationUser.AuthenticationType.OnPremAD);
 
+                // التحقق من صلاحية الحساب
+                if (user.ExpirationDate.HasValue && user.ExpirationDate < DateTime.UtcNow)
+                    return (false, null, "Account expired", null);
+
                 if (user == null)
                 {
                     user = new ApplicationUser

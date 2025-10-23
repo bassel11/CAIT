@@ -4,6 +4,7 @@ using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251023125312_Add_MFACodeHash_Field")]
+    partial class Add_MFACodeHash_Field
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,9 +77,6 @@ namespace Identity.Infrastructure.Migrations
                     b.Property<int>("AuthType")
                         .HasColumnType("int");
 
-                    b.Property<string>("AuthenticatorKey")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid?>("AzureObjectId")
                         .HasColumnType("uniqueidentifier");
 
@@ -136,9 +136,6 @@ namespace Identity.Infrastructure.Migrations
 
                     b.Property<bool>("MFAEnabled")
                         .HasColumnType("bit");
-
-                    b.Property<int>("MFAMethod")
-                        .HasColumnType("int");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
