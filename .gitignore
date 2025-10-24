@@ -416,3 +416,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+/CAIT.CMS/Services/Identity/Identity.API/appsettings.json
+/CAIT.CMS/Services/Identity/Identity.API/appsettings.json
