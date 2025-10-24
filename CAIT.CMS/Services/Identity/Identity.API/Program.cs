@@ -143,6 +143,7 @@ builder.Services.AddScoped<IMfaService, MfaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAzureAuthService, AzureAuthService>();
 builder.Services.AddScoped<IAzureB2BService, AzureB2BService>();
+builder.Services.AddScoped<IGuestUserAsync, GuestUserAsync>();
 
 
 // Add services to the container.

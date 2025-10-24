@@ -16,14 +16,16 @@ namespace Identity.API.Controllers
         private readonly IMfaService _mfaService;
         private readonly IAzureAuthService _azureAuthService;
         private readonly IAzureB2BService _azureB2BService;
+        private readonly IGuestUserAsync _guestUser;
 
-        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService, IMfaService mfaService, IAzureAuthService azureAuthService, IAzureB2BService azureB2BService)
+        public AuthController(IAuthService authService, ILdapAuthService ldapAuthService, IMfaService mfaService, IAzureAuthService azureAuthService, IAzureB2BService azureB2BService, IGuestUserAsync guestUser)
         {
             _authService = authService;
             _ldapAuthService = ldapAuthService;
             _mfaService = mfaService;
             _azureAuthService = azureAuthService;
             _azureB2BService = azureB2BService;
+            _guestUser = guestUser;
         }
 
         // register
@@ -45,6 +47,18 @@ namespace Identity.API.Controllers
 
             var authtype = (ApplicationUser.AuthenticationType)dto.AuthType;
 
+            string? token = null;
+
+            // استخراج Authorization Header فقط إذا كان النوع AzureAD أو B2BGuest
+            if (authtype == ApplicationUser.AuthenticationType.AzureAD || authtype == ApplicationUser.AuthenticationType.B2BGuest)
+            {
+                var authHeader = Request.Headers["Authorization"].ToString();
+                if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return BadRequest("Missing or invalid Authorization header");
+
+                token = authHeader.Substring("Bearer ".Length).Trim();
+            }
+
             switch (authtype)
             {
                 case ApplicationUser.AuthenticationType.OnPremAD:
@@ -57,22 +71,17 @@ namespace Identity.API.Controllers
 
                 case ApplicationUser.AuthenticationType.AzureAD:
 
-                    var authADHeader = Request.Headers["Authorization"].ToString();
-                    if (string.IsNullOrWhiteSpace(authADHeader) || !authADHeader.StartsWith("Bearer "))
-                        return BadRequest("Missing or invalid Authorization header");
+                    if (await _guestUser.IsGuestUserAsync(token!))
+                        return Unauthorized("Guest users must login via B2BGuest flow");
 
-                    var Azuretoken = authADHeader.Substring("Bearer ".Length).Trim();
-                    result = await _azureAuthService.ExchangeAzureTokenAsync(Azuretoken);
+                    result = await _azureAuthService.ExchangeAzureTokenAsync(token!);
                     break;
 
                 case ApplicationUser.AuthenticationType.B2BGuest:
 
-                    var authB2BHeader = Request.Headers["Authorization"].ToString();
-                    if (string.IsNullOrWhiteSpace(authB2BHeader) || !authB2BHeader.StartsWith("Bearer "))
-                        return BadRequest("Missing or invalid Authorization header");
-
-                    var B2Btoken = authB2BHeader.Substring("Bearer ".Length).Trim();
-                    result = await _azureB2BService.ExchangeB2BTokenAsync(B2Btoken);
+                    if (!await _guestUser.IsGuestUserAsync(token!))
+                        return Unauthorized("Member users must login via AzureAD flow");
+                    result = await _azureB2BService.ExchangeB2BTokenAsync(token);
 
                     break;
 
