@@ -117,8 +117,10 @@ namespace Identity.Infrastructure.Services
                                              && u.AuthType == ApplicationUser.AuthenticationType.OnPremAD);
 
                 // التحقق من صلاحية الحساب
-                if (user.ExpirationDate.HasValue && user.ExpirationDate < DateTime.UtcNow)
+                if (user?.ExpirationDate.HasValue == true && user.ExpirationDate < DateTime.UtcNow)
+                {
                     return (false, null, "Account expired", null);
+                }
 
                 if (user == null)
                 {
