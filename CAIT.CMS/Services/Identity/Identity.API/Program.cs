@@ -1,7 +1,11 @@
 ﻿using Identity.Application.Interfaces;
+using Identity.Application.Interfaces.Roles;
+using Identity.Application.Interfaces.Users;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
+using Identity.Infrastructure.Services.Roles;
+using Identity.Infrastructure.Services.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -144,6 +148,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAzureAuthService, AzureAuthService>();
 builder.Services.AddScoped<IAzureB2BService, AzureB2BService>();
 builder.Services.AddScoped<IGuestUserAsync, GuestUserAsync>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 
 // Add services to the container.

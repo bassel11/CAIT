@@ -47,16 +47,32 @@ namespace Identity.Infrastructure.Data
                 .HasKey(ur => new { ur.UserId, ur.RoleId });
 
             builder.Entity<ApplicationUserRole>()
-                .HasOne(ur => ur.User)
-                .WithMany(u => u.UserRoles)
-                .HasForeignKey(ur => ur.UserId)
-                .IsRequired();
-
-            builder.Entity<ApplicationUserRole>()
                 .HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Restrict) // 🚫 يمنع حذف الدور إن كان مرتبطًا بمستخدمين
                 .IsRequired();
+
+            builder.Entity<ApplicationUserRole>()
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Restrict) // 🚫 يمنع حذف المستخدم إذا كان مرتبطًا بدور
+                .IsRequired();
+
+
+
+            //builder.Entity<ApplicationUserRole>()
+            //    .HasOne(ur => ur.User)
+            //    .WithMany(u => u.UserRoles)
+            //    .HasForeignKey(ur => ur.UserId)
+            //    .IsRequired();
+
+            //builder.Entity<ApplicationUserRole>()
+            //    .HasOne(ur => ur.Role)
+            //    .WithMany(r => r.UserRoles)
+            //    .HasForeignKey(ur => ur.RoleId)
+            //    .IsRequired();
 
             // =====================================================
             // 🔹 RefreshToken Relationship
