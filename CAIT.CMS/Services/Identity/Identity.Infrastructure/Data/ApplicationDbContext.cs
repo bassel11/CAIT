@@ -23,6 +23,8 @@ namespace Identity.Infrastructure.Data
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<UserPasswordHistory> UserPasswordHistories => Set<UserPasswordHistory>();
+        public DbSet<Permission> Permissions => Set<Permission>();
+        public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -39,6 +41,8 @@ namespace Identity.Infrastructure.Data
             builder.Entity<IdentityUserLogin<Guid>>(b => b.ToTable("UserLogins"));
             builder.Entity<IdentityRoleClaim<Guid>>(b => b.ToTable("RoleClaims"));
             builder.Entity<IdentityUserToken<Guid>>(b => b.ToTable("UserTokens"));
+            builder.Entity<Permission>(b => b.ToTable("Permissions"));
+            builder.Entity<RolePermission>(b => b.ToTable("RolePermissions"));
 
 
             // =====================================================
@@ -72,20 +76,6 @@ namespace Identity.Infrastructure.Data
                 .OnDelete(DeleteBehavior.Restrict) // 🚫 يمنع حذف المستخدم إذا كان مرتبطًا بدور
                 .IsRequired();
 
-
-
-            //builder.Entity<ApplicationUserRole>()
-            //    .HasOne(ur => ur.User)
-            //    .WithMany(u => u.UserRoles)
-            //    .HasForeignKey(ur => ur.UserId)
-            //    .IsRequired();
-
-            //builder.Entity<ApplicationUserRole>()
-            //    .HasOne(ur => ur.Role)
-            //    .WithMany(r => r.UserRoles)
-            //    .HasForeignKey(ur => ur.RoleId)
-            //    .IsRequired();
-
             // =====================================================
             // 🔹 RefreshToken Relationship
             // =====================================================
@@ -107,28 +97,6 @@ namespace Identity.Infrastructure.Data
             // =====================================================
             builder.Entity<ApplicationUser>(entity =>
             {
-                // ---- Field Size & Encoding ----
-                //entity.Property(u => u.FirstName)
-                //      .HasMaxLength(100)
-                //      .IsUnicode(true);
-
-                //entity.Property(u => u.LastName)
-                //      .HasMaxLength(100)
-                //      .IsUnicode(true);
-
-                //entity.Property(u => u.AdDomain)
-                //      .HasMaxLength(100)
-                //      .IsUnicode(false);
-
-                //entity.Property(u => u.AdAccount)
-                //      .HasMaxLength(255)
-                //      .IsUnicode(false);
-
-                //entity.Property(u => u.Email)
-                //      .HasMaxLength(255)
-                //      .IsUnicode(false);
-
-                // ---- Indexes & Constraints ----
 
                 // فهرس لمستخدمي On-Prem Active Directory
                 entity.HasIndex(u => new { u.AdDomain, u.AdAccount })
@@ -171,6 +139,63 @@ namespace Identity.Infrastructure.Data
                       .HasForeignKey(p => p.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+
+            // =====================================================
+            // 🔹 Permissions Configuration
+            // =====================================================
+            builder.Entity<Permission>(entity =>
+            {
+
+                entity.HasKey(p => p.Id);
+
+                entity.Property(p => p.Name)
+                      .IsRequired()
+                      .HasMaxLength(150);
+
+                // تخزين Enums كقيم int في قاعدة البيانات
+                entity.Property(p => p.Resource)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(p => p.Action)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(p => p.Description)
+                      .HasMaxLength(300);
+
+                entity.HasIndex(p => p.Name)
+                      .IsUnique(true)
+                      .HasDatabaseName("UX_Permissions_Name");
+
+                entity.HasIndex(p => new { p.Resource, p.Action })
+                      .IsUnique(true)
+                      .HasDatabaseName("UX_Permissions_Resource_Action");
+            });
+
+
+            // =====================================================
+            // 🔹 RolePermissions Configuration (Many-to-Many)
+            // =====================================================
+            builder.Entity<RolePermission>(entity =>
+            {
+                // مفتاح مركب
+                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+                // العلاقة مع ApplicationRole
+                entity.HasOne(rp => rp.Role)
+                      .WithMany(r => r.RolePermissions)
+                      .HasForeignKey(rp => rp.RoleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // العلاقة مع Permission
+                entity.HasOne(rp => rp.Permission)
+                      .WithMany(p => p.RolePermissions)
+                      .HasForeignKey(rp => rp.PermissionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
         }
     }
 }
