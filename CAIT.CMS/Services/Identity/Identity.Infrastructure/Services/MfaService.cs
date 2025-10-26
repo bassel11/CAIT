@@ -159,14 +159,14 @@ namespace Identity.Infrastructure.Services
             await _userManager.UpdateAsync(user);
 
             // توليد JWT و Refresh Token بعد نجاح MFA
-            var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             return (true, new LoginResponseDto
             {
-                Token = token,
+                Token = jwtResult.Token,
                 RefreshToken = refreshToken,
-                TokenExpiry = expiry
+                TokenExpiry = jwtResult.Expiry
             }, null);
         }
 

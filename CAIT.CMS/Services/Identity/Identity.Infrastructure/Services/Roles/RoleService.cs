@@ -132,7 +132,7 @@ namespace Identity.Infrastructure.Services.Roles
                 return (false, "Cannot delete role because it is assigned to one or more users.");
 
             // Force Prevent Delete
-            return (false, "Now You Cannot Delete Roles Please, Please check with the developer or system administrator. .");
+            // return (false, "Now You Cannot Delete Roles Please, Please check with the developer or system administrator. .");
             //
 
             var result = await _roleManager.DeleteAsync(role);

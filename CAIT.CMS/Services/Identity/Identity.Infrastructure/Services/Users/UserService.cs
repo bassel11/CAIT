@@ -1,7 +1,9 @@
 ﻿using Identity.Application.Common;
 using Identity.Application.DTOs.Users;
 using Identity.Application.Interfaces.Users;
+using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -11,11 +13,13 @@ namespace Identity.Infrastructure.Services.Users
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<UserService> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public UserService(ApplicationDbContext context, ILogger<UserService> logger)
+        public UserService(ApplicationDbContext context, ILogger<UserService> logger, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
         }
         public async Task<UserDto?> GetByIdAsync(Guid id)
         {
@@ -165,5 +169,33 @@ namespace Identity.Infrastructure.Services.Users
             _logger.LogInformation("User {UserId} soft-deleted at {Time}", id, DateTime.UtcNow);
             return (true, null);
         }
+
+        public async Task<(bool Success, string? Error)> DeactivateUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            if (!user.IsActive)
+                return (false, "User is already deactivated");
+
+            // تعطيل المستخدم
+            user.IsActive = false;
+            await _userManager.UpdateAsync(user);
+
+            // تسجيل العملية في الـ Audit
+            //await _auditService.LogAsync(new AuditLog
+            //{
+            //    UserId = User.Identity.Name,
+            //    Action = "DeactivateUser",
+            //    TargetUserId = user.Id,
+            //    Timestamp = DateTime.UtcNow,
+            //    Description = $"User {user.UserName} has been deactivated"
+            //});
+
+            return (true, null);
+
+        }
+
     }
 }

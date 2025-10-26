@@ -30,6 +30,7 @@ namespace Identity.API.Controllers
 
         // register
         [HttpPost("register")]
+        [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             var result = await _authService.RegisterAsync(dto);
@@ -41,6 +42,7 @@ namespace Identity.API.Controllers
 
         // ------------------- Unified Login -------------------
         [HttpPost("login")]
+
         public async Task<IActionResult> Login(LoginDto dto)
         {
             (bool Success, LoginResponseDto? Response, string? Error, string? UserId) result;
@@ -129,6 +131,7 @@ namespace Identity.API.Controllers
 
         // verify-mfa
         [HttpPost("verify-mfa")]
+
         public async Task<IActionResult> VerifyMfa(VerifyMfaDto dto)
         {
             var result = await _mfaService.VerifyMfaAsync(dto);
@@ -141,7 +144,7 @@ namespace Identity.API.Controllers
 
         // enable mfa
         [HttpPost("enable-mfa")]
-        //   [Authorize(AuthenticationSchemes = "BearerPolicy")]
+        [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> EnableMfaForDatabaseUser([FromBody] EnableMfaDto dto)
         {
             if (string.IsNullOrEmpty(dto.UserId))
@@ -190,22 +193,6 @@ namespace Identity.API.Controllers
                 return BadRequest(result.Error);
 
             return Ok(new { Message = "Password changed successfully" });
-        }
-
-        // Dectivate User Only for SuperAdmin Roles
-        [HttpPost("deactivateUser")]
-        //[Authorize(Roles = "SuperAdmin")] // فقط المشرف الأعلى يمكنه تعطيل المستخدمين
-        public async Task<IActionResult> DeactivateUser(DeactivateUserDto dto)
-        {
-
-            if (string.IsNullOrEmpty(dto.UserId))
-                return Unauthorized("Invalid user");
-
-            var result = await _authService.DeactivateUserAsync(dto.UserId);
-            if (!result.Success)
-                return BadRequest(result.Error);
-
-            return Ok(new { Message = "Deactivate User successfully" });
         }
     }
 }

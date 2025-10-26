@@ -40,6 +40,18 @@ namespace Identity.Infrastructure.Data
             builder.Entity<IdentityRoleClaim<Guid>>(b => b.ToTable("RoleClaims"));
             builder.Entity<IdentityUserToken<Guid>>(b => b.ToTable("UserTokens"));
 
+
+            // =====================================================
+            // 🔹 Roles Configuration: unique constraint على Name
+            // =====================================================
+            builder.Entity<ApplicationRole>(entity =>
+            {
+                // الحقل Name فريد الآن
+                entity.HasIndex(r => r.Name)
+                      .IsUnique(true)
+                      .HasDatabaseName("UX_Roles_Name");
+            });
+
             // =====================================================
             // 🔹 UserRoles Relationships
             // =====================================================
@@ -139,7 +151,7 @@ namespace Identity.Infrastructure.Data
             });
 
             // =====================================================
-            // 🔹 UserPasswordHistory Configuration ✅
+            //  UserPasswordHistory Configuration
             // =====================================================
             builder.Entity<UserPasswordHistory>(entity =>
             {

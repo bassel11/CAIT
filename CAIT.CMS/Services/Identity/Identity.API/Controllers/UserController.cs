@@ -1,12 +1,14 @@
-﻿using Identity.Application.DTOs.Users;
+﻿using Identity.Application.DTOs;
+using Identity.Application.DTOs.Users;
 using Identity.Application.Interfaces.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -36,6 +38,21 @@ namespace Identity.API.Controllers
         {
             var result = await _userService.SoftDeleteAsync(id);
             return result.Success ? Ok() : NotFound(result.Error);
+        }
+
+        // Dectivate User Only for SuperAdmin Roles
+        [HttpPost("deactivateUser")]
+        public async Task<IActionResult> DeactivateUser(DeactivateUserDto dto)
+        {
+
+            if (string.IsNullOrEmpty(dto.UserId))
+                return Unauthorized("Invalid user");
+
+            var result = await _userService.DeactivateUserAsync(dto.UserId);
+            if (!result.Success)
+                return BadRequest(result.Error);
+
+            return Ok(new { Message = "Deactivate User successfully" });
         }
 
     }

@@ -145,14 +145,14 @@ namespace Identity.Infrastructure.Services
                 return (false, null, "User is inactive", null);
 
             // Generate internal JWT + Refresh
-            var jwt = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var refresh = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             return (true, new LoginResponseDto
             {
-                Token = jwt,
+                Token = jwtResult.Token,
                 RefreshToken = refresh,
-                TokenExpiry = expiry
+                TokenExpiry = jwtResult.Expiry
             }, null, null);
         }
     }

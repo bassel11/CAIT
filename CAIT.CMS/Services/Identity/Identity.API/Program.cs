@@ -1,15 +1,18 @@
 ﻿using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Roles;
+using Identity.Application.Interfaces.UserRoles;
 using Identity.Application.Interfaces.Users;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
 using Identity.Infrastructure.Services.Roles;
+using Identity.Infrastructure.Services.UserRoles;
 using Identity.Infrastructure.Services.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +49,11 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtConfig["Issuer"],
         ValidAudience = jwtConfig["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig["Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig["Key"])),
+
+        RoleClaimType = ClaimTypes.Role, //  ضروري لقراءة الأدوار بشكل صحيح
+        NameClaimType = ClaimTypes.Name //  لتحديد اسم المستخدم من التوكن
+
     };
 })
 // Azure AD internal
@@ -150,6 +157,7 @@ builder.Services.AddScoped<IAzureB2BService, AzureB2BService>();
 builder.Services.AddScoped<IGuestUserAsync, GuestUserAsync>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 
 
 // Add services to the container.
@@ -157,8 +165,37 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Identity.API", Version = "v1" });
 
+    // إضافة دعم Authorization Bearer
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "أدخل 'Bearer {token}'"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 var app = builder.Build();
 
 
@@ -169,7 +206,7 @@ using (var scope = app.Services.CreateScope())
     var dbContext = services.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate(); // Apply migrations
 
-    await IdentitySeed.SeedRolesAndAdminAsync(services); // Seed roles & admin
+    await IdentitySeed.SeedRolesAndAdminAsync(services); // Seed Basic roles & admin
 }
 
 // Configure the HTTP request pipeline.

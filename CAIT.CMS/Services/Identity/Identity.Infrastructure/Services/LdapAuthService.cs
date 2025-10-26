@@ -146,14 +146,14 @@ namespace Identity.Infrastructure.Services
                 }
 
                 // إنشاء التوكنات
-                var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+                var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
                 var response = new LoginResponseDto
                 {
-                    Token = token,
+                    Token = jwtResult.Token,
                     RefreshToken = refreshToken,
-                    TokenExpiry = expiry
+                    TokenExpiry = jwtResult.Expiry
                 };
 
                 return (true, response, null, null);
@@ -174,7 +174,7 @@ namespace Identity.Infrastructure.Services
                 return (false, null, "Invalid or expired refresh token");
 
             var user = storedToken.User;
-            var newToken = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var jwtResultNew = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var newRefreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             storedToken.Revoked = true;
@@ -182,9 +182,9 @@ namespace Identity.Infrastructure.Services
 
             return (true, new LoginResponseDto
             {
-                Token = newToken,
+                Token = jwtResultNew.Token,
                 RefreshToken = newRefreshToken,
-                TokenExpiry = expiry
+                TokenExpiry = jwtResultNew.Expiry
             }, null);
         }
     }

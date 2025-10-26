@@ -9,5 +9,7 @@ namespace Identity.Application.Interfaces.Users
         Task<UserDto?> GetByIdAsync(Guid id);
         Task<(bool Success, string? Error)> UpdateAsync(Guid id, UserUpdateDto dto);
         Task<(bool Success, string? Error)> SoftDeleteAsync(Guid id);
+
+        Task<(bool Success, string? Error)> DeactivateUserAsync(string userId);
     }
 }

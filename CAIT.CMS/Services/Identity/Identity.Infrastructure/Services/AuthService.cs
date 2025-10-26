@@ -18,14 +18,17 @@ namespace Identity.Infrastructure.Services
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IEmailService _emailService;
+        private readonly RoleManager<ApplicationRole> _roleManager;
+
         public AuthService(UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IJwtTokenService jwtTokenService,
-            IRefreshTokenService refreshTokenService, IEmailService emailService)
+            IRefreshTokenService refreshTokenService, IEmailService emailService, RoleManager<ApplicationRole> roleManager)
         {
             _userManager = userManager;
             _dbContext = dbContext;
             _jwtTokenService = jwtTokenService;
             _refreshTokenService = refreshTokenService;
             _emailService = emailService;
+            _roleManager = roleManager;
         }
 
         public async Task<(bool Success, LoginResponseDto? Response, IEnumerable<string>? Errors)> RegisterAsync(RegisterDto dto)
@@ -46,7 +49,20 @@ namespace Identity.Infrastructure.Services
             if (!result.Succeeded) return (false, null, result.Errors.Select(e => e.Description));
 
             // Assign default role
-            await _userManager.AddToRoleAsync(user, "Member");
+            //await _userManager.AddToRoleAsync(user, "Member");
+
+            //  تحقق من وجود الدور المطلوب في النظام
+            // إذا تم تمرير دور غير فارغ
+            if (!string.IsNullOrWhiteSpace(dto.Role))
+            {
+                // تحقق من وجود الدور في النظام
+                if (!await _roleManager.RoleExistsAsync(dto.Role))
+                    return (false, null, new[] { $"Role '{dto.Role}' does not exist" });
+
+                // إسناد الدور للمستخدم
+                await _userManager.AddToRoleAsync(user, dto.Role);
+            }
+
 
             // 🟢 حفظ كلمة المرور الجديدة في سجل UserPasswordHistory
             var passwordHistory = new UserPasswordHistory
@@ -58,14 +74,15 @@ namespace Identity.Infrastructure.Services
             _dbContext.UserPasswordHistories.Add(passwordHistory);
             await _dbContext.SaveChangesAsync();
 
-            var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            //var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             var response = new LoginResponseDto
             {
-                Token = token,
+                Token = jwtResult.Token,
                 RefreshToken = refreshToken,
-                TokenExpiry = expiry
+                TokenExpiry = jwtResult.Expiry
             };
 
             return (true, response, null);
@@ -116,14 +133,14 @@ namespace Identity.Infrastructure.Services
 
 
             // إذا لم يكن MFA مفعلًا، توليد JWT مباشرة
-            var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             return (true, new LoginResponseDto
             {
-                Token = token,
+                Token = jwtResult.Token,
                 RefreshToken = refreshToken,
-                TokenExpiry = expiry
+                TokenExpiry = jwtResult.Expiry
             }, null, null); // user.Id.ToString()  لارجاع UserId
         }
 
@@ -137,7 +154,7 @@ namespace Identity.Infrastructure.Services
                 return (false, null, "Invalid or expired refresh token");
 
             var user = storedToken.User;
-            var newToken = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            var jwtResultNew = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var newRefreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 
             // Revoke old refresh token
@@ -146,9 +163,9 @@ namespace Identity.Infrastructure.Services
 
             return (true, new LoginResponseDto
             {
-                Token = newToken,
+                Token = jwtResultNew.Token,
                 RefreshToken = newRefreshToken,
-                TokenExpiry = expiry
+                TokenExpiry = jwtResultNew.Expiry
             }, null);
         }
 
@@ -208,33 +225,6 @@ namespace Identity.Infrastructure.Services
             await _dbContext.SaveChangesAsync();
 
             return (true, null);
-        }
-
-        public async Task<(bool Success, string? Error)> DeactivateUserAsync(string userId)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-                return (false, "User not found");
-
-            if (!user.IsActive)
-                return (false, "User is already deactivated");
-
-            // تعطيل المستخدم
-            user.IsActive = false;
-            await _userManager.UpdateAsync(user);
-
-            // تسجيل العملية في الـ Audit
-            //await _auditService.LogAsync(new AuditLog
-            //{
-            //    UserId = User.Identity.Name,
-            //    Action = "DeactivateUser",
-            //    TargetUserId = user.Id,
-            //    Timestamp = DateTime.UtcNow,
-            //    Description = $"User {user.UserName} has been deactivated"
-            //});
-
-            return (true, null);
-
         }
 
         private string HashCode(string code, string salt)

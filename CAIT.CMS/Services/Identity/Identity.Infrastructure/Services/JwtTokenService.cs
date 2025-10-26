@@ -20,7 +20,7 @@ namespace Identity.Infrastructure.Services
             _userManager = userManager;
         }
 
-        public string GenerateJwtToken(ApplicationUser user, out DateTime expiry)
+        public async Task<JwtTokenResult> GenerateJwtTokenAsync(ApplicationUser user)
         {
             var claims = new List<Claim>
             {
@@ -30,14 +30,18 @@ namespace Identity.Infrastructure.Services
             };
 
             // Add roles
-            var roles = _userManager.GetRolesAsync(user).Result;
+            var roles = await _userManager.GetRolesAsync(user);
+            //claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
             foreach (var role in roles)
                 claims.Add(new Claim(ClaimTypes.Role, role));
+
+
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            expiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:DurationInMinutes"]));
+            var expiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:DurationInMinutes"]));
+
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
@@ -47,7 +51,8 @@ namespace Identity.Infrastructure.Services
                 signingCredentials: creds
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return new JwtTokenResult(new JwtSecurityTokenHandler().WriteToken(token), expiry);
+            //return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Identity.Infrastructure.Data
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             // 1. Roles
-            string[] roles = new string[] { "SuperAdmin", "CommitteeAdmin", "Member", "Observer" };
+            string[] roles = new string[] { "SuperAdmin", "CommitteeAdmin", "Member", "Observer", "Rapporteur", "ViceChairman" };
 
             foreach (var roleName in roles)
             {
