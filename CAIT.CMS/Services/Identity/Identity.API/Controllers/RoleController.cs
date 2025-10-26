@@ -1,14 +1,10 @@
 ﻿using Identity.Application.DTOs.Roles;
 using Identity.Application.Interfaces.Roles;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
-    public class RoleController : ControllerBase
+    public class RoleController : BaseController
     {
         private readonly IRoleService _roleService;
 

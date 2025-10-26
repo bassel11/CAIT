@@ -1,15 +1,11 @@
 ﻿using Identity.Application.DTOs.UserRoles;
 using Identity.Application.DTOs.UserRoles.Multiple;
 using Identity.Application.Interfaces.UserRoles;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
-    public class UserRolesController : ControllerBase
+    public class UserRolesController : BaseController
     {
         private readonly IUserRoleService _userroleService;
 
