@@ -1,4 +1,5 @@
-﻿using Identity.Application.DTOs.Permissions;
+﻿using Identity.Application.Common;
+using Identity.Application.DTOs.Permissions;
 
 namespace Identity.Application.Interfaces.Permissions
 {
@@ -9,5 +10,6 @@ namespace Identity.Application.Interfaces.Permissions
         Task<PermissionDto> CreateAsync(CreatePermissionDto dto);
         Task<PermissionDto> UpdateAsync(Guid id, UpdatePermissionDto dto);
         Task<bool> DeleteAsync(Guid id);
+        Task<PagedResult<PermissionDto>> GetPagedAsync(PermissionFilterDto query);
     }
 }

@@ -1,9 +1,12 @@
-﻿using Identity.Application.Interfaces;
+﻿using FluentValidation;
+using FluentValidation.AspNetCore;
+using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Permissions;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Interfaces.Roles;
 using Identity.Application.Interfaces.UserRoles;
 using Identity.Application.Interfaces.Users;
+using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
@@ -18,6 +21,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -164,6 +168,14 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
+
+
+// ---------------- FluentValidation Configuration ----------------
+builder.Services
+    .AddFluentValidationAutoValidation() // يفعّل التحقق التلقائي قبل Controller
+    .AddFluentValidationClientsideAdapters()
+    .AddValidatorsFromAssemblyContaining<PermissionFilterValidator>(); // يسجل كل الـ Validators
+
 
 
 // Add services to the container.
