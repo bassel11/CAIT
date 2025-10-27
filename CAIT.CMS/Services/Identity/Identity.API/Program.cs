@@ -1,10 +1,14 @@
 ﻿using Identity.Application.Interfaces;
+using Identity.Application.Interfaces.Permissions;
+using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Interfaces.Roles;
 using Identity.Application.Interfaces.UserRoles;
 using Identity.Application.Interfaces.Users;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
+using Identity.Infrastructure.Services.Permissions;
+using Identity.Infrastructure.Services.RolePermissions;
 using Identity.Infrastructure.Services.Roles;
 using Identity.Infrastructure.Services.UserRoles;
 using Identity.Infrastructure.Services.Users;
@@ -158,6 +162,8 @@ builder.Services.AddScoped<IGuestUserAsync, GuestUserAsync>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
 
 
 // Add services to the container.
