@@ -90,7 +90,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // ==========================
-// 10️⃣ Apply Migrations & Seed
+// Apply Migrations & Seed
 // ==========================
 app.MigrateDatabase<CommitteeContext>((context, services) =>
 {
@@ -99,7 +99,7 @@ app.MigrateDatabase<CommitteeContext>((context, services) =>
 });
 
 // ==========================
-// 11️⃣ HTTP Pipeline
+// HTTP Pipeline
 // ==========================
 if (app.Environment.IsDevelopment())
 {

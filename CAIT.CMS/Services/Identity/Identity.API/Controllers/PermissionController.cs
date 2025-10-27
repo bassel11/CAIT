@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
+using Identity.API.Controllers.Base;
 using Identity.Application.DTOs.Permissions;
 using Identity.Application.Interfaces.Permissions;
 using Microsoft.AspNetCore.Mvc;

@@ -1,4 +1,5 @@
-﻿using Identity.Application.DTOs.UserRoles;
+﻿using Identity.API.Controllers.Base;
+using Identity.Application.DTOs.UserRoles;
 using Identity.Application.DTOs.UserRoles.Multiple;
 using Identity.Application.Interfaces.UserRoles;
 using Microsoft.AspNetCore.Mvc;

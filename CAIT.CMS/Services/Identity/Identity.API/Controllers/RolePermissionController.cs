@@ -1,4 +1,5 @@
-﻿using Identity.Application.DTOs.RolePermissions;
+﻿using Identity.API.Controllers.Base;
+using Identity.Application.DTOs.RolePermissions;
 using Identity.Application.Interfaces.RolePermissions;
 using Microsoft.AspNetCore.Mvc;
 

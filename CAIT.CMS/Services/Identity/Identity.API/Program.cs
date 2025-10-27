@@ -49,6 +49,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer("LocalJwt", options =>
 {
+
     options.RequireHttpsMetadata = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -64,6 +65,7 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = ClaimTypes.Name //  لتحديد اسم المستخدم من التوكن
 
     };
+
 })
 // Azure AD internal
 .AddJwtBearer("AzureAD", options =>
@@ -82,6 +84,7 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = "preferred_username",
         RoleClaimType = "roles"
     };
+
 })
 // Policy scheme to select the right bearer
 .AddPolicyScheme("BearerPolicy", "BearerPolicy", options =>
@@ -236,9 +239,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseMiddleware<CustomErrorMiddleware>();
+
 
 app.UseAuthentication();
+app.UseMiddleware<CustomErrorMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

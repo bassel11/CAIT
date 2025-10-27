@@ -1,4 +1,5 @@
-﻿using Identity.Application.DTOs;
+﻿using Identity.API.Controllers.Base;
+using Identity.Application.DTOs;
 using Identity.Application.DTOs.Users;
 using Identity.Application.Interfaces.Users;
 using Microsoft.AspNetCore.Mvc;
