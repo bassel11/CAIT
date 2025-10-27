@@ -5,6 +5,7 @@ using Identity.Application.Mappers;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Identity.Infrastructure.Services.Permissions
 {
@@ -90,93 +91,40 @@ namespace Identity.Infrastructure.Services.Permissions
 
         public async Task<PagedResult<PermissionDto>> GetPagedAsync(PermissionFilterDto filter)
         {
-            // sanitize pageSize
-            var page = filter.Page < 1 ? 1 : filter.Page;
-            var pageSize = filter.PageSize < 1
-                ? PaginationDefaults.DefaultPageSize
-                : Math.Min(filter.PageSize, PaginationDefaults.MaxPageSize);
+            var query = _context.Permissions.AsNoTracking();
 
-            IQueryable<Permission> query = _context.Permissions.AsNoTracking();
-
-            // Filters
+            // filters
             if (!string.IsNullOrWhiteSpace(filter.Search))
             {
                 var s = filter.Search.Trim();
-                // use EF functions if desired (e.g., EF.Functions.Like) for performance
                 query = query.Where(p => p.Name.Contains(s) || p.Description.Contains(s));
             }
-
             if (filter.Resource.HasValue)
                 query = query.Where(p => p.Resource == filter.Resource.Value);
-
             if (filter.Action.HasValue)
                 query = query.Where(p => p.Action == filter.Action.Value);
-
             if (filter.IsActive.HasValue)
                 query = query.Where(p => p.IsActive == filter.IsActive.Value);
 
-            if (filter.IsGlobal.HasValue)
-                query = query.Where(p => p.IsGlobal == filter.IsGlobal.Value);
+            var total = await query.CountAsync();
 
-            // Count before paging
-            var totalCount = await query.CountAsync();
-
-            // Sorting
-            // normalize
-            var sortBy = (filter.SortBy ?? "name").ToLowerInvariant();
-            var sortDir = (filter.SortDir ?? "asc").ToLowerInvariant();
-
-            // Default sort if unknown
-            switch (sortBy)
+            // sorting
+            var sortMap = new Dictionary<string, Expression<Func<Permission, object>>>
             {
-                case "createdat":
-                case "created":
-                    query = sortDir == "desc" ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt);
-                    break;
-                case "resource":
-                    query = sortDir == "desc" ? query.OrderByDescending(p => p.Resource) : query.OrderBy(p => p.Resource);
-                    break;
-                case "action":
-                    query = sortDir == "desc" ? query.OrderByDescending(p => p.Action) : query.OrderBy(p => p.Action);
-                    break;
-                case "isglobal":
-                    query = sortDir == "desc" ? query.OrderByDescending(p => p.IsGlobal) : query.OrderBy(p => p.IsGlobal);
-                    break;
-                case "isactive":
-                    query = sortDir == "desc" ? query.OrderByDescending(p => p.IsActive) : query.OrderBy(p => p.IsActive);
-                    break;
-                case "name":
-                default:
-                    query = sortDir == "desc" ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name);
-                    break;
-            }
+                ["name"] = p => p.Name,
+                ["createdat"] = p => p.CreatedAt,
+                ["resource"] = p => p.Resource,
+                ["action"] = p => p.Action,
+                ["isglobal"] = p => p.IsGlobal,
+                ["isactive"] = p => p.IsActive
+            };
 
-            // Paging
-            var skip = (page - 1) * pageSize;
+            query = query.ApplySorting(filter.SortBy!, filter.SortDir, sortMap);
+            query = query.ApplyPaging(filter);
 
-            // Projection using Expression mapper to translate to SQL
-            var items = await query
-                .Skip(skip)
-                .Take(pageSize)
-                .Select(PermissionMapper.ToDtoExpr)
-                .ToListAsync();
+            var permissions = await query.Select(PermissionMapper.ToDtoExpr).ToListAsync();
 
-            return new PagedResult<PermissionDto>(items, totalCount, page, pageSize);
+            return new PagedResult<PermissionDto>(permissions, total, filter.Page, filter.PageSize);
         }
-
-
-        //private static PermissionDto MapToDto(Permission p)
-        //{
-        //    return new PermissionDto
-        //    {
-        //        Id = p.Id,
-        //        Name = p.Name,
-        //        Description = p.Description,
-        //        Resource = p.Resource.ToString(),
-        //        Action = p.Action.ToString(),
-        //        IsGlobal = p.IsGlobal,
-        //        IsActive = p.IsActive
-        //    };
-        //}
     }
 }

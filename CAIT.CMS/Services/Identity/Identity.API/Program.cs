@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.AspNetCore;
+using Identity.API.Middlewares;
 using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Permissions;
 using Identity.Application.Interfaces.RolePermissions;
@@ -235,6 +236,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<CustomErrorMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

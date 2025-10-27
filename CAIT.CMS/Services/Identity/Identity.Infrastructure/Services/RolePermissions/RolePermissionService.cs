@@ -1,10 +1,12 @@
-﻿using Identity.Application.DTOs.Permissions;
+﻿using Identity.Application.Common;
+using Identity.Application.DTOs.Permissions;
 using Identity.Application.DTOs.RolePermissions;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Mappers;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Identity.Infrastructure.Services.RolePermissions
 {
@@ -42,14 +44,55 @@ namespace Identity.Infrastructure.Services.RolePermissions
             return true;
         }
 
-        public async Task<IEnumerable<PermissionDto>> GetPermissionsByRoleAsync(Guid roleId)
+        public async Task<IEnumerable<PermissionDto>> GetPermissionsByRoleAsync(Guid roleId, PermissionByRoleFilterDto? filter = null)
         {
-            var permissions = await _context.RolePermissions
+            var query = _context.RolePermissions
                 .Where(rp => rp.RoleId == roleId)
                 .Include(rp => rp.Permission)
-                //.Select(rp => MapToDto(rp.Permission))
-                .Select(rp => PermissionMapper.ToDto(rp.Permission))
-                .ToListAsync();
+                .Select(rp => rp.Permission)
+                .AsQueryable();
+
+            if (filter != null)
+            {
+                // 🔹 البحث النصي
+                if (!string.IsNullOrWhiteSpace(filter.Search))
+                {
+                    var s = filter.Search.Trim();
+                    query = query.Where(p => p.Name.Contains(s) || p.Description.Contains(s));
+                }
+
+                // 🔹 الفلاتر الأخرى
+                if (filter.Resource.HasValue)
+                    query = query.Where(p => p.Resource == filter.Resource.Value);
+
+                if (filter.Action.HasValue)
+                    query = query.Where(p => p.Action == filter.Action.Value);
+
+                if (filter.IsActive.HasValue)
+                    query = query.Where(p => p.IsActive == filter.IsActive.Value);
+
+                if (filter.IsGlobal.HasValue)
+                    query = query.Where(p => p.IsGlobal == filter.IsGlobal.Value);
+
+                // 🔹 ترتيب النتائج
+                var sortMap = new Dictionary<string, Expression<Func<Permission, object>>>
+                {
+                    ["name"] = p => p.Name,
+                    ["createdat"] = p => p.CreatedAt,
+                    ["resource"] = p => p.Resource,
+                    ["action"] = p => p.Action,
+                    ["isglobal"] = p => p.IsGlobal,
+                    ["isactive"] = p => p.IsActive
+                };
+
+                query = query.ApplySorting(filter.SortBy!, filter.SortDir, sortMap);
+
+                // 🔹 تطبيق Paging
+                query = query.ApplyPaging(filter);
+            }
+
+            // Projection باستخدام Mapper
+            var permissions = await query.Select(PermissionMapper.ToDtoExpr).ToListAsync();
 
             return permissions;
         }

@@ -30,7 +30,7 @@ namespace Identity.API.Controllers
                            : BadRequest(new { Message = $"Failed to remove role '{dto.RoleName}'" });
         }
 
-        [HttpGet("{userId}/roles")]
+        [HttpGet("roles/{userId}")]
         public async Task<IActionResult> GetUserRoles(Guid userId)
         {
             var roles = await _userroleService.GetUserRolesAsync(userId);

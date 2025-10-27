@@ -18,23 +18,11 @@ namespace Identity.Application.Mappers
         };
 
         // helper if you need to map an already-loaded entity
-        public static PermissionDto ToDto(Permission p) => ToDtoExpr.Compile().Invoke(p);
-
-
-
-        //public static PermissionDto ToDto(Permission p)
-        //{
-        //    return new PermissionDto
-        //    {
-        //        Id = p.Id,
-        //        Name = p.Name,
-        //        Description = p.Description,
-        //        Resource = p.Resource.ToString(),
-        //        Action = p.Action.ToString(),
-        //        IsGlobal = p.IsGlobal,
-        //        IsActive = p.IsActive
-        //    };
-        //}
+        public static PermissionDto ToDto(Permission? p)
+        {
+            if (p == null) return null!;
+            return ToDtoExpr.Compile().Invoke(p);
+        }
     }
 
 

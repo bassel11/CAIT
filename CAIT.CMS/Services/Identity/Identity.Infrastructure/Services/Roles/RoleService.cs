@@ -1,11 +1,13 @@
 ﻿using Identity.Application.Common;
 using Identity.Application.DTOs.Roles;
 using Identity.Application.Interfaces.Roles;
+using Identity.Application.Mappers;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace Identity.Infrastructure.Services.Roles
 {
@@ -25,27 +27,32 @@ namespace Identity.Infrastructure.Services.Roles
         public async Task<PagedResult<RoleDto>> GetRolesAsync(RoleFilterDto filter)
         {
             var query = _context.Roles
-                .Include(r => r.UserRoles)
-                .AsQueryable();
+      .Include(r => r.UserRoles)
+      .AsQueryable();
 
+            // 🧭 الفلاتر
             if (!string.IsNullOrWhiteSpace(filter.Search))
-                query = query.Where(r => r.Name.Contains(filter.Search) || (r.Description ?? "").Contains(filter.Search));
+            {
+                var s = filter.Search.Trim();
+                query = query.Where(r => r.Name.Contains(s) || (r.Description ?? "").Contains(s));
+            }
 
+            // Count قبل الـ Paging
             var total = await query.CountAsync();
 
-            var roles = await query
-                .OrderBy(r => r.Name)
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .Select(r => new RoleDto
-                {
-                    Id = r.Id,
-                    Name = r.Name!,
-                    Description = r.Description,
-                    CreatedAt = r.CreatedAt,
-                    UserCount = r.UserRoles.Count
-                })
-                .ToListAsync();
+            // 🔹 تعريف خريطة الحقول للـ Sorting
+            var sortMap = new Dictionary<string, Expression<Func<ApplicationRole, object>>>
+            {
+                ["name"] = r => r.Name!,
+                ["createdat"] = r => r.CreatedAt
+            };
+
+            // Apply Sorting & Paging
+            query = query.ApplySorting(filter.SortBy ?? "name", filter.SortDir, sortMap)
+                         .ApplyPaging(filter);
+
+            // Projection باستخدام RoleMapper
+            var roles = await query.Select(RoleMapper.ToDtoExpr).ToListAsync();
 
             return new PagedResult<RoleDto>(roles, total, filter.Page, filter.PageSize);
         }

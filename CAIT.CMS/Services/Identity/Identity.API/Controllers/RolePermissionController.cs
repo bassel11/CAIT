@@ -22,9 +22,9 @@ namespace Identity.API.Controllers
         }
 
         [HttpGet("role/{roleId}")]
-        public async Task<IActionResult> GetPermissionsByRole(Guid roleId)
+        public async Task<IActionResult> GetPermissionsByRole(Guid roleId, [FromQuery] PermissionByRoleFilterDto filter)
         {
-            var result = await _rolePermission.GetPermissionsByRoleAsync(roleId);
+            var result = await _rolePermission.GetPermissionsByRoleAsync(roleId, filter);
             return Ok(result);
         }
     }

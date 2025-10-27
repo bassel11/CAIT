@@ -1,11 +1,13 @@
 ﻿using Identity.Application.Common;
 using Identity.Application.DTOs.Users;
 using Identity.Application.Interfaces.Users;
+using Identity.Application.Mappers;
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace Identity.Infrastructure.Services.Users
 {
@@ -67,16 +69,19 @@ namespace Identity.Infrastructure.Services.Users
         public async Task<PagedResult<UserDto>> GetUsersAsync(UserFilterDto filter)
         {
             var query = _context.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .AsQueryable();
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .AsQueryable();
 
             // 🧭 الفلاتر
             if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var s = filter.Search.Trim();
                 query = query.Where(u =>
-                    u.FirstName.Contains(filter.Search) ||
-                    u.LastName.Contains(filter.Search) ||
-                    u.Email!.Contains(filter.Search));
+                    u.FirstName.Contains(s) ||
+                    u.LastName.Contains(s) ||
+                    u.Email!.Contains(s));
+            }
 
             if (filter.IsActive.HasValue)
                 query = query.Where(u => u.IsActive == filter.IsActive);
@@ -87,54 +92,34 @@ namespace Identity.Infrastructure.Services.Users
             if (filter.MFAEnabled.HasValue)
                 query = query.Where(u => u.MFAEnabled == filter.MFAEnabled);
 
-            // 🕒 التصفية بالتواريخ
             if (filter.CreatedAfter.HasValue)
                 query = query.Where(u => u.CreatedAt >= filter.CreatedAfter.Value);
             if (filter.CreatedBefore.HasValue)
                 query = query.Where(u => u.CreatedAt <= filter.CreatedBefore.Value);
 
+            // Count before paging
             var total = await query.CountAsync();
 
-            var users = await query
-                .OrderByDescending(u => u.CreatedAt)
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    UserName = u.UserName,
-                    NormalizedUserName = u.NormalizedUserName,
-                    Email = u.Email,
-                    NormalizedEmail = u.NormalizedEmail,
-                    EmailConfirmed = u.EmailConfirmed,
-                    PhoneNumber = u.PhoneNumber,
-                    PhoneNumberConfirmed = u.PhoneNumberConfirmed,
-                    TwoFactorEnabled = u.TwoFactorEnabled,
-                    LockoutEnd = u.LockoutEnd,
-                    LockoutEnabled = u.LockoutEnabled,
-                    AccessFailedCount = u.AccessFailedCount,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    ExpirationDate = u.ExpirationDate,
-                    AuthType = u.AuthType,
-                    AdDomain = u.AdDomain,
-                    AdAccount = u.AdAccount,
-                    AzureTenantId = u.AzureTenantId,
-                    AzureObjectId = u.AzureObjectId,
-                    ExternalId = u.ExternalId,
-                    MFAEnabled = u.MFAEnabled,
-                    MFAMethod = u.MFAMethod,
-                    MFACodeExpiry = u.MFACodeExpiry,
-                    IsActive = u.IsActive,
-                    CreatedAt = u.CreatedAt,
-                    UpdatedAt = u.UpdatedAt,
-                    ExpiresAt = u.ExpiresAt,
-                    Roles = u.UserRoles.Select(r => r.Role.Name!).ToList()
-                })
-                .ToListAsync();
+            // Sort map
+            var sortMap = new Dictionary<string, Expression<Func<ApplicationUser, object>>>
+            {
+                ["username"] = u => u.UserName,
+                ["firstname"] = u => u.FirstName,
+                ["lastname"] = u => u.LastName,
+                ["email"] = u => u.Email,
+                ["createdat"] = u => u.CreatedAt
+            };
+
+            // Apply sorting & paging
+            query = query.ApplySorting(filter.SortBy ?? "createdat", filter.SortDir, sortMap)
+                         .ApplyPaging(filter);
+
+            // Projection using UserMapper
+            var users = await query.Select(UserMapper.ToDtoExpr).ToListAsync();
 
             return new PagedResult<UserDto>(users, total, filter.Page, filter.PageSize);
         }
+
 
         public async Task<(bool Success, string? Error)> UpdateAsync(Guid id, UserUpdateDto dto)
         {
