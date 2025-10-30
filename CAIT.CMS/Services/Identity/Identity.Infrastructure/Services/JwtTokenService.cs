@@ -24,9 +24,10 @@ namespace Identity.Infrastructure.Services
         {
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim("uid", user.Id.ToString())
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email ?? user.UserName),
+                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new Claim("uid", user.Id.ToString()),
+                new Claim("auth_type", user.AuthType.ToString())
             };
 
             // Add roles
@@ -35,7 +36,11 @@ namespace Identity.Infrastructure.Services
             foreach (var role in roles)
                 claims.Add(new Claim(ClaimTypes.Role, role));
 
-
+            // Flags ثابتة
+            if (roles.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase))
+                claims.Add(new Claim("is_superadmin", "true"));
+            if (roles.Contains("SystemSettingsAdmin", StringComparer.OrdinalIgnoreCase))
+                claims.Add(new Claim("is_systemsettingsadmin", "true"));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

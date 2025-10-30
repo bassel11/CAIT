@@ -11,7 +11,7 @@ namespace Identity.Application.Mappers
             Id = p.Id,
             Name = p.Name,
             Description = p.Description,
-            Resource = p.Resource.ToString(),
+            Resource = p.ResourceType.ToString(),
             Action = p.Action.ToString(),
             IsGlobal = p.IsGlobal,
             IsActive = p.IsActive

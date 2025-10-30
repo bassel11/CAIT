@@ -4,8 +4,10 @@ using Identity.Application.DTOs.RolePermissions;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Mappers;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 
 namespace Identity.Infrastructure.Services.RolePermissions
@@ -17,32 +19,69 @@ namespace Identity.Infrastructure.Services.RolePermissions
         {
             _context = context;
         }
+
         public async Task<bool> AssignPermissionsToRoleAsync(AssignPermissionsToRoleDto dto)
         {
             var role = await _context.Roles
                 .Include(r => r.RolePermissions)
                 .FirstOrDefaultAsync(r => r.Id == dto.RoleId);
 
-            if (role == null) throw new KeyNotFoundException("Role not found");
+            if (role == null)
+                throw new KeyNotFoundException("Role not found");
 
-            var existingPermissions = role.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
-            var newPermissions = dto.PermissionIds.Except(existingPermissions).ToList();
-
-            foreach (var permId in newPermissions)
+            // إضافة الصلاحيات الجديدة
+            foreach (var item in dto.Permissions)
             {
-                if (!await _context.Permissions.AnyAsync(p => p.Id == permId))
-                    throw new KeyNotFoundException($"Permission {permId} not found");
+                var permissionExists = await _context.Permissions.AnyAsync(p => p.Id == item.PermissionId);
+                if (!permissionExists)
+                    throw new KeyNotFoundException($"Permission {item.PermissionId} not found");
 
-                role.RolePermissions.Add(new RolePermission
+                //  التحقق من القيم بناءً على ScopeType
+                await ValidateScopeAsync(item);
+
+                var newRolePermission = new RolePermission
                 {
-                    RoleId = role.Id,
-                    PermissionId = permId
-                });
+                    RoleId = dto.RoleId,
+                    PermissionId = item.PermissionId,
+                    ScopeType = item.ScopeType,
+                    CommitteeId = item.CommitteeId,
+                    ResourceId = item.ResourceId,
+                    Allow = item.Allow
+                };
+
+                _context.RolePermissions.Add(newRolePermission);
             }
 
             await _context.SaveChangesAsync();
             return true;
         }
+
+        //public async Task<bool> AssignPermissionsToRoleAsync(AssignPermissionsToRoleDto dto)
+        //{
+        //    var role = await _context.Roles
+        //        .Include(r => r.RolePermissions)
+        //        .FirstOrDefaultAsync(r => r.Id == dto.RoleId);
+
+        //    if (role == null) throw new KeyNotFoundException("Role not found");
+
+        //    var existingPermissions = role.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
+        //    var newPermissions = dto.PermissionIds.Except(existingPermissions).ToList();
+
+        //    foreach (var permId in newPermissions)
+        //    {
+        //        if (!await _context.Permissions.AnyAsync(p => p.Id == permId))
+        //            throw new KeyNotFoundException($"Permission {permId} not found");
+
+        //        role.RolePermissions.Add(new RolePermission
+        //        {
+        //            RoleId = role.Id,
+        //            PermissionId = permId
+        //        });
+        //    }
+
+        //    await _context.SaveChangesAsync();
+        //    return true;
+        //}
 
         public async Task<IEnumerable<PermissionDto>> GetPermissionsByRoleAsync(Guid roleId, PermissionByRoleFilterDto? filter = null)
         {
@@ -62,8 +101,8 @@ namespace Identity.Infrastructure.Services.RolePermissions
                 }
 
                 // 🔹 الفلاتر الأخرى
-                if (filter.Resource.HasValue)
-                    query = query.Where(p => p.Resource == filter.Resource.Value);
+                if (filter.ResourceType.HasValue)
+                    query = query.Where(p => p.ResourceType == filter.ResourceType.Value);
 
                 if (filter.Action.HasValue)
                     query = query.Where(p => p.Action == filter.Action.Value);
@@ -79,7 +118,7 @@ namespace Identity.Infrastructure.Services.RolePermissions
                 {
                     ["name"] = p => p.Name,
                     ["createdat"] = p => p.CreatedAt,
-                    ["resource"] = p => p.Resource,
+                    ["resource"] = p => p.ResourceType,
                     ["action"] = p => p.Action,
                     ["isglobal"] = p => p.IsGlobal,
                     ["isactive"] = p => p.IsActive
@@ -97,6 +136,45 @@ namespace Identity.Infrastructure.Services.RolePermissions
             return permissions;
         }
 
+
+        //  دالة التحقق من صلاحية النطاق
+        private async Task ValidateScopeAsync(RolePermissionItemDto item)
+        {
+            switch (item.ScopeType)
+            {
+                case PermissionScopeType.Global:
+                    // لا يجب أن يكون هناك CommitteeId أو ResourceId
+                    item.CommitteeId = null;
+                    item.ResourceId = null;
+                    break;
+
+                case PermissionScopeType.Committee:
+                    // يجب أن تحتوي على CommitteeId فقط
+                    if (item.CommitteeId == null)
+                        throw new ValidationException("CommitteeId is required when ScopeType = Committee.");
+                    item.ResourceId = null;
+                    break;
+
+                case PermissionScopeType.ResourceInstance:
+                    // يجب أن تحتوي على ResourceId
+                    if (item.ResourceId == null)
+                        throw new ValidationException("ResourceId is required when ScopeType = ResourceInstance.");
+
+                    // التأكد من أن المورد موجود
+                    var resource = await _context.Resources
+                        .FirstOrDefaultAsync(r => r.Id == item.ResourceId);
+
+                    if (resource == null)
+                        throw new ValidationException($"Resource {item.ResourceId} not found.");
+
+                    // تعبئة CommitteeId تلقائياً من المورد (إن وجد)
+                    item.CommitteeId = resource.CommitteeId;
+                    break;
+
+                default:
+                    throw new ValidationException("Invalid ScopeType value.");
+            }
+        }
         //private static PermissionDto MapToDto(Permission p)
         //{
         //    return new PermissionDto

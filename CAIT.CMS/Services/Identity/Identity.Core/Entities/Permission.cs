@@ -12,7 +12,7 @@ namespace Identity.Core.Entities
         public string Name { get; set; }
 
         [Required]
-        public ResourceType Resource { get; set; } // e.g. "Committee", "Meeting", "Task"
+        public ResourceType ResourceType { get; set; } // e.g. "Committee", "Meeting", "Task"
 
         [Required]
         public ActionType Action { get; set; } // e.g. "Create", "View", "Update", "Delete", "Approve"

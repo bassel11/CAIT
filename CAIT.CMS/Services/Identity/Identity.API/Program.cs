@@ -1,27 +1,34 @@
 ﻿using FluentValidation;
 using FluentValidation.AspNetCore;
-using Identity.API.Middlewares;
+using Identity.API.Models;
+using Identity.Application.Authorization;
 using Identity.Application.Interfaces;
+using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.Permissions;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Interfaces.Roles;
 using Identity.Application.Interfaces.UserRoles;
 using Identity.Application.Interfaces.Users;
+using Identity.Application.Middlewares;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
+using Identity.Infrastructure.Services.Authorization;
 using Identity.Infrastructure.Services.Permissions;
 using Identity.Infrastructure.Services.RolePermissions;
 using Identity.Infrastructure.Services.Roles;
 using Identity.Infrastructure.Services.UserRoles;
 using Identity.Infrastructure.Services.Users;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +72,40 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = ClaimTypes.Name //  لتحديد اسم المستخدم من التوكن
 
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            var error = new ErrorResponse
+            {
+                StatusCode = 401,
+                Error = "Unauthorized",
+                Message = "Authentication Code is missing or invalid."
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(error));
+        },
+
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+
+            var error = new ErrorResponse
+            {
+                StatusCode = 403,
+                Error = "Forbidden",
+                Message = "You do not have access to this resource."
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(error));
+        }
+    };
 
 })
 // Azure AD internal
@@ -84,7 +125,40 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = "preferred_username",
         RoleClaimType = "roles"
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
 
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            var error = new ErrorResponse
+            {
+                StatusCode = 401,
+                Error = "Unauthorized",
+                Message = "Authentication code is missing or invalid."
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(error));
+        },
+
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+
+            var error = new ErrorResponse
+            {
+                StatusCode = 403,
+                Error = "Forbidden",
+                Message = "You do not have access to this resource."
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(error));
+        }
+    };
 })
 // Policy scheme to select the right bearer
 .AddPolicyScheme("BearerPolicy", "BearerPolicy", options =>
@@ -181,6 +255,20 @@ builder.Services
     .AddValidatorsFromAssemblyContaining<PermissionFilterValidator>(); // يسجل كل الـ Validators
 
 
+// Register permission checker & handler
+builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
+// Example policy registration
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Permission:Committee.CreateMeeting", policy =>
+        policy.Requirements.Add(new PermissionRequirement("Meeting.Create")));
+
+    options.AddPolicy("Permission:System.ViewDashboard", policy =>
+        policy.Requirements.Add(new PermissionRequirement("System.ViewDashboard")));
+});
+
 
 // Add services to the container.
 
@@ -238,11 +326,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+app.UseMiddleware<ErrorHandlerMiddleware>();
+
 app.UseHttpsRedirection();
 
 
 app.UseAuthentication();
-app.UseMiddleware<CustomErrorMiddleware>();
+//app.UseMiddleware<CustomErrorMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

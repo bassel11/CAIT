@@ -1,4 +1,5 @@
-﻿using Identity.Application.DTOs;
+﻿using Identity.API.Models;
+using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Core.Entities;
 using Identity.Core.Enums;
@@ -92,7 +93,15 @@ namespace Identity.API.Controllers
             }
 
             if (!result.Success)
-                return Unauthorized(result.Error);
+            {
+                return Unauthorized(new ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    Error = "Unauthorized",
+                    Message = result.Error ?? "Login failed due to invalid credentials or authentication error."
+                });
+
+            }
 
             //return Ok(result.Response);
             return Ok(new
@@ -193,6 +202,16 @@ namespace Identity.API.Controllers
                 return BadRequest(result.Error);
 
             return Ok(new { Message = "Password changed successfully" });
+        }
+
+
+        //
+        [Authorize(Policy = "Permission:Committee.CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("committee/{committeeId}/meetings")]
+        public IActionResult CreateMeeting() //Guid committeeId, [FromBody] CreateMeetingDto dto
+        {
+            // authorized users only
+            return Ok("hellloooooo");
         }
     }
 }

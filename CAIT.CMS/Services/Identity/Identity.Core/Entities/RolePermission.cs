@@ -1,4 +1,6 @@
-﻿namespace Identity.Core.Entities
+﻿using Identity.Core.Enums;
+
+namespace Identity.Core.Entities
 {
     public class RolePermission
     {
@@ -7,5 +9,12 @@
 
         public Guid PermissionId { get; set; }
         public Permission Permission { get; set; } = null!;
+
+        public PermissionScopeType ScopeType { get; set; } = PermissionScopeType.Global;
+        public Guid? CommitteeId { get; set; }            // when ScopeType == Committee
+        public Guid? ResourceId { get; set; }             // when ScopeType == ResourceInstance
+
+        public bool Allow { get; set; } = true;           // support for explicit deny if needed
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

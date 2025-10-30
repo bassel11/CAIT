@@ -6,7 +6,7 @@ namespace Identity.Application.DTOs.Permissions
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public ResourceType Resource { get; set; }
+        public ResourceType ResourceType { get; set; }
         public ActionType Action { get; set; }
         public bool IsGlobal { get; set; } = false;
     }

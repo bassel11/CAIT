@@ -28,7 +28,7 @@ namespace Identity.Infrastructure.Services.Permissions
             {
                 Name = dto.Name,
                 Description = dto.Description,
-                Resource = dto.Resource,
+                ResourceType = dto.ResourceType,
                 Action = dto.Action,
                 IsGlobal = dto.IsGlobal,
                 IsActive = true
@@ -100,7 +100,7 @@ namespace Identity.Infrastructure.Services.Permissions
                 query = query.Where(p => p.Name.Contains(s) || p.Description.Contains(s));
             }
             if (filter.Resource.HasValue)
-                query = query.Where(p => p.Resource == filter.Resource.Value);
+                query = query.Where(p => p.ResourceType == filter.Resource.Value);
             if (filter.Action.HasValue)
                 query = query.Where(p => p.Action == filter.Action.Value);
             if (filter.IsActive.HasValue)
@@ -113,7 +113,7 @@ namespace Identity.Infrastructure.Services.Permissions
             {
                 ["name"] = p => p.Name,
                 ["createdat"] = p => p.CreatedAt,
-                ["resource"] = p => p.Resource,
+                ["resource"] = p => p.ResourceType,
                 ["action"] = p => p.Action,
                 ["isglobal"] = p => p.IsGlobal,
                 ["isactive"] = p => p.IsActive

@@ -3,6 +3,7 @@
     public class AssignPermissionsToRoleDto
     {
         public Guid RoleId { get; set; }
-        public List<Guid> PermissionIds { get; set; } = new List<Guid>();
+        // قائمة من الصلاحيات مع تفاصيل النطاق ونوع التفويض
+        public List<RolePermissionItemDto> Permissions { get; set; } = new();
     }
 }

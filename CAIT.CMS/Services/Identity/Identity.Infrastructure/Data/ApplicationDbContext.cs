@@ -25,6 +25,8 @@ namespace Identity.Infrastructure.Data
         public DbSet<UserPasswordHistory> UserPasswordHistories => Set<UserPasswordHistory>();
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+        public DbSet<Resource> Resources => Set<Resource>();
+        public DbSet<UserPermissionAssignment> UserPermissionAssignments => Set<UserPermissionAssignment>();
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -43,6 +45,8 @@ namespace Identity.Infrastructure.Data
             builder.Entity<IdentityUserToken<Guid>>(b => b.ToTable("UserTokens"));
             builder.Entity<Permission>(b => b.ToTable("Permissions"));
             builder.Entity<RolePermission>(b => b.ToTable("RolePermissions"));
+            builder.Entity<Resource>(b => b.ToTable("Resources"));
+            builder.Entity<UserPermissionAssignment>(b => b.ToTable("UserPermissionAssignments"));
 
 
             // =====================================================
@@ -154,7 +158,7 @@ namespace Identity.Infrastructure.Data
                       .HasMaxLength(150);
 
                 // تخزين Enums كقيم int في قاعدة البيانات
-                entity.Property(p => p.Resource)
+                entity.Property(p => p.ResourceType)
                       .HasConversion<int>()
                       .IsRequired();
 
@@ -168,10 +172,6 @@ namespace Identity.Infrastructure.Data
                 entity.HasIndex(p => p.Name)
                       .IsUnique(true)
                       .HasDatabaseName("UX_Permissions_Name");
-
-                entity.HasIndex(p => new { p.Resource, p.Action })
-                      .IsUnique(true)
-                      .HasDatabaseName("UX_Permissions_Resource_Action");
             });
 
 
@@ -182,6 +182,13 @@ namespace Identity.Infrastructure.Data
             {
                 // مفتاح مركب
                 entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+                entity.Property(rp => rp.ScopeType)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(rp => rp.Allow)
+                      .HasDefaultValue(true);
 
                 // العلاقة مع ApplicationRole
                 entity.HasOne(rp => rp.Role)
@@ -194,8 +201,94 @@ namespace Identity.Infrastructure.Data
                       .WithMany(p => p.RolePermissions)
                       .HasForeignKey(rp => rp.PermissionId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(rp => new { rp.RoleId, rp.PermissionId, rp.CommitteeId })
+                     .HasDatabaseName("IX_RolePermissions_Committee");
             });
 
+
+            // =====================================================
+            // 🔹 Resource Configuration
+            // =====================================================
+            builder.Entity<Resource>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+
+                entity.Property(r => r.ResourceType)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(r => r.DisplayName)
+                      .HasMaxLength(300);
+
+                entity.Property(r => r.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+
+                //entity.HasOne(r => r.Committee)
+                //      .WithMany()
+                //      .HasForeignKey(r => r.CommitteeId)
+                //      .OnDelete(DeleteBehavior.Restrict);
+
+                // 🔍 فهارس لتحسين الاستعلامات
+                entity.HasIndex(r => new { r.ResourceType, r.ReferenceId })
+                      .IsUnique()
+                      .HasDatabaseName("UX_Resources_Type_Ref");
+
+                entity.HasIndex(r => r.CommitteeId)
+                      .HasDatabaseName("IX_Resources_Committee");
+            });
+
+            // =====================================================
+            // 🔹 UserPermissionAssignment Configuration
+            // =====================================================
+            builder.Entity<UserPermissionAssignment>(entity =>
+            {
+                entity.HasKey(upa => upa.Id);
+
+                entity.Property(upa => upa.ScopeType)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(upa => upa.Allow)
+                      .HasDefaultValue(true);
+
+                entity.Property(upa => upa.Reason)
+                      .HasMaxLength(500);
+
+                entity.Property(upa => upa.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+
+                // علاقات
+                entity.HasOne(upa => upa.User)
+                      .WithMany()
+                      .HasForeignKey(upa => upa.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(upa => upa.Permission)
+                      .WithMany()
+                      .HasForeignKey(upa => upa.PermissionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                //entity.HasOne<Committee>()
+                //      .WithMany()
+                //      .HasForeignKey(upa => upa.CommitteeId)
+                //      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne<Resource>()
+                      .WithMany()
+                      .HasForeignKey(upa => upa.ResourceId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // 🔍 فهارس للأداء
+                entity.HasIndex(upa => new { upa.UserId, upa.PermissionId })
+                      .HasDatabaseName("IX_UserPerm_User_Permission");
+
+                entity.HasIndex(upa => new { upa.UserId, upa.CommitteeId })
+                      .HasDatabaseName("IX_UserPerm_User_Committee");
+
+                entity.HasIndex(upa => new { upa.UserId, upa.ResourceId })
+                      .HasDatabaseName("IX_UserPerm_User_Resource");
+            });
         }
     }
 }
