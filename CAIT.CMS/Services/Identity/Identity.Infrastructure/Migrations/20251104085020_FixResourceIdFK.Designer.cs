@@ -4,6 +4,7 @@ using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251104085020_FixResourceIdFK")]
+    partial class FixResourceIdFK
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -370,6 +373,9 @@ namespace Identity.Infrastructure.Migrations
                     b.Property<int>("ScopeType")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("Allow")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -378,10 +384,7 @@ namespace Identity.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("ResourceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("RoleId", "PermissionId", "ScopeType");
+                    b.HasKey("RoleId", "PermissionId", "ScopeType", "ResourceId");
 
                     b.HasIndex("PermissionId");
 
@@ -389,7 +392,7 @@ namespace Identity.Infrastructure.Migrations
 
                     b.ToTable("RolePermissions", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RolePermission_Scope", "(ScopeType = 0 AND ResourceId IS NULL)\r\n          OR (ScopeType IN (1,2) AND ResourceId IS NOT NULL)");
+                            t.HasCheckConstraint("CK_RolePermission_Scope", "(ScopeType = 0 AND ResourceId IS NULL)\r\n                      OR (ScopeType IN (1,2) AND ResourceId IS NOT NULL)");
                         });
                 });
 
@@ -606,7 +609,8 @@ namespace Identity.Infrastructure.Migrations
                     b.HasOne("Identity.Core.Entities.Resource", "Resource")
                         .WithMany("RolePermissions")
                         .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Identity.Core.Entities.ApplicationRole", "Role")
                         .WithMany("RolePermissions")

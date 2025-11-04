@@ -3,7 +3,7 @@ namespace Identity.Application.Common
 {
     public static class QueryableExtensions
     {
-        public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, BaseFilter filter)
+        public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, BaseFilterDto filter)
         {
             var page = filter.Page < 1 ? 1 : filter.Page;
             var pageSize = filter.PageSize < 1

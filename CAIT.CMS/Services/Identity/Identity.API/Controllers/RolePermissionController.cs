@@ -15,18 +15,25 @@ namespace Identity.API.Controllers
             _rolePermission = rolePermission;
         }
 
-        [HttpPost("assign")]
+        [HttpPost("AssignPermissionsToRole")]
         public async Task<IActionResult> AssignPermissionsToRole([FromBody] AssignPermissionsToRoleDto dto)
         {
             var result = await _rolePermission.AssignPermissionsToRoleAsync(dto);
             return Ok(result);
         }
 
-        [HttpGet("role/{roleId}")]
-        public async Task<IActionResult> GetPermissionsByRole(Guid roleId, [FromQuery] PermissionByRoleFilterDto filter)
+        [HttpGet("GetPermissionsByRole")]
+        public async Task<IActionResult> GetPermissionsByRole([FromQuery] PermissionByRoleFilterDto filter)
         {
-            var result = await _rolePermission.GetPermissionsByRoleAsync(roleId, filter);
+            var result = await _rolePermission.GetPermissionsByRoleAsync(filter);
             return Ok(result);
+        }
+
+        [HttpGet("GetRolePermissions")]
+        public async Task<IActionResult> GetRolePermissions([FromQuery] PermissionByRoleFilterDto filter)
+        {
+            var permissions = await _rolePermission.GetRolePermissionsWithResourcesAsync(filter);
+            return Ok(permissions);
         }
     }
 }

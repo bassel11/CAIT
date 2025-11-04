@@ -1,11 +1,13 @@
 ﻿using Identity.Application.Common;
 using Identity.Core.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Identity.Application.DTOs.RolePermissions
 {
-    public class PermissionByRoleFilterDto : BaseFilter
+    public class PermissionByRoleFilterDto : BaseFilterDto
     {
-        //  لتحديد الدور المطلوب فحص صلاحياته
+
+        [Required]
         public Guid? RoleId { get; set; }
 
         //  فلتر بواسطة نوع المورد (Committee, Meeting, Task, ... إلخ)
@@ -17,16 +19,10 @@ namespace Identity.Application.DTOs.RolePermissions
         //  فلتر على نطاق الصلاحية (Global, Committee, ResourceInstance)
         public PermissionScopeType? ScopeType { get; set; }
 
-        //  فلتر على لجنة معينة عند وجود ScopeType = Committee
-        public Guid? CommitteeId { get; set; }
-
-        //  فلتر على كيان مورد معين (Resource Instance)
         public Guid? ResourceId { get; set; }
 
-        //  فلتر على السماح أو الرفض
         public bool? Allow { get; set; }
 
-        //  فلتر على النشاط (هل الصلاحية مفعلة أو لا)
         public bool? IsActive { get; set; }
 
         //  فلتر على الصلاحيات العامة فقط

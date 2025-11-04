@@ -8,37 +8,31 @@ namespace Identity.Core.Entities
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        /// <summary>
-        /// Logical type of the resource (e.g., Committee, Meeting, Document, Task, Decision)
-        /// </summary>
+        // Logical type of the resource (e.g., Committee, Meeting, Document, Task, Decision)
         [Required]
         public ResourceType ResourceType { get; set; }
 
-        /// <summary>
-        /// The Committee this resource belongs to (if applicable)
-        /// </summary>
-        public Guid? CommitteeId { get; set; }
+        // The Committee this resource belongs to (if applicable)
+        //public Guid? CommitteeId { get; set; }
 
-        /// <summary>
-        /// ReferenceId points to the actual domain entity record (e.g. Meeting.Id, Document.Id)
-        /// </summary>
+        // ReferenceId points to the actual domain entity record (e.g. Meeting.Id, Document.Id)
         [Required]
         public Guid ReferenceId { get; set; }
 
-        /// <summary>
-        /// Optional display name for convenience in logs or audits
-        /// </summary>
+        // المورد الأب (Parent) في حال انتماء المورد إلى لجنة مثلاً
+        [MaxLength(100)]
+        public ResourceType ParentResourceType { get; set; } // "Committee"
+        public Guid? ParentReferenceId { get; set; }
+
+
+        // Optional display name for convenience in logs or audits
         [MaxLength(300)]
         public string? DisplayName { get; set; }
 
-        /// <summary>
-        /// Metadata for search or audit — e.g. version, owner, etc.
-        /// </summary>
+        // Metadata for search or audit — e.g. version, owner, etc.
         public string? MetadataJson { get; set; }
 
-        /// <summary>
-        /// Audit fields
-        /// </summary>
+        // Audit fields
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public Guid? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }

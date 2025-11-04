@@ -180,8 +180,8 @@ namespace Identity.Infrastructure.Data
             // =====================================================
             builder.Entity<RolePermission>(entity =>
             {
-                // مفتاح مركب
-                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+                // مفتاح مركب بدون ResourceId
+                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId, rp.ScopeType });
 
                 entity.Property(rp => rp.ScopeType)
                       .HasConversion<int>()
@@ -190,21 +190,26 @@ namespace Identity.Infrastructure.Data
                 entity.Property(rp => rp.Allow)
                       .HasDefaultValue(true);
 
-                // العلاقة مع ApplicationRole
                 entity.HasOne(rp => rp.Role)
                       .WithMany(r => r.RolePermissions)
                       .HasForeignKey(rp => rp.RoleId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                // العلاقة مع Permission
                 entity.HasOne(rp => rp.Permission)
                       .WithMany(p => p.RolePermissions)
                       .HasForeignKey(rp => rp.PermissionId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasIndex(rp => new { rp.RoleId, rp.PermissionId, rp.CommitteeId })
-                     .HasDatabaseName("IX_RolePermissions_Committee");
+                entity.HasOne(rp => rp.Resource)
+                      .WithMany(r => r.RolePermissions)
+                      .HasForeignKey(rp => rp.ResourceId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasCheckConstraint("CK_RolePermission_Scope",
+                   @"(ScopeType = 0 AND ResourceId IS NULL)
+          OR (ScopeType IN (1,2) AND ResourceId IS NOT NULL)");
             });
+
 
 
             // =====================================================
@@ -224,18 +229,10 @@ namespace Identity.Infrastructure.Data
                 entity.Property(r => r.CreatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
 
-                //entity.HasOne(r => r.Committee)
-                //      .WithMany()
-                //      .HasForeignKey(r => r.CommitteeId)
-                //      .OnDelete(DeleteBehavior.Restrict);
-
-                // 🔍 فهارس لتحسين الاستعلامات
                 entity.HasIndex(r => new { r.ResourceType, r.ReferenceId })
-                      .IsUnique()
-                      .HasDatabaseName("UX_Resources_Type_Ref");
-
-                entity.HasIndex(r => r.CommitteeId)
-                      .HasDatabaseName("IX_Resources_Committee");
+                      .IsUnique().HasDatabaseName("UX_Resources_Type_ExternalRef");
+                entity.HasIndex(r => new { r.ParentResourceType, r.ParentReferenceId })
+                      .HasDatabaseName("IX_Resources_Parent");
             });
 
             // =====================================================
@@ -274,20 +271,16 @@ namespace Identity.Infrastructure.Data
                 //      .HasForeignKey(upa => upa.CommitteeId)
                 //      .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne<Resource>()
-                      .WithMany()
-                      .HasForeignKey(upa => upa.ResourceId)
+                entity.HasOne(upa => upa.Resource)                        // <-- navigation property
+                      .WithMany(r => r.UserPermissionAssignments)         // <-- collection property في Resource
+                      .HasForeignKey(upa => upa.ResourceId)              // <-- FK واضح
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // 🔍 فهارس للأداء
-                entity.HasIndex(upa => new { upa.UserId, upa.PermissionId })
-                      .HasDatabaseName("IX_UserPerm_User_Permission");
 
-                entity.HasIndex(upa => new { upa.UserId, upa.CommitteeId })
-                      .HasDatabaseName("IX_UserPerm_User_Committee");
-
-                entity.HasIndex(upa => new { upa.UserId, upa.ResourceId })
-                      .HasDatabaseName("IX_UserPerm_User_Resource");
+                // Indexes
+                entity.HasIndex(upa => new { upa.UserId, upa.PermissionId, upa.ScopeType, upa.ResourceId })
+                                      .IsUnique()
+                                      .HasDatabaseName("UX_UserPermissions_Scope");
             });
         }
     }

@@ -45,6 +45,12 @@ namespace Identity.Infrastructure.Services
                 IsActive = true
             };
 
+            // تحقق من الدور قبل أي عملية إنشاء
+            if (!string.IsNullOrWhiteSpace(dto.Role) && !await _roleManager.RoleExistsAsync(dto.Role))
+            {
+                return (false, null, new[] { $"Role '{dto.Role}' does not exist" });
+            }
+
             var result = await _userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded) return (false, null, result.Errors.Select(e => e.Description));
 

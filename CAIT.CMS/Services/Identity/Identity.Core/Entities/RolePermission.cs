@@ -11,8 +11,10 @@ namespace Identity.Core.Entities
         public Permission Permission { get; set; } = null!;
 
         public PermissionScopeType ScopeType { get; set; } = PermissionScopeType.Global;
-        public Guid? CommitteeId { get; set; }            // when ScopeType == Committee
+
+        //public Guid? CommitteeId { get; set; }            // when ScopeType == Committee
         public Guid? ResourceId { get; set; }             // when ScopeType == ResourceInstance
+        public Resource? Resource { get; set; }
 
         public bool Allow { get; set; } = true;           // support for explicit deny if needed
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

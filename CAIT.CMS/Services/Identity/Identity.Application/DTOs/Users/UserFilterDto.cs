@@ -3,7 +3,7 @@ using Identity.Core.Entities;
 
 namespace Identity.Application.DTOs.Users
 {
-    public class UserFilterDto : BaseFilter
+    public class UserFilterDto : BaseFilterDto
     {
         public bool? IsActive { get; set; }
         public ApplicationUser.AuthenticationType? AuthType { get; set; }

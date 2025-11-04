@@ -3,7 +3,7 @@ using Identity.Core.Enums;
 
 namespace Identity.Application.DTOs.Permissions
 {
-    public class PermissionFilterDto : BaseFilter
+    public class PermissionFilterDto : BaseFilterDto
     {
 
         // فلتر بواسطة Resource enum (قيمة اسمية أو رقمية)

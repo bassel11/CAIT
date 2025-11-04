@@ -11,7 +11,7 @@ namespace Identity.Application.DTOs.RolePermissions
         public PermissionScopeType ScopeType { get; set; } = PermissionScopeType.Global;
 
         // معرف اللجنة عند استخدام ScopeType = Committee
-        public Guid? CommitteeId { get; set; }
+        // public Guid? CommitteeId { get; set; }
 
         // معرف المورد عند استخدام ScopeType = ResourceInstance
         public Guid? ResourceId { get; set; }

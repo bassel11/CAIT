@@ -2,7 +2,7 @@
 
 namespace Identity.Application.DTOs.Roles
 {
-    public class RoleFilterDto : BaseFilter
+    public class RoleFilterDto : BaseFilterDto
     {
     }
 }

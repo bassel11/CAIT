@@ -10,8 +10,9 @@ namespace Identity.Core.Entities
         public Guid PermissionId { get; set; }
         public Permission Permission { get; set; } = null!;
         public PermissionScopeType ScopeType { get; set; } = PermissionScopeType.Global;
-        public Guid? CommitteeId { get; set; }
+        //public Guid? CommitteeId { get; set; }
         public Guid? ResourceId { get; set; }
+        public Resource? Resource { get; set; }
         public bool Allow { get; set; } = true;  // false = explicit deny
         public string? Reason { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

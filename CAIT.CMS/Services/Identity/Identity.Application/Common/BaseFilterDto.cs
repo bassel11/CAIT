@@ -1,6 +1,6 @@
 ﻿namespace Identity.Application.Common
 {
-    public abstract class BaseFilter
+    public abstract class BaseFilterDto
     {
         public string? Search { get; set; }
         public int Page { get; set; } = 1;
