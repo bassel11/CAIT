@@ -183,54 +183,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Azure B2B
-//.AddJwtBearer("AzureB2B", options =>
-//{
-//    var authority = $"{azureB2BConfig["Instance"]}{azureB2BConfig["TenantId"]}/v2.0";
 
-//    options.Authority = authority;
-//    options.TokenValidationParameters = new TokenValidationParameters
-//    {
-//        ValidateIssuer = true,
-//        ValidateAudience = true,
-//        ValidateLifetime = true,
-//        ValidAudience = azureB2BConfig["Audience"],
-//        ValidIssuers = azureB2BConfig.GetSection("ValidIssuers").Get<string[]>(),
-//        NameClaimType = "preferred_username",
-//        RoleClaimType = "roles"
-//    };
-//})
 
-// Policy scheme to select the right bearer
-//.AddPolicyScheme("BearerPolicy", "BearerPolicy", options =>
-//{
-//    options.ForwardDefaultSelector = context =>
-//    {
-//        var authHeader = context.Request.Headers["Authorization"].ToString();
-//        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-//            return "LocalJwt";
-
-//        var token = authHeader.Substring("Bearer ".Length).Trim();
-//        try
-//        {
-//            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-
-//            if (jwt.Issuer?.Contains("login.microsoftonline.com") == true)
-//            {
-//                var userType = jwt.Claims.FirstOrDefault(c => c.Type == "userType")?.Value;
-//                if (userType == "Guest")
-//                    return "AzureB2B"; // Guest external user
-//                else
-//                    return "AzureAD"; // Internal user
-//            }
-//        }
-//        catch { }
-
-//        return "LocalJwt";
-//    };
-//});
-
-builder.Services.AddAuthorization();
+//builder.Services.AddAuthorization();
 
 
 // ---------------- Dependency Injection ----------------
@@ -259,18 +214,33 @@ builder.Services
 
 
 // Register permission checker & handler
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
 // Example policy registration
-builder.Services.AddAuthorization(options =>
+using (var serviceProvider = builder.Services.BuildServiceProvider())
 {
-    options.AddPolicy("Permission:Committee.CreateMeeting", policy =>
-        policy.Requirements.Add(new PermissionRequirement("Meeting.Create")));
+    using var scope = serviceProvider.CreateScope();
 
-    options.AddPolicy("Permission:System.ViewDashboard", policy =>
-        policy.Requirements.Add(new PermissionRequirement("System.ViewDashboard")));
-});
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    var permissions = dbContext.Permissions
+        .AsNoTracking()
+        .Select(p => p.Name) // <-- التعديل من Code إلى Name
+        .ToList();
+
+    builder.Services.AddAuthorization(options =>
+    {
+        foreach (var permission in permissions)
+        {
+            options.AddPolicy(permission, policy =>
+                policy.Requirements.Add(new PermissionRequirement(permission)));
+        }
+    });
+}
+
 
 
 // Add services to the container.

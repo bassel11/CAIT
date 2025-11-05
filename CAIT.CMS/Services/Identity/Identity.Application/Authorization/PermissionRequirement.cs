@@ -5,12 +5,10 @@ namespace Identity.Application.Authorization
     public class PermissionRequirement : IAuthorizationRequirement
     {
         public string PermissionName { get; }
-        public Guid? CommitteeId { get; }
 
-        public PermissionRequirement(string permissionName, Guid? committeeId = null)
+        public PermissionRequirement(string permissionName)
         {
             PermissionName = permissionName;
-            CommitteeId = committeeId;
         }
     }
 }

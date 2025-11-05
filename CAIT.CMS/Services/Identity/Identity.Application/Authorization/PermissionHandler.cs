@@ -1,42 +1,33 @@
 ﻿using Identity.Application.Interfaces.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 
 namespace Identity.Application.Authorization
 {
     public class PermissionHandler : AuthorizationHandler<PermissionRequirement>
     {
-        private readonly IPermissionChecker _checker;
+        private readonly IPermissionChecker _permissionChecker;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public PermissionHandler(IPermissionChecker checker)
+        public PermissionHandler(IPermissionChecker permissionChecker, IHttpContextAccessor httpContextAccessor)
         {
-            _checker = checker;
+            _permissionChecker = permissionChecker;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        protected override async Task HandleRequirementAsync(
-            AuthorizationHandlerContext context,
-            PermissionRequirement requirement)
+        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
         {
-            var userIdClaim = context.User.FindFirst("uid");
-            if (userIdClaim == null)
+            var userIdClaim = context.User.FindFirst("uid")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
             {
                 context.Fail();
                 return;
             }
 
-            if (context.User.HasClaim("is_superadmin", "true"))
-            {
-                context.Succeed(requirement);
-                return;
-            }
+            var userId = Guid.Parse(userIdClaim);
+            bool hasPermission = await _permissionChecker.HasPermissionAsync(userId, requirement.PermissionName);
 
-            if (!Guid.TryParse(userIdClaim.Value, out var userId))
-            {
-                context.Fail();
-                return;
-            }
-
-            var allowed = await _checker.HasPermissionAsync(userId, requirement.PermissionName, requirement.CommitteeId);
-            if (allowed)
+            if (hasPermission)
                 context.Succeed(requirement);
             else
                 context.Fail();

@@ -31,7 +31,7 @@ namespace Identity.API.Controllers
 
         // register
         [HttpPost("register")]
-        [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
+        [Authorize(Roles = "SuperAdmin", Policy = "RegisterUser", AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             var result = await _authService.RegisterAsync(dto);
@@ -153,7 +153,7 @@ namespace Identity.API.Controllers
 
         // enable mfa
         [HttpPost("enable-mfa")]
-        [Authorize(Roles = "SuperAdmin", AuthenticationSchemes = "BearerPolicy")]
+        [Authorize(Roles = "SuperAdmin", Policy = "EnableMfa", AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> EnableMfaForDatabaseUser([FromBody] EnableMfaDto dto)
         {
             if (string.IsNullOrEmpty(dto.UserId))
@@ -206,8 +206,8 @@ namespace Identity.API.Controllers
 
 
         //
-        [Authorize(Policy = "Permission:Committee.CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("committee/{committeeId}/meetings")]
+        [Authorize(Policy = "CreateCommittee", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("committee/create")]
         public IActionResult CreateMeeting() //Guid committeeId, [FromBody] CreateMeetingDto dto
         {
             // authorized users only

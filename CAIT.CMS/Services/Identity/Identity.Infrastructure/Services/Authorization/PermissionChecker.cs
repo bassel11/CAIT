@@ -1,138 +1,59 @@
 ﻿using Identity.Application.Interfaces.Authorization;
-using Identity.Core.Entities;
-using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Identity.Infrastructure.Services.Authorization
 {
     public class PermissionChecker : IPermissionChecker
     {
-        private readonly ApplicationDbContext _db;
+        private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public PermissionChecker(ApplicationDbContext db)
+        public PermissionChecker(ApplicationDbContext context, IMemoryCache cache)
         {
-            _db = db;
+            _context = context;
+            _cache = cache;
         }
 
-        /// <summary>
-        /// يتحقق من امتلاك المستخدم لصلاحية معينة على مورد معين (اختياري).
-        /// </summary>
-        public async Task<bool> HasPermissionAsync(
-            Guid userId,
-            string permissionName,
-            Guid? resourceId = null)
+        public async Task<bool> HasPermissionAsync(Guid userId, string permissionName, Guid? resourceId = null)
         {
-            // 1️⃣ تحقق من دور SuperAdmin (يتجاوز كل شيء)
-            var userRoles = await _db.UserRoles
-                .Where(ur => ur.UserId == userId)
-                .Select(ur => ur.Role)
-                .ToListAsync();
+            // مفتاح التخزين المؤقت
+            string cacheKey = $"user_permissions_{userId}";
 
-            if (userRoles.Any(r => r.Name == "SuperAdmin"))
-                return true;
-
-            // 2️⃣ احصل على الـ Permission المعني
-            var permission = await _db.Permissions
-                .FirstOrDefaultAsync(p => p.Name == permissionName && p.IsActive);
-
-            if (permission == null)
-                return false;
-
-            // 🔹 اجلب المورد (إن وجد)
-            Resource? resource = null;
-            if (resourceId.HasValue)
+            // محاولة استرجاع الصلاحيات من الكاش أولاً
+            if (!_cache.TryGetValue(cacheKey, out HashSet<string> userPermissions))
             {
-                resource = await _db.Resources.AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.Id == resourceId.Value);
+                // ✅ Eager Loading لجميع البيانات الضرورية دفعة واحدة
+                var rolesWithPermissions = await _context.UserRoles
+                    .Where(ur => ur.UserId == userId)
+                    .Include(ur => ur.Role)
+                        .ThenInclude(r => r.RolePermissions)
+                            .ThenInclude(rp => rp.Permission)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                // تجميع كل الصلاحيات في HashSet لتسريع البحث
+                userPermissions = rolesWithPermissions
+                    .SelectMany(ur => ur.Role.RolePermissions)
+                    .Where(rp => resourceId == null || rp.ResourceId == resourceId) // دعم ResourceId إن وجد
+                    .Select(rp => rp.Permission.Name)
+                    .Distinct()
+                    .ToHashSet();
+
+                // تخزين في الكاش لمدة 10 دقائق
+                _cache.Set(cacheKey, userPermissions, TimeSpan.FromMinutes(10));
             }
 
-            // ---------------------------------------------------
-            // 3️⃣ تحقق من UserPermissionAssignments (صلاحيات فردية)
-            // ---------------------------------------------------
+            return userPermissions.Contains(permissionName);
+        }
 
-            // Deny أولاً (الأولوية)
-            bool userExplicitDeny = await _db.UserPermissionAssignments.AnyAsync(a =>
-                a.UserId == userId &&
-                a.PermissionId == permission.Id &&
-                a.Allow == false &&
-                (
-                    a.ScopeType == PermissionScopeType.Global ||
-                    (a.ScopeType == PermissionScopeType.ResourceType && a.Resource != null && a.Resource.ResourceType == permission.ResourceType) ||
-                    (a.ScopeType == PermissionScopeType.ResourceInstance && a.ResourceId == resourceId)
-                ));
-
-            if (userExplicitDeny)
-                return false;
-
-            // Allow (إن وُجد)
-            bool userExplicitAllow = await _db.UserPermissionAssignments.AnyAsync(a =>
-                a.UserId == userId &&
-                a.PermissionId == permission.Id &&
-                a.Allow == true &&
-                (
-                    a.ScopeType == PermissionScopeType.Global ||
-                    (a.ScopeType == PermissionScopeType.ResourceType && a.Resource != null && a.Resource.ResourceType == permission.ResourceType) ||
-                    (a.ScopeType == PermissionScopeType.ResourceInstance && a.ResourceId == resourceId)
-                ));
-
-            if (userExplicitAllow)
-                return true;
-
-            // ---------------------------------------------------
-            // 4️⃣ تحقق من صلاحيات الأدوار RolePermissions
-            // ---------------------------------------------------
-            var roleIds = userRoles.Select(r => r.Id).ToList();
-
-            // Deny أولاً (الأولوية)
-            bool roleExplicitDeny = await _db.RolePermissions.AnyAsync(rp =>
-                roleIds.Contains(rp.RoleId) &&
-                rp.PermissionId == permission.Id &&
-                rp.Allow == false &&
-                (
-                    rp.ScopeType == PermissionScopeType.Global ||
-                    (rp.ScopeType == PermissionScopeType.ResourceType && rp.Resource != null && rp.Resource.ResourceType == permission.ResourceType) ||
-                    (rp.ScopeType == PermissionScopeType.ResourceInstance && rp.ResourceId == resourceId)
-                ));
-
-            if (roleExplicitDeny)
-                return false;
-
-            // Allow (إذا وُجد)
-            bool roleAllow = await _db.RolePermissions.AnyAsync(rp =>
-                roleIds.Contains(rp.RoleId) &&
-                rp.PermissionId == permission.Id &&
-                rp.Allow == true &&
-                (
-                    rp.ScopeType == PermissionScopeType.Global ||
-                    (rp.ScopeType == PermissionScopeType.ResourceType && rp.Resource != null && rp.Resource.ResourceType == permission.ResourceType) ||
-                    (rp.ScopeType == PermissionScopeType.ResourceInstance && rp.ResourceId == resourceId)
-                ));
-
-            if (roleAllow)
-                return true;
-
-            // ---------------------------------------------------
-            // 5️⃣ تحقق من Parent Resource (مثل لجنة تابعة)
-            // ---------------------------------------------------
-            if (resource != null && resource.ParentReferenceId.HasValue)
-            {
-                var parent = await _db.Resources.AsNoTracking()
-                    .FirstOrDefaultAsync(r =>
-                        r.ReferenceId == resource.ParentReferenceId &&
-                        r.ResourceType == resource.ParentResourceType);
-
-                if (parent != null)
-                {
-                    // أعِد التحقق على مستوى parent
-                    return await HasPermissionAsync(userId, permissionName, parent.Id);
-                }
-            }
-
-            // ---------------------------------------------------
-            // 6️⃣ الافتراضي: لا يوجد إذن
-            // ---------------------------------------------------
-            return false;
+        // اختياري: طريقة لتحديث الكاش عند تعديل صلاحيات المستخدم
+        public void InvalidateCache(Guid userId)
+        {
+            string cacheKey = $"user_permissions_{userId}";
+            _cache.Remove(cacheKey);
         }
     }
+
 }
