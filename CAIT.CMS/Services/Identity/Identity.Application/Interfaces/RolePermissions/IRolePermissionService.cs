@@ -8,5 +8,7 @@ namespace Identity.Application.Interfaces.RolePermissions
         Task<bool> AssignPermissionsToRoleAsync(AssignPermissionsToRoleDto dto);
         Task<IEnumerable<PermissionDto>> GetPermissionsByRoleAsync(PermissionByRoleFilterDto? filter = null);
         Task<IEnumerable<RolePermissionDetailsDto>> GetRolePermissionsWithResourcesAsync(PermissionByRoleFilterDto? filter = null);
+        Task<bool> UpdateRolePermissionResourceAsync(UpdateRolePermissionResourceDto dto);
+
     }
 }

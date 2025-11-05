@@ -35,5 +35,13 @@ namespace Identity.API.Controllers
             var permissions = await _rolePermission.GetRolePermissionsWithResourcesAsync(filter);
             return Ok(permissions);
         }
+        [HttpPut("UpdateRolePermissionResource")]
+        public async Task<IActionResult> UpdateRolePermissionResource([FromBody] UpdateRolePermissionResourceDto dto)
+        {
+            var result = await _rolePermission.UpdateRolePermissionResourceAsync(dto);
+            return Ok(result);
+        }
+
+
     }
 }

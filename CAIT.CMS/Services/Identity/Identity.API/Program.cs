@@ -5,6 +5,7 @@ using Identity.Application.Authorization;
 using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.Permissions;
+using Identity.Application.Interfaces.Resources;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Interfaces.Roles;
 using Identity.Application.Interfaces.UserRoles;
@@ -16,6 +17,7 @@ using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
 using Identity.Infrastructure.Services.Authorization;
 using Identity.Infrastructure.Services.Permissions;
+using Identity.Infrastructure.Services.Resources;
 using Identity.Infrastructure.Services.RolePermissions;
 using Identity.Infrastructure.Services.Roles;
 using Identity.Infrastructure.Services.UserRoles;
@@ -246,6 +248,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
+builder.Services.AddScoped<IResourceService, ResourceService>();
 
 
 // ---------------- FluentValidation Configuration ----------------

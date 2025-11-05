@@ -21,7 +21,7 @@ namespace Identity.Core.Entities
 
         // المورد الأب (Parent) في حال انتماء المورد إلى لجنة مثلاً
         [MaxLength(100)]
-        public ResourceType ParentResourceType { get; set; } // "Committee"
+        public ResourceType? ParentResourceType { get; set; } // "Committee"
         public Guid? ParentReferenceId { get; set; }
 
 

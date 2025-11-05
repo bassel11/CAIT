@@ -181,7 +181,8 @@ namespace Identity.Infrastructure.Data
             builder.Entity<RolePermission>(entity =>
             {
                 // مفتاح مركب بدون ResourceId
-                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId, rp.ScopeType });
+                //entity.HasKey(rp => new { rp.RoleId, rp.PermissionId, rp.ScopeType });
+                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
                 entity.Property(rp => rp.ScopeType)
                       .HasConversion<int>()

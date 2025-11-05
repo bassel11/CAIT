@@ -167,38 +167,74 @@ namespace Identity.Infrastructure.Services.RolePermissions
                 if (filter.IsActive.HasValue)
                     query = query.Where(rp => rp.Permission.IsActive == filter.IsActive.Value);
 
-                // 🔸 صلاحيات عامة أو خاصة
+                //  صلاحيات عامة أو خاصة
                 if (filter.IsGlobal.HasValue)
                     query = query.Where(rp => rp.Permission.IsGlobal == filter.IsGlobal.Value);
 
-                // =========================
-                // 🔹 الترتيب Sorting
-                // =========================
+                // المورد (ResourceId)
+                if (filter.ResourceId.HasValue)
+                    query = query.Where(rp => rp.ResourceId == filter.ResourceId.Value);
+
+                // السماح (Allow)
+                if (filter.Allow.HasValue)
+                    query = query.Where(rp => rp.Allow == filter.Allow.Value);
+
+                // الترتيب Sorting
                 var sortMap = new Dictionary<string, Expression<Func<RolePermission, object>>>
                 {
                     ["name"] = rp => rp.Permission.Name,
-                    ["createdat"] = rp => rp.CreatedAt,
-                    ["resource"] = rp => rp.Permission.ResourceType,
+                    ["description"] = rp => rp.Permission.Description,
+                    ["resource"] = rp => rp.Resource.DisplayName!,
+                    ["resourcetype"] = rp => rp.Permission.ResourceType,
                     ["action"] = rp => rp.Permission.Action,
                     ["scope"] = rp => rp.ScopeType,
                     ["isglobal"] = rp => rp.Permission.IsGlobal,
-                    ["isactive"] = rp => rp.Permission.IsActive
+                    ["isactive"] = rp => rp.Permission.IsActive,
+                    ["allow"] = rp => rp.Allow,
+                    ["createdat"] = rp => rp.CreatedAt
                 };
 
                 query = query.ApplySorting(filter.SortBy!, filter.SortDir, sortMap);
 
                 // =========================
-                // 🔹 التصفح Pagination
+                //  التصفح Pagination
                 // =========================
                 query = query.ApplyPaging(filter);
             }
 
-            // =========================
-            // 🔹 التحويل باستخدام Mapper
-            // =========================
+
+            // التحويل باستخدام Mapper
             var result = await query.Select(RolePermissionMapper.ToDtoExpr).ToListAsync();
             return result;
         }
+
+        public async Task<bool> UpdateRolePermissionResourceAsync(UpdateRolePermissionResourceDto dto)
+        {
+            // التحقق من وجود الصلاحية المرتبطة بالدور
+            var rolePermission = await _context.RolePermissions
+                .FirstOrDefaultAsync(rp =>
+                    rp.RoleId == dto.RoleId &&
+                    rp.PermissionId == dto.PermissionId);
+
+            if (rolePermission == null)
+                throw new KeyNotFoundException("Role permission not found.");
+
+            // التحقق من وجود المورد
+            var resource = await _context.Resources.FirstOrDefaultAsync(r => r.Id == dto.ResourceId);
+            if (resource == null)
+                throw new ValidationException($"Resource {dto.ResourceId} not found.");
+
+            // تعديل القيم
+            rolePermission.ScopeType = PermissionScopeType.ResourceInstance;
+            rolePermission.ResourceId = dto.ResourceId;
+            if (dto.Allow.HasValue)
+                rolePermission.Allow = dto.Allow.Value;
+
+            // حفظ التغييرات
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
 
         //  دالة التحقق من صلاحية النطاق
         private async Task ValidateScopeAsync(RolePermissionItemDto item)

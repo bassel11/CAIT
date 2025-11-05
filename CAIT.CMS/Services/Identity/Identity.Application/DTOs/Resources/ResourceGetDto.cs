@@ -7,7 +7,7 @@ namespace Identity.Application.DTOs.Resources
         public Guid Id { get; set; }
         public ResourceType ResourceType { get; set; }
         public Guid ReferenceId { get; set; }
-        public ResourceType ParentResourceType { get; set; }
+        public ResourceType? ParentResourceType { get; set; }
         public Guid? ParentReferenceId { get; set; }
         public string? DisplayName { get; set; }
         public string? MetadataJson { get; set; }

@@ -22,14 +22,14 @@ namespace Identity.API.Controllers
 
 
         #region Actions
-        [HttpGet]
+        [HttpGet("GetResources")]
         public async Task<IActionResult> GetAll()
         {
             var resources = await _resourceService.GetAllResourcesAsync();
             return Ok(resources);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("GetResourceById/{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var resource = await _resourceService.GetResourceByIdAsync(id);
@@ -37,7 +37,7 @@ namespace Identity.API.Controllers
             return Ok(resource);
         }
 
-        [HttpPost]
+        [HttpPost("CreateResource")]
         public async Task<IActionResult> Create([FromBody] ResourceCreateDto dto)
         {
             var userId = Guid.NewGuid(); // Replace with actual current user ID
@@ -45,7 +45,7 @@ namespace Identity.API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("UpdateResource/{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] ResourceUpdateDto dto)
         {
             try
@@ -59,7 +59,7 @@ namespace Identity.API.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("DeleteResource/{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             try

@@ -11,7 +11,7 @@ namespace Identity.Application.DTOs.Resources
         [Required]
         public Guid ReferenceId { get; set; }
 
-        public ResourceType ParentResourceType { get; set; }
+        public ResourceType? ParentResourceType { get; set; }
         public Guid? ParentReferenceId { get; set; }
 
         [MaxLength(300)]
