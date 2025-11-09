@@ -1,6 +1,7 @@
 ﻿using Identity.Application.Common;
 using Identity.Application.DTOs.Permissions;
 using Identity.Application.DTOs.RolePermissions;
+using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Mappers;
 using Identity.Core.Entities;
@@ -15,9 +16,11 @@ namespace Identity.Infrastructure.Services.RolePermissions
     public class RolePermissionService : IRolePermissionService
     {
         private readonly ApplicationDbContext _context;
-        public RolePermissionService(ApplicationDbContext context)
+        private readonly IPermissionCacheInvalidator _cacheInvalidator;
+        public RolePermissionService(ApplicationDbContext context, IPermissionCacheInvalidator cacheInvalidator)
         {
             _context = context;
+            _cacheInvalidator = cacheInvalidator;
         }
 
         public async Task<bool> AssignPermissionsToRoleAsync(AssignPermissionsToRoleDto dto)
@@ -63,6 +66,10 @@ namespace Identity.Infrastructure.Services.RolePermissions
             }
 
             await _context.SaveChangesAsync();
+
+            // مسح كاش الصلاحيات للمستخدمين الذين ينتمون لهذا الدور
+            await _cacheInvalidator.InvalidateUserPermissionsByRoleAsync(dto.RoleId);
+
             return true;
         }
 
@@ -232,6 +239,9 @@ namespace Identity.Infrastructure.Services.RolePermissions
 
             // حفظ التغييرات
             await _context.SaveChangesAsync();
+
+            await _cacheInvalidator.InvalidateUserPermissionsByRoleAsync(dto.RoleId);
+
             return true;
         }
 

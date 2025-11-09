@@ -208,10 +208,25 @@ namespace Identity.API.Controllers
         //
         [Authorize(Policy = "CreateCommittee", AuthenticationSchemes = "BearerPolicy")]
         [HttpPost("committee/create")]
+        public IActionResult CreateCommittee() //Guid committeeId, [FromBody] CreateMeetingDto dto
+        {
+            // authorized users only
+            return Ok("Hello new Committee");
+        }
+        [Authorize(Policy = "CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("meeting/create")]
         public IActionResult CreateMeeting() //Guid committeeId, [FromBody] CreateMeetingDto dto
         {
             // authorized users only
-            return Ok("hellloooooo");
+            return Ok("helllo new meeting");
+        }
+
+        [Authorize(Policy = "CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("createmeeting")]
+        public IActionResult CreateMeetingwithResourceId([FromQuery] Guid? resourceId) //Guid committeeId, [FromBody] CreateMeetingDto dto
+        {
+            // authorized users only
+            return Ok("helllo new meeting");
         }
     }
 }

@@ -13,6 +13,7 @@ using Identity.Application.Interfaces.Users;
 using Identity.Application.Middlewares;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
+using Identity.Infrastructure.Authorization;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
 using Identity.Infrastructure.Services.Authorization;
@@ -204,6 +205,9 @@ builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
+builder.Services.AddScoped<IPermissionCacheInvalidator, PermissionCacheInvalidator>();
+
+
 
 
 // ---------------- FluentValidation Configuration ----------------
@@ -304,8 +308,8 @@ app.UseMiddleware<ErrorHandlerMiddleware>();
 
 app.UseHttpsRedirection();
 
-
 app.UseAuthentication();
+app.UseMiddleware<PermissionMiddleware>();
 //app.UseMiddleware<CustomErrorMiddleware>();
 app.UseAuthorization();
 

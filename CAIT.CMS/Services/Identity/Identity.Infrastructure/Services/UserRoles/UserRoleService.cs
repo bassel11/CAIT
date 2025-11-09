@@ -1,4 +1,5 @@
-﻿using Identity.Application.Interfaces.UserRoles;
+﻿using Identity.Application.Interfaces.Authorization;
+using Identity.Application.Interfaces.UserRoles;
 using Identity.Core.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -8,10 +9,12 @@ namespace Identity.Infrastructure.Services.UserRoles
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<ApplicationRole> _roleManager;
-        public UserRoleService(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager)
+        private readonly IPermissionCacheInvalidator _cacheInvalidator;
+        public UserRoleService(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, IPermissionCacheInvalidator cacheInvalidator)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _cacheInvalidator = cacheInvalidator;
         }
         public async Task<bool> AssignUserRoleAsync(Guid userId, string roleName)
         {
@@ -22,6 +25,13 @@ namespace Identity.Infrastructure.Services.UserRoles
                 return false;
 
             var result = await _userManager.AddToRoleAsync(user, roleName);
+
+            //if (result.Succeeded)
+            //{
+            //    // إبطال الكاش بعد إضافة الدور
+            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            //}
+
             return result.Succeeded;
         }
 
@@ -47,6 +57,14 @@ namespace Identity.Infrastructure.Services.UserRoles
             if (user == null) return false;
 
             var result = await _userManager.RemoveFromRoleAsync(user, roleName);
+
+
+            //if (result.Succeeded)
+            //{
+            //    // ✅ إبطال الكاش بعد إزالة الدور
+            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            //}
+
             return result.Succeeded;
         }
 
@@ -74,6 +92,14 @@ namespace Identity.Infrastructure.Services.UserRoles
             if (!rolesToAdd.Any()) return (true, "All roles are already assigned.");
 
             var result = await _userManager.AddToRolesAsync(user, rolesToAdd);
+
+
+            //if (result.Succeeded)
+            //{
+            //    // إبطال الكاش بعد إضافة أدوار متعددة
+            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            //}
+
             return result.Succeeded
                 ? (true, "Roles assigned successfully.")
                 : (false, "Failed to assign roles.");
@@ -90,6 +116,12 @@ namespace Identity.Infrastructure.Services.UserRoles
             if (!rolesToRemove.Any()) return true; // لا يوجد شيء للإزالة
 
             var result = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+
+            //{
+            //    // إبطال الكاش بعد إزالة أدوار متعددة
+            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            //}
+
             return result.Succeeded;
         }
 
@@ -104,6 +136,7 @@ namespace Identity.Infrastructure.Services.UserRoles
                     if (!currentRoles.Contains(roleName))
                     {
                         await _userManager.AddToRoleAsync(user, roleName);
+                        // await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(id);
                     }
                 }
             }

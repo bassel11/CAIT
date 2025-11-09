@@ -18,13 +18,11 @@ namespace Identity.Infrastructure.Services.Authorization
 
         public async Task<bool> HasPermissionAsync(Guid userId, string permissionName, Guid? resourceId = null)
         {
-            // مفتاح التخزين المؤقت
             string cacheKey = $"user_permissions_{userId}";
 
-            // محاولة استرجاع الصلاحيات من الكاش أولاً
             if (!_cache.TryGetValue(cacheKey, out HashSet<string> userPermissions))
             {
-                // ✅ Eager Loading لجميع البيانات الضرورية دفعة واحدة
+                // تحميل الصلاحيات من قاعدة البيانات
                 var rolesWithPermissions = await _context.UserRoles
                     .Where(ur => ur.UserId == userId)
                     .Include(ur => ur.Role)
@@ -33,22 +31,23 @@ namespace Identity.Infrastructure.Services.Authorization
                     .AsNoTracking()
                     .ToListAsync();
 
-                // تجميع كل الصلاحيات في HashSet لتسريع البحث
                 userPermissions = rolesWithPermissions
                     .SelectMany(ur => ur.Role.RolePermissions)
-                    .Where(rp => resourceId == null || rp.ResourceId == resourceId) // دعم ResourceId إن وجد
+                    .Where(rp => resourceId == null || rp.ResourceId == resourceId)
                     .Select(rp => rp.Permission.Name)
                     .Distinct()
                     .ToHashSet();
 
-                // تخزين في الكاش لمدة 10 دقائق
-                _cache.Set(cacheKey, userPermissions, TimeSpan.FromMinutes(10));
+                // تخزين في الكاش لمدة دقيقة واحدة
+                _cache.Set(cacheKey, userPermissions, TimeSpan.FromMinutes(1));
             }
 
             return userPermissions.Contains(permissionName);
         }
 
-        // اختياري: طريقة لتحديث الكاش عند تعديل صلاحيات المستخدم
+        /// <summary>
+        /// إبطال الكاش عند تعديل الصلاحيات
+        /// </summary>
         public void InvalidateCache(Guid userId)
         {
             string cacheKey = $"user_permissions_{userId}";
