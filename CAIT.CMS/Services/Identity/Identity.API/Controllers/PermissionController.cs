@@ -2,7 +2,9 @@
 using FluentValidation.Results;
 using Identity.API.Controllers.Base;
 using Identity.Application.DTOs.Permissions;
+using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.Permissions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
@@ -13,14 +15,17 @@ namespace Identity.API.Controllers
     {
         private readonly IPermissionService _permissionService;
         private readonly IValidator<PermissionFilterDto> _validator;
+        private readonly IPermissionChecker _checker;
 
-        public PermissionController(IPermissionService permissionService, IValidator<PermissionFilterDto> validator)
+        public PermissionController(IPermissionService permissionService, IValidator<PermissionFilterDto> validator, IPermissionChecker checker)
         {
             _permissionService = permissionService;
             _validator = validator;
+            _checker = checker;
         }
 
         [HttpGet("GetAllPermissions")]
+        [Authorize(Policy = "Permission:Permission.View")]
         public async Task<IActionResult> GetAll()
         {
             var result = await _permissionService.GetAllAsync();
@@ -29,6 +34,7 @@ namespace Identity.API.Controllers
 
         // GET api/permissions
         [HttpGet("GetFilteredPermissions")]
+        [Authorize(Policy = "Permission:Permission.View")]
         public async Task<IActionResult> Get([FromQuery] PermissionFilterDto query)
         {
             ValidationResult validationResult = await _validator.ValidateAsync(query);
@@ -40,6 +46,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpGet("GetPermissionById/{id}")]
+        [Authorize(Policy = "Permission:Permission.View")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _permissionService.GetByIdAsync(id);
@@ -47,6 +54,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPost("CreatePermission")]
+        [Authorize(Policy = "Permission:Permission.Create")]
         public async Task<IActionResult> Create([FromBody] CreatePermissionDto dto)
         {
             var result = await _permissionService.CreateAsync(dto);
@@ -54,6 +62,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPut("UpdatePermission/{id}")]
+        [Authorize(Policy = "Permission:Permission.Update")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePermissionDto dto)
         {
             var result = await _permissionService.UpdateAsync(id, dto);
@@ -61,10 +70,22 @@ namespace Identity.API.Controllers
         }
 
         [HttpDelete("DeletePermission/{id}")]
+        [Authorize(Policy = "Permission:Permission.Delete")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await _permissionService.DeleteAsync(id);
             return Ok(result);
+        }
+
+
+        // for calling ckeck permissions from another Service Endpoints
+
+        [HttpGet("check")]
+        [AllowAnonymous] // for internally between Services
+        public async Task<IActionResult> Check(Guid userId, string permission, Guid? resourceId = null)
+        {
+            bool has = await _checker.HasPermissionAsync(userId, permission, resourceId);
+            return Ok(new { allowed = has });
         }
 
     }

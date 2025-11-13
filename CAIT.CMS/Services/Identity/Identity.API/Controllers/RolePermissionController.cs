@@ -1,6 +1,7 @@
 ﻿using Identity.API.Controllers.Base;
 using Identity.Application.DTOs.RolePermissions;
 using Identity.Application.Interfaces.RolePermissions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
@@ -9,39 +10,34 @@ namespace Identity.API.Controllers
     [ApiController]
     public class RolePermissionController : BaseController
     {
-        private readonly IRolePermissionService _rolePermission;
-        public RolePermissionController(IRolePermissionService rolePermission)
+        private readonly IRolePremissionService _rolePermission;
+        public RolePermissionController(IRolePremissionService rolePermission)
         {
             _rolePermission = rolePermission;
         }
 
         [HttpPost("AssignPermissionsToRole")]
-        public async Task<IActionResult> AssignPermissionsToRole([FromBody] AssignPermissionsToRoleDto dto)
+        [Authorize(Policy = "Permission:RolePermission.Assign")]
+        public async Task<IActionResult> AssignPermissionsToRole([FromBody] AsgnPermsToRoleDto dto)
         {
-            var result = await _rolePermission.AssignPermissionsToRoleAsync(dto);
+            var result = await _rolePermission.AsgnPermsToRoleAsync(dto);
             return Ok(result);
         }
 
         [HttpGet("GetPermissionsByRole")]
-        public async Task<IActionResult> GetPermissionsByRole([FromQuery] PermissionByRoleFilterDto filter)
+        [Authorize(Policy = "Permission:RolePermission.View")]
+        public async Task<IActionResult> GetPermissionsByRole([FromQuery] PermsByRoleFilterDto filter)
         {
-            var result = await _rolePermission.GetPermissionsByRoleAsync(filter);
+            var result = await _rolePermission.GetPermsByRoleAsync(filter);
             return Ok(result);
         }
 
-        [HttpGet("GetRolePermissions")]
-        public async Task<IActionResult> GetRolePermissions([FromQuery] PermissionByRoleFilterDto filter)
+        [HttpPut("RemovePermissionsOfRole")]
+        [Authorize(Policy = "Permission:RolePermission.Remove")]
+        public async Task<IActionResult> RemovePermissionsOfRoleAsync([FromBody] RemPermsToRoleDto dto)
         {
-            var permissions = await _rolePermission.GetRolePermissionsWithResourcesAsync(filter);
-            return Ok(permissions);
-        }
-        [HttpPut("UpdateRolePermissionResource")]
-        public async Task<IActionResult> UpdateRolePermissionResource([FromBody] UpdateRolePermissionResourceDto dto)
-        {
-            var result = await _rolePermission.UpdateRolePermissionResourceAsync(dto);
+            var result = await _rolePermission.RemovePermissionsOfRoleAsync(dto);
             return Ok(result);
         }
-
-
     }
 }

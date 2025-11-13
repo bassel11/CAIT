@@ -1,4 +1,6 @@
-﻿namespace Identity.Application.DTOs.Users
+﻿using Identity.Core.Enums;
+
+namespace Identity.Application.DTOs.Users
 {
     public class UserUpdateDto
     {
@@ -8,5 +10,6 @@
         public bool? IsActive { get; set; }
         public bool? MFAEnabled { get; set; }
         public DateTime? ExpirationDate { get; set; }
+        public PrivilageType PrivilageType { get; set; }
     }
 }

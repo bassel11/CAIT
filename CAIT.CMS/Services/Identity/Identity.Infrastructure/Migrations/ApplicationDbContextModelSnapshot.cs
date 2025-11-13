@@ -162,6 +162,9 @@ namespace Identity.Infrastructure.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<int>("PrivilageType")
+                        .HasColumnType("int");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -310,55 +313,6 @@ namespace Identity.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("Identity.Core.Entities.Resource", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("DisplayName")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("MetadataJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("ParentReferenceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("ParentResourceType")
-                        .HasMaxLength(100)
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ReferenceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ResourceType")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentResourceType", "ParentReferenceId")
-                        .HasDatabaseName("IX_Resources_Parent");
-
-                    b.HasIndex("ResourceType", "ReferenceId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_Resources_Type_ExternalRef");
-
-                    b.ToTable("Resources", (string)null);
-                });
-
             modelBuilder.Entity("Identity.Core.Entities.RolePermission", b =>
                 {
                     b.Property<Guid>("RoleId")
@@ -367,30 +321,11 @@ namespace Identity.Infrastructure.Migrations
                     b.Property<Guid>("PermissionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("Allow")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("ResourceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ScopeType")
-                        .HasColumnType("int");
-
                     b.HasKey("RoleId", "PermissionId");
 
                     b.HasIndex("PermissionId");
 
-                    b.HasIndex("ResourceId");
-
-                    b.ToTable("RolePermissions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_RolePermission_Scope", "(ScopeType = 0 AND ResourceId IS NULL)\r\n          OR (ScopeType IN (1,2) AND ResourceId IS NOT NULL)");
-                        });
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("Identity.Core.Entities.UserPasswordHistory", b =>
@@ -419,36 +354,34 @@ namespace Identity.Infrastructure.Migrations
                     b.ToTable("UserPasswordHistories", (string)null);
                 });
 
-            modelBuilder.Entity("Identity.Core.Entities.UserPermissionAssignment", b =>
+            modelBuilder.Entity("Identity.Core.Entities.UserRolePermReso", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("Allow")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                        .HasColumnType("bit");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                    b.Property<Guid?>("ParentResourceId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
+                    b.Property<int>("ParentResourceType")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("PermissionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<Guid?>("ResourceId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("ScopeType")
+                    b.Property<int>("ResourceType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Scope")
                         .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
@@ -458,14 +391,11 @@ namespace Identity.Infrastructure.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.HasIndex("ResourceId");
+                    b.HasIndex("RoleId");
 
-                    b.HasIndex("UserId", "PermissionId", "ScopeType", "ResourceId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_UserPermissions_Scope")
-                        .HasFilter("[ResourceId] IS NOT NULL");
+                    b.HasIndex("UserId");
 
-                    b.ToTable("UserPermissionAssignments", (string)null);
+                    b.ToTable("UserRolePermResos", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -603,11 +533,6 @@ namespace Identity.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Identity.Core.Entities.Resource", "Resource")
-                        .WithMany("RolePermissions")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Identity.Core.Entities.ApplicationRole", "Role")
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
@@ -615,8 +540,6 @@ namespace Identity.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Permission");
-
-                    b.Navigation("Resource");
 
                     b.Navigation("Role");
                 });
@@ -632,28 +555,29 @@ namespace Identity.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Identity.Core.Entities.UserPermissionAssignment", b =>
+            modelBuilder.Entity("Identity.Core.Entities.UserRolePermReso", b =>
                 {
                     b.HasOne("Identity.Core.Entities.Permission", "Permission")
-                        .WithMany()
+                        .WithMany("UserRolePermResos")
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Identity.Core.Entities.Resource", "Resource")
-                        .WithMany("UserPermissionAssignments")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                    b.HasOne("Identity.Core.Entities.ApplicationRole", "Role")
+                        .WithMany("UserRolePermResos")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Identity.Core.Entities.ApplicationUser", "User")
-                        .WithMany()
+                        .WithMany("UserRolePermResos")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Permission");
 
-                    b.Navigation("Resource");
+                    b.Navigation("Role");
 
                     b.Navigation("User");
                 });
@@ -698,6 +622,8 @@ namespace Identity.Infrastructure.Migrations
                 {
                     b.Navigation("RolePermissions");
 
+                    b.Navigation("UserRolePermResos");
+
                     b.Navigation("UserRoles");
                 });
 
@@ -705,19 +631,16 @@ namespace Identity.Infrastructure.Migrations
                 {
                     b.Navigation("RefreshTokens");
 
+                    b.Navigation("UserRolePermResos");
+
                     b.Navigation("UserRoles");
                 });
 
             modelBuilder.Entity("Identity.Core.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
-                });
 
-            modelBuilder.Entity("Identity.Core.Entities.Resource", b =>
-                {
-                    b.Navigation("RolePermissions");
-
-                    b.Navigation("UserPermissionAssignments");
+                    b.Navigation("UserRolePermResos");
                 });
 #pragma warning restore 612, 618
         }

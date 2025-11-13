@@ -52,6 +52,11 @@ namespace Identity.Core.Entities
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; } = new List<ApplicationUserRole>();
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
+        #region Pre for new Privilage method
+        public virtual ICollection<UserRolePermReso> UserRolePermResos { get; set; } = new List<UserRolePermReso>();
+        public PrivilageType PrivilageType { get; set; } = PrivilageType.None;
+        #endregion
+
         // ---------- Utility ----------
         public string FullName => $"{FirstName} {LastName}".Trim();
     }

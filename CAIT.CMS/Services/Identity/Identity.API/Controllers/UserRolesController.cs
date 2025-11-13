@@ -2,6 +2,7 @@
 using Identity.Application.DTOs.UserRoles;
 using Identity.Application.DTOs.UserRoles.Multiple;
 using Identity.Application.Interfaces.UserRoles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
@@ -16,6 +17,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPost("assign")]
+        [Authorize(Policy = "Permission:UserRole.Assign")]
         public async Task<IActionResult> AssigUserRole([FromBody] AssignUserRoleDto dto)
         {
             var success = await _userroleService.AssignUserRoleAsync(dto.UserId, dto.RoleName);
@@ -24,6 +26,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPost("remove")]
+        [Authorize(Policy = "Permission:UserRole.Remove")]
         public async Task<IActionResult> RemoveUserRole([FromBody] RemoveUserRoleDto dto)
         {
             var success = await _userroleService.RemoveUserRoleAsync(dto.UserId, dto.RoleName);
@@ -32,6 +35,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpGet("roles/{userId}")]
+        [Authorize(Policy = "Permission:UserRole.View")]
         public async Task<IActionResult> GetUserRoles(Guid userId)
         {
             var roles = await _userroleService.GetUserRolesAsync(userId);
@@ -44,6 +48,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpGet("users/{role}")]
+        [Authorize(Policy = "Permission:UserRole.View")]
         public async Task<IActionResult> GetUsersByRole(string role)
         {
             var users = await _userroleService.GetUsersByRoleAsync(role);
@@ -53,7 +58,7 @@ namespace Identity.API.Controllers
                 Users = users.Select(u => new UserRolesDto
                 {
                     UserId = u.Id,
-                    Email = u.Email,
+                    Email = u.Email!,
                     Roles = _userroleService.GetUserRolesAsync(u.Id).Result
                 })
             };
@@ -63,6 +68,7 @@ namespace Identity.API.Controllers
 
         #region Multiple 
         [HttpPost("assign-multiple")]
+        [Authorize(Policy = "Permission:UserRole.Assign")]
         public async Task<IActionResult> AssignUserRoles([FromBody] AssignUserRolesDto dto)
         {
             var (success, message) = await _userroleService.AssignUserRolesAsync(dto.UserId, dto.RoleNames);
@@ -71,6 +77,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPost("remove-multiple")]
+        [Authorize(Policy = "Permission:UserRole.Remove")]
         public async Task<IActionResult> RemoveUserRoles([FromBody] RemoveUserRolesDto dto)
         {
             var success = await _userroleService.RemoveUserRolesAsync(dto.UserId, dto.RoleNames);
@@ -79,6 +86,7 @@ namespace Identity.API.Controllers
         }
 
         [HttpPost("assign-users-to-role")]
+        [Authorize(Policy = "Permission:UserRole.Assign")]
         public async Task<IActionResult> AssignUsersToRole([FromBody] AssignUsersToRoleDto dto)
         {
             var success = await _userroleService.AssignUsersToRoleAsync(dto.RoleName, dto.UserIds);

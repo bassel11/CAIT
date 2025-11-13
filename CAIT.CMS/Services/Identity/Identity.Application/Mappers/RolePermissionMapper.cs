@@ -6,7 +6,7 @@ namespace Identity.Application.Mappers
 {
     public static class RolePermissionMapper
     {
-        public static readonly Expression<Func<RolePermission, RolePermissionDetailsDto>> ToDtoExpr = rp => new RolePermissionDetailsDto
+        public static readonly Expression<Func<RolePermission, PermsDetailsDto>> ToDtoExpr = rp => new PermsDetailsDto
         {
             RoleId = rp.RoleId,
             PermissionId = rp.PermissionId,
@@ -16,25 +16,12 @@ namespace Identity.Application.Mappers
             PermissionResourceTypeName = rp.Permission.ResourceType.ToString(),
             Action = rp.Permission.Action,
             ActionName = rp.Permission.Action.ToString(),
-            PermissionScopeType = rp.ScopeType,
-            PermissionScopeTypeName = rp.ScopeType.ToString(),
             IsGlobal = rp.Permission.IsGlobal,
-            IsActive = rp.Permission.IsActive,
-            Allow = rp.Allow,
-            CreatedAt = rp.CreatedAt,
+            IsActive = rp.Permission.IsActive
 
-            // 🟢 Resource Info
-            ResourceId = rp.ResourceId,
-            ResourceReferenceId = rp.Resource != null ? rp.Resource.ReferenceId : null,
-            Res_Type = rp.Resource != null ? rp.Resource.ResourceType : null,
-            Res_TypeName = rp.Resource != null ? rp.Resource.ResourceType.ToString() : null,
-            ResourceDisplayName = rp.Resource != null ? rp.Resource.DisplayName : null,
-            ResourceParentType = rp.Resource != null ? rp.Resource.ParentResourceType : null,
-            ResourceParentTypeName = rp.Resource != null ? rp.Resource.ParentResourceType.ToString() : null,
-            ResourceParentReferenceId = rp.Resource != null ? rp.Resource.ParentReferenceId : null
         };
 
-        public static RolePermissionDetailsDto ToDto(RolePermission rp)
+        public static PermsDetailsDto ToDto(RolePermission rp)
         {
             if (rp == null) return null!;
             return ToDtoExpr.Compile().Invoke(rp);

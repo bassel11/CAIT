@@ -5,11 +5,11 @@ using Identity.Application.Authorization;
 using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.Permissions;
-using Identity.Application.Interfaces.Resources;
 using Identity.Application.Interfaces.RolePermissions;
 using Identity.Application.Interfaces.Roles;
 using Identity.Application.Interfaces.UserRoles;
 using Identity.Application.Interfaces.Users;
+using Identity.Application.Interfaces.UsrRolPermRes;
 using Identity.Application.Middlewares;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
@@ -18,11 +18,11 @@ using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Services;
 using Identity.Infrastructure.Services.Authorization;
 using Identity.Infrastructure.Services.Permissions;
-using Identity.Infrastructure.Services.Resources;
 using Identity.Infrastructure.Services.RolePermissions;
 using Identity.Infrastructure.Services.Roles;
 using Identity.Infrastructure.Services.UserRoles;
 using Identity.Infrastructure.Services.Users;
+using Identity.Infrastructure.Services.UsrRolPermRes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -203,10 +203,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
-builder.Services.AddScoped<IResourceService, ResourceService>();
+builder.Services.AddScoped<IRolePremissionService, RolePremissionService>();
 builder.Services.AddScoped<IPermissionCacheInvalidator, PermissionCacheInvalidator>();
-
+builder.Services.AddScoped<IUsrRolPermResService, UsrRolPermResService>();
 
 
 
@@ -221,29 +220,31 @@ builder.Services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
+
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
 // Example policy registration
-using (var serviceProvider = builder.Services.BuildServiceProvider())
-{
-    using var scope = serviceProvider.CreateScope();
+//using (var serviceProvider = builder.Services.BuildServiceProvider())
+//{
+//    using var scope = serviceProvider.CreateScope();
 
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-    var permissions = dbContext.Permissions
-        .AsNoTracking()
-        .Select(p => p.Name) // <-- التعديل من Code إلى Name
-        .ToList();
+//    var permissions = dbContext.Permissions
+//        .AsNoTracking()
+//        .Select(p => p.Name) // <-- التعديل من Code إلى Name
+//        .ToList();
 
-    builder.Services.AddAuthorization(options =>
-    {
-        foreach (var permission in permissions)
-        {
-            options.AddPolicy(permission, policy =>
-                policy.Requirements.Add(new PermissionRequirement(permission)));
-        }
-    });
-}
+//    builder.Services.AddAuthorization(options =>
+//    {
+//        foreach (var permission in permissions)
+//        {
+//            options.AddPolicy(permission, policy =>
+//                policy.Requirements.Add(new PermissionRequirement(permission)));
+//        }
+//    });
+//}
 
 
 
@@ -293,6 +294,7 @@ using (var scope = app.Services.CreateScope())
     var dbContext = services.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate(); // Apply migrations
 
+    await PermissionSeeder.SeedPermissionsAsync(dbContext);
     await IdentitySeed.SeedRolesAndAdminAsync(services); // Seed Basic roles & admin
 }
 
@@ -309,7 +311,8 @@ app.UseMiddleware<ErrorHandlerMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-app.UseMiddleware<PermissionMiddleware>();
+app.UseMiddleware<ResourceExtractionMiddleware>();
+//app.UseMiddleware<PermissionMiddleware>();
 //app.UseMiddleware<CustomErrorMiddleware>();
 app.UseAuthorization();
 

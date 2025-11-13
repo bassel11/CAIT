@@ -126,5 +126,10 @@ namespace Identity.Infrastructure.Services.Permissions
 
             return new PagedResult<PermissionDto>(permissions, total, filter.Page, filter.PageSize);
         }
+
+        public async Task<bool> ExistsAsync(Guid id)
+        {
+            return await _context.Permissions.AnyAsync(p => p.Id == id);
+        }
     }
 }

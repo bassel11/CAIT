@@ -24,10 +24,13 @@ namespace Identity.Infrastructure.Data
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<UserPasswordHistory> UserPasswordHistories => Set<UserPasswordHistory>();
         public DbSet<Permission> Permissions => Set<Permission>();
-        public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
-        public DbSet<Resource> Resources => Set<Resource>();
-        public DbSet<UserPermissionAssignment> UserPermissionAssignments => Set<UserPermissionAssignment>();
 
+
+        #region Pre for new Privilage Method
+
+        public DbSet<UserRolePermReso> UserRolePermResos => Set<UserRolePermReso>();
+        public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+        #endregion
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -44,10 +47,13 @@ namespace Identity.Infrastructure.Data
             builder.Entity<IdentityRoleClaim<Guid>>(b => b.ToTable("RoleClaims"));
             builder.Entity<IdentityUserToken<Guid>>(b => b.ToTable("UserTokens"));
             builder.Entity<Permission>(b => b.ToTable("Permissions"));
-            builder.Entity<RolePermission>(b => b.ToTable("RolePermissions"));
-            builder.Entity<Resource>(b => b.ToTable("Resources"));
-            builder.Entity<UserPermissionAssignment>(b => b.ToTable("UserPermissionAssignments"));
+            //builder.Entity<RolePermission>(b => b.ToTable("RolePermissions"));
+            //builder.Entity<Resource>(b => b.ToTable("Resources"));
 
+            #region Pre Tables for new privilage method
+            builder.Entity<UserRolePermReso>(b => b.ToTable("UserRolePermResos"));
+            builder.Entity<RolePermission>(b => b.ToTable("RolePermissions"));
+            #endregion
 
             // =====================================================
             // 🔹 Roles Configuration: unique constraint على Name
@@ -178,111 +184,121 @@ namespace Identity.Infrastructure.Data
             // =====================================================
             // 🔹 RolePermissions Configuration (Many-to-Many)
             // =====================================================
+            //  builder.Entity<RolePermission>(entity =>
+            //  {
+            //      // مفتاح مركب بدون ResourceId
+            //      //entity.HasKey(rp => new { rp.RoleId, rp.PermissionId, rp.ScopeType });
+            //      entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+            //      entity.Property(rp => rp.ScopeType)
+            //            .HasConversion<int>()
+            //            .IsRequired();
+
+            //      entity.Property(rp => rp.Allow)
+            //            .HasDefaultValue(true);
+
+            //      entity.HasOne(rp => rp.Role)
+            //            .WithMany(r => r.RolePermissions)
+            //            .HasForeignKey(rp => rp.RoleId)
+            //            .OnDelete(DeleteBehavior.Cascade);
+
+            //      entity.HasOne(rp => rp.Permission)
+            //            .WithMany(p => p.RolePermissions)
+            //            .HasForeignKey(rp => rp.PermissionId)
+            //            .OnDelete(DeleteBehavior.Cascade);
+
+            //      entity.HasOne(rp => rp.Resource)
+            //            .WithMany(r => r.RolePermissions)
+            //            .HasForeignKey(rp => rp.ResourceId)
+            //            .OnDelete(DeleteBehavior.Restrict);
+
+            //      entity.HasCheckConstraint("CK_RolePermission_Scope",
+            //         @"(ScopeType = 0 AND ResourceId IS NULL)
+            //OR (ScopeType IN (1,2) AND ResourceId IS NOT NULL)");
+            //  });
+
+
+
+            // =====================================================
+            //  Resource Configuration
+            // =====================================================
+            //builder.Entity<Resource>(entity =>
+            //{
+            //    entity.HasKey(r => r.Id);
+
+            //    entity.Property(r => r.ResourceType)
+            //          .HasConversion<int>()
+            //          .IsRequired();
+
+            //    entity.Property(r => r.DisplayName)
+            //          .HasMaxLength(300);
+
+            //    entity.Property(r => r.CreatedAt)
+            //          .HasDefaultValueSql("GETUTCDATE()");
+
+            //    entity.HasIndex(r => new { r.ResourceType, r.ReferenceId })
+            //          .IsUnique().HasDatabaseName("UX_Resources_Type_ExternalRef");
+            //    entity.HasIndex(r => new { r.ParentResourceType, r.ParentReferenceId })
+            //          .HasDatabaseName("IX_Resources_Parent");
+            //});
+
+            #region Pre for new Privilage Method
+
+            // UserRolePermReso
+
+            builder.Entity<UserRolePermReso>(entity =>
+            {
+                entity.HasKey(urpr => urpr.Id);
+
+                entity.HasOne(u => u.User)
+                      .WithMany(urpr => urpr.UserRolePermResos)
+                      .HasForeignKey(u => u.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.Role)
+                      .WithMany(urpr => urpr.UserRolePermResos)
+                      .HasForeignKey(r => r.RoleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(p => p.Permission)
+                      .WithMany(urpr => urpr.UserRolePermResos)
+                      .HasForeignKey(p => p.PermissionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(urpr => urpr.Scope)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(urpr => urpr.ResourceType)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+                entity.Property(urpr => urpr.ParentResourceType)
+                      .HasConversion<int>()
+                      .IsRequired();
+
+            });
+
+            // RolePermission
             builder.Entity<RolePermission>(entity =>
             {
-                // مفتاح مركب بدون ResourceId
-                //entity.HasKey(rp => new { rp.RoleId, rp.PermissionId, rp.ScopeType });
-                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+                // مفتاح مركب
+                entity.HasKey(prp => new { prp.RoleId, prp.PermissionId });
 
-                entity.Property(rp => rp.ScopeType)
-                      .HasConversion<int>()
-                      .IsRequired();
-
-                entity.Property(rp => rp.Allow)
-                      .HasDefaultValue(true);
-
-                entity.HasOne(rp => rp.Role)
-                      .WithMany(r => r.RolePermissions)
-                      .HasForeignKey(rp => rp.RoleId)
+                entity.HasOne(p => p.Permission)
+                      .WithMany(prp => prp.RolePermissions)
+                      .HasForeignKey(p => p.PermissionId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(rp => rp.Permission)
-                      .WithMany(p => p.RolePermissions)
-                      .HasForeignKey(rp => rp.PermissionId)
+                entity.HasOne(r => r.Role)
+                      .WithMany(prp => prp.RolePermissions)
+                      .HasForeignKey(r => r.RoleId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(rp => rp.Resource)
-                      .WithMany(r => r.RolePermissions)
-                      .HasForeignKey(rp => rp.ResourceId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasCheckConstraint("CK_RolePermission_Scope",
-                   @"(ScopeType = 0 AND ResourceId IS NULL)
-          OR (ScopeType IN (1,2) AND ResourceId IS NOT NULL)");
             });
 
+            #endregion
 
-
-            // =====================================================
-            // 🔹 Resource Configuration
-            // =====================================================
-            builder.Entity<Resource>(entity =>
-            {
-                entity.HasKey(r => r.Id);
-
-                entity.Property(r => r.ResourceType)
-                      .HasConversion<int>()
-                      .IsRequired();
-
-                entity.Property(r => r.DisplayName)
-                      .HasMaxLength(300);
-
-                entity.Property(r => r.CreatedAt)
-                      .HasDefaultValueSql("GETUTCDATE()");
-
-                entity.HasIndex(r => new { r.ResourceType, r.ReferenceId })
-                      .IsUnique().HasDatabaseName("UX_Resources_Type_ExternalRef");
-                entity.HasIndex(r => new { r.ParentResourceType, r.ParentReferenceId })
-                      .HasDatabaseName("IX_Resources_Parent");
-            });
-
-            // =====================================================
-            // 🔹 UserPermissionAssignment Configuration
-            // =====================================================
-            builder.Entity<UserPermissionAssignment>(entity =>
-            {
-                entity.HasKey(upa => upa.Id);
-
-                entity.Property(upa => upa.ScopeType)
-                      .HasConversion<int>()
-                      .IsRequired();
-
-                entity.Property(upa => upa.Allow)
-                      .HasDefaultValue(true);
-
-                entity.Property(upa => upa.Reason)
-                      .HasMaxLength(500);
-
-                entity.Property(upa => upa.CreatedAt)
-                      .HasDefaultValueSql("GETUTCDATE()");
-
-                // علاقات
-                entity.HasOne(upa => upa.User)
-                      .WithMany()
-                      .HasForeignKey(upa => upa.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(upa => upa.Permission)
-                      .WithMany()
-                      .HasForeignKey(upa => upa.PermissionId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                //entity.HasOne<Committee>()
-                //      .WithMany()
-                //      .HasForeignKey(upa => upa.CommitteeId)
-                //      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(upa => upa.Resource)                        // <-- navigation property
-                      .WithMany(r => r.UserPermissionAssignments)         // <-- collection property في Resource
-                      .HasForeignKey(upa => upa.ResourceId)              // <-- FK واضح
-                      .OnDelete(DeleteBehavior.Restrict);
-
-
-                // Indexes
-                entity.HasIndex(upa => new { upa.UserId, upa.PermissionId, upa.ScopeType, upa.ResourceId })
-                                      .IsUnique()
-                                      .HasDatabaseName("UX_UserPermissions_Scope");
-            });
         }
     }
 }

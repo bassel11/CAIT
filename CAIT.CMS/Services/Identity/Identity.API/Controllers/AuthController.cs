@@ -31,7 +31,7 @@ namespace Identity.API.Controllers
 
         // register
         [HttpPost("register")]
-        [Authorize(Roles = "SuperAdmin", Policy = "RegisterUser", AuthenticationSchemes = "BearerPolicy")]
+        [Authorize(Roles = "SuperAdmin", Policy = "Permission:User.Register", AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             var result = await _authService.RegisterAsync(dto);
@@ -153,7 +153,7 @@ namespace Identity.API.Controllers
 
         // enable mfa
         [HttpPost("enable-mfa")]
-        [Authorize(Roles = "SuperAdmin", Policy = "EnableMfa", AuthenticationSchemes = "BearerPolicy")]
+        [Authorize(Roles = "SuperAdmin", Policy = "Permission:User.EnableMfa", AuthenticationSchemes = "BearerPolicy")]
         public async Task<IActionResult> EnableMfaForDatabaseUser([FromBody] EnableMfaDto dto)
         {
             if (string.IsNullOrEmpty(dto.UserId))
@@ -205,28 +205,31 @@ namespace Identity.API.Controllers
         }
 
 
-        //
-        [Authorize(Policy = "CreateCommittee", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("committee/create")]
-        public IActionResult CreateCommittee() //Guid committeeId, [FromBody] CreateMeetingDto dto
-        {
-            // authorized users only
-            return Ok("Hello new Committee");
-        }
-        [Authorize(Policy = "CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("meeting/create")]
+        //[Authorize(Policy = "CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
+        [Authorize(Policy = "Permission:Meeting.Create", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("CraeteCommittee")]
         public IActionResult CreateMeeting() //Guid committeeId, [FromBody] CreateMeetingDto dto
         {
             // authorized users only
             return Ok("helllo new meeting");
         }
 
-        [Authorize(Policy = "CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("createmeeting")]
+        [Authorize(Policy = "Permission:Meeting.Create", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("CraeteCommitteeWithResource")]
         public IActionResult CreateMeetingwithResourceId([FromQuery] Guid? resourceId) //Guid committeeId, [FromBody] CreateMeetingDto dto
         {
             // authorized users only
-            return Ok("helllo new meeting");
+            return Ok("helllo new Committee with ResourceId");
+        }
+
+        [Authorize(Policy = "Permission:Meeting.Create", AuthenticationSchemes = "BearerPolicy")]
+        [HttpPost("CraeteCommitteeWithResourceAndParent")]
+        public IActionResult CreateMeetingwithResourceIdandParent(
+                                                                  [FromQuery] Guid? resourceId,
+                                                                  [FromQuery] Guid? parentResourceId)
+        {
+            // authorized users only
+            return Ok("helllo new meeting with ResourceId and ParentResourceId");
         }
     }
 }

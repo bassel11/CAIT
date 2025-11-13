@@ -42,45 +42,47 @@ namespace Identity.Infrastructure.Services
                 AuthType = AuthenticationType.Database,
                 MFAEnabled = false,
                 EmailConfirmed = true,
-                IsActive = true
+                IsActive = true,
+                PrivilageType = dto.privilageType
             };
 
-            // تحقق من الدور قبل أي عملية إنشاء
-            if (!string.IsNullOrWhiteSpace(dto.Role) && !await _roleManager.RoleExistsAsync(dto.Role))
+            //  تحقق مبدئي: إذا كان PrivilageType = PredifinedRoles، تأكد أن الدور صالح
+            if (dto.privilageType == PrivilageType.PredifinedRoles)
             {
-                return (false, null, new[] { $"Role '{dto.Role}' does not exist" });
+                if (string.IsNullOrWhiteSpace(dto.Role))
+                {
+                    return (false, null, new[] { "Role must be provided when PrivilageType is PredifinedRoles" });
+                }
+
+                if (!await _roleManager.RoleExistsAsync(dto.Role))
+                {
+                    return (false, null, new[] { $"Role '{dto.Role}' does not exist" });
+                }
             }
 
+            //  إنشاء المستخدم
             var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded) return (false, null, result.Errors.Select(e => e.Description));
+            if (!result.Succeeded)
+                return (false, null, result.Errors.Select(e => e.Description));
 
-            // Assign default role
-            //await _userManager.AddToRoleAsync(user, "Member");
-
-            //  تحقق من وجود الدور المطلوب في النظام
-            // إذا تم تمرير دور غير فارغ
-            if (!string.IsNullOrWhiteSpace(dto.Role))
+            //  فقط إذا كان PrivilageType = PredifinedRoles أضف الدور
+            if (dto.privilageType == PrivilageType.PredifinedRoles)
             {
-                // تحقق من وجود الدور في النظام
-                if (!await _roleManager.RoleExistsAsync(dto.Role))
-                    return (false, null, new[] { $"Role '{dto.Role}' does not exist" });
-
-                // إسناد الدور للمستخدم
                 await _userManager.AddToRoleAsync(user, dto.Role);
             }
 
-
-            // 🟢 حفظ كلمة المرور الجديدة في سجل UserPasswordHistory
+            //  سجل كلمة المرور في التاريخ
             var passwordHistory = new UserPasswordHistory
             {
                 UserId = user.Id,
-                PasswordHash = user.PasswordHash!,   // تم توليدها تلقائياً من Identity
+                PasswordHash = user.PasswordHash!,
                 CreatedAt = DateTime.UtcNow
             };
+
             _dbContext.UserPasswordHistories.Add(passwordHistory);
             await _dbContext.SaveChangesAsync();
 
-            //var token = _jwtTokenService.GenerateJwtToken(user, out var expiry);
+            //  توليد التوكنات
             var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
             var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
 

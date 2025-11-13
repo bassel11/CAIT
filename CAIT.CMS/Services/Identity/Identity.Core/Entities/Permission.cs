@@ -9,7 +9,7 @@ namespace Identity.Core.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Required]
         public ResourceType ResourceType { get; set; } // e.g. "Committee", "Meeting", "Task"
@@ -20,6 +20,12 @@ namespace Identity.Core.Entities
         public bool IsGlobal { get; set; } = false;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        #region Pre for new Privilage method
+        public virtual ICollection<UserRolePermReso> UserRolePermResos { get; set; } = new List<UserRolePermReso>();
+
         public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
+        #endregion
     }
 }

@@ -1,7 +1,11 @@
 ﻿using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.UserRoles;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
+using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace Identity.Infrastructure.Services.UserRoles
 {
@@ -10,27 +14,35 @@ namespace Identity.Infrastructure.Services.UserRoles
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly IPermissionCacheInvalidator _cacheInvalidator;
-        public UserRoleService(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, IPermissionCacheInvalidator cacheInvalidator)
+        private readonly ApplicationDbContext _context;
+        public UserRoleService(UserManager<ApplicationUser> userManager
+                              , RoleManager<ApplicationRole> roleManager
+                              , IPermissionCacheInvalidator cacheInvalidator
+                              , ApplicationDbContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _cacheInvalidator = cacheInvalidator;
+            _context = context;
         }
         public async Task<bool> AssignUserRoleAsync(Guid userId, string roleName)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) return false;
+            if (user == null || user.PrivilageType != PrivilageType.PredifinedRoles) return false;
+
+            if (await HasCustomPermissionsAsync(userId))
+                throw new ValidationException("Cannot assign predefined roles to a user with custom permissions.");
 
             if (!await _roleManager.RoleExistsAsync(roleName))
                 return false;
 
             var result = await _userManager.AddToRoleAsync(user, roleName);
 
-            //if (result.Succeeded)
-            //{
-            //    // إبطال الكاش بعد إضافة الدور
-            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
-            //}
+            if (result.Succeeded)
+            {
+                // إبطال الكاش بعد إضافة الدور
+                await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            }
 
             return result.Succeeded;
         }
@@ -38,8 +50,8 @@ namespace Identity.Infrastructure.Services.UserRoles
         public async Task<IList<string>> GetUserRolesAsync(Guid userId)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) return new List<string>();
-
+            if (user == null || user.PrivilageType != PrivilageType.PredifinedRoles)
+                return new List<string>();
             return await _userManager.GetRolesAsync(user);
         }
 
@@ -54,27 +66,34 @@ namespace Identity.Infrastructure.Services.UserRoles
         public async Task<bool> RemoveUserRoleAsync(Guid userId, string roleName)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) return false;
+            if (user == null || user.PrivilageType != PrivilageType.PredifinedRoles) return false;
+
+            if (await HasCustomPermissionsAsync(userId))
+                throw new ValidationException("Cannot modify predefined roles for a user who has custom permissions.");
 
             var result = await _userManager.RemoveFromRoleAsync(user, roleName);
 
 
-            //if (result.Succeeded)
-            //{
-            //    // ✅ إبطال الكاش بعد إزالة الدور
-            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
-            //}
+            if (result.Succeeded)
+            {
+                //  إبطال الكاش بعد إزالة الدور
+                await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            }
 
             return result.Succeeded;
         }
 
 
-        #region Multiple 
+        #region Multiple
 
         public async Task<(bool Success, string Message)> AssignUserRolesAsync(Guid userId, List<string> roles)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) return (false, "User not found.");
+            if (user == null || user.PrivilageType != PrivilageType.PredifinedRoles)
+                return (false, "User not found. or check the User Privilage Type");
+
+            if (await HasCustomPermissionsAsync(userId))
+                throw new ValidationException("Cannot modify predefined roles for a user who has custom permissions.");
 
             // تحقق من أدوار فارغة أو null
             if (roles.Any(r => string.IsNullOrWhiteSpace(r)))
@@ -94,11 +113,11 @@ namespace Identity.Infrastructure.Services.UserRoles
             var result = await _userManager.AddToRolesAsync(user, rolesToAdd);
 
 
-            //if (result.Succeeded)
-            //{
-            //    // إبطال الكاش بعد إضافة أدوار متعددة
-            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
-            //}
+            if (result.Succeeded)
+            {
+                // إبطال الكاش بعد إضافة أدوار متعددة
+                await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            }
 
             return result.Succeeded
                 ? (true, "Roles assigned successfully.")
@@ -108,7 +127,10 @@ namespace Identity.Infrastructure.Services.UserRoles
         public async Task<bool> RemoveUserRolesAsync(Guid userId, List<string> roles)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null) return false;
+            if (user == null || user.PrivilageType != PrivilageType.PredifinedRoles) return false;
+
+            if (await HasCustomPermissionsAsync(userId))
+                throw new ValidationException("Cannot modify predefined roles for a user who has custom permissions.");
 
             var currentRoles = await _userManager.GetRolesAsync(user);
             var rolesToRemove = roles.Intersect(currentRoles).ToList(); // فقط الأدوار الموجودة
@@ -117,10 +139,10 @@ namespace Identity.Infrastructure.Services.UserRoles
 
             var result = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
 
-            //{
-            //    // إبطال الكاش بعد إزالة أدوار متعددة
-            //    await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
-            //}
+            {
+                // إبطال الكاش بعد إزالة أدوار متعددة
+                await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(userId);
+            }
 
             return result.Succeeded;
         }
@@ -130,13 +152,19 @@ namespace Identity.Infrastructure.Services.UserRoles
             foreach (var id in userIds)
             {
                 var user = await _userManager.FindByIdAsync(id.ToString());
-                if (user != null)
+                if (user == null || user.PrivilageType != PrivilageType.PredifinedRoles)
+                    return false;
+                else if (await HasCustomPermissionsAsync(id))
+                {
+                    throw new ValidationException("Cannot modify predefined roles for a user who has custom permissions.");
+                }
+                else
                 {
                     var currentRoles = await _userManager.GetRolesAsync(user);
                     if (!currentRoles.Contains(roleName))
                     {
                         await _userManager.AddToRoleAsync(user, roleName);
-                        // await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(id);
+                        await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(id);
                     }
                 }
             }
@@ -147,6 +175,12 @@ namespace Identity.Infrastructure.Services.UserRoles
 
         #endregion
 
+        #region Private Functions
+        private async Task<bool> HasCustomPermissionsAsync(Guid userId)
+        {
+            return await _context.UserRolePermResos.AnyAsync(x => x.UserId == userId);
+        }
+        #endregion
 
     }
 }

@@ -11,5 +11,6 @@ namespace Identity.Application.Interfaces.Permissions
         Task<PermissionDto> UpdateAsync(Guid id, UpdatePermissionDto dto);
         Task<bool> DeleteAsync(Guid id);
         Task<PagedResult<PermissionDto>> GetPagedAsync(PermissionFilterDto query);
+        Task<bool> ExistsAsync(Guid id);
     }
 }

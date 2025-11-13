@@ -25,23 +25,21 @@ namespace Identity.Application.Authorization
             }
 
             var userId = Guid.Parse(userIdClaim);
-
-            // محاولة الحصول على ResourceId من HttpContext
             var httpContext = _httpContextAccessor.HttpContext;
+
             Guid? resourceId = null;
+            Guid? parentResourceId = null;
 
             if (httpContext != null)
             {
-                // من query string
-                if (httpContext.Request.Query.TryGetValue("resourceId", out var qValues) && Guid.TryParse(qValues.FirstOrDefault(), out var parsedQueryId))
-                    resourceId = parsedQueryId;
+                if (httpContext.Items.TryGetValue("ResourceId", out var rVal) && rVal is Guid rGuid)
+                    resourceId = rGuid;
 
-                // من header (أولوية أعلى)
-                if (httpContext.Request.Headers.TryGetValue("X-ResourceId", out var hValues) && Guid.TryParse(hValues.FirstOrDefault(), out var parsedHeaderId))
-                    resourceId = parsedHeaderId;
+                if (httpContext.Items.TryGetValue("ParentResourceId", out var pVal) && pVal is Guid pGuid)
+                    parentResourceId = pGuid;
             }
 
-            bool hasPermission = await _permissionChecker.HasPermissionAsync(userId, requirement.PermissionName, resourceId);
+            bool hasPermission = await _permissionChecker.HasPermissionAsync(userId, requirement.PermissionName, resourceId, parentResourceId);
 
             if (hasPermission)
                 context.Succeed(requirement);

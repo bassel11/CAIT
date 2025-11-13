@@ -37,6 +37,7 @@ namespace Identity.Application.Mappers
             CreatedAt = u.CreatedAt,
             UpdatedAt = u.UpdatedAt,
             ExpiresAt = u.ExpiresAt,
+            PrivilageType = u.PrivilageType,
             Roles = u.UserRoles.Select(r => r.Role.Name!).ToList()
         };
 

@@ -1,0 +1,203 @@
+[
+  {
+    "Name": "User.Register",
+    "ResourceType": 2,
+    "Action": 15,
+    "Description": "Register New User",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "User.EnableMfa",
+    "ResourceType": 2,
+    "Action": 10,
+    "Description": "Enable MultiFactor Authentication",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "User.View",
+    "ResourceType": 2,
+    "Action": 0,
+    "Description": "View Users",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "User.Update",
+    "ResourceType": 2,
+    "Action": 2,
+    "Description": "Update Users",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "User.Delete",
+    "ResourceType": 2,
+    "Action": 3,
+    "Description": "Delete User",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "User.Deactivate",
+    "ResourceType": 2,
+    "Action": 16,
+    "Description": "Deactivate User",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+
+  {
+    "Name": "UserRole.Assign",
+    "ResourceType": 2,
+    "Action": 5,
+    "Description": "Assign User Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "UserRole.Remove",
+    "ResourceType": 2,
+    "Action": 17,
+    "Description": "Remove User Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "UserRole.View",
+    "ResourceType": 2,
+    "Action": 0,
+    "Description": "View User Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+
+  {
+    "Name": "Role.View",
+    "ResourceType": 2,
+    "Action": 0,
+    "Description": "View Roles",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "Role.Create",
+    "ResourceType": 2,
+    "Action": 1,
+    "Description": "Create New Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "Role.Update",
+    "ResourceType": 2,
+    "Action": 2,
+    "Description": "Update Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "Role.Delete",
+    "ResourceType": 2,
+    "Action": 3,
+    "Description": "Delete Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+
+  {
+    "Name": "RolePermission.Assign",
+    "ResourceType": 2,
+    "Action": 5,
+    "Description": "Assign Permissions to Role",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "RolePermission.View",
+    "ResourceType": 2,
+    "Action": 0,
+    "Description": "View Role Permissions",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "RolePermission.Remove",
+    "ResourceType": 2,
+    "Action": 17,
+    "Description": "Remove Role Permissions",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+
+
+  {
+    "Name": "Meeting.Create",
+    "ResourceType": 4,
+    "Action": 1,
+    "Description": "Create New Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
+
+  {
+    "Name": "Permission.View",
+    "ResourceType": 2,
+    "Action": 0,
+    "Description": "View Permissions",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "Permission.Create",
+    "ResourceType": 2,
+    "Action": 1,
+    "Description": "Create New Permission",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "Permission.Update",
+    "ResourceType": 2,
+    "Action": 2,
+    "Description": "Update Permission",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "Permission.Delete",
+    "ResourceType": 2,
+    "Action": 3,
+    "Description": "Delete Permission",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+
+  {
+    "Name": "CustomPermission.Assign",
+    "ResourceType": 2,
+    "Action": 5,
+    "Description": "Assign Custom Permissions to User",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "CustomPermission.View",
+    "ResourceType": 2,
+    "Action": 0,
+    "Description": "View Custom Permissions of User",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
+    "Name": "CustomPermission.Remove",
+    "ResourceType": 2,
+    "Action": 17,
+    "Description": "Remove Custom Permissions of User",
+    "IsGlobal": true,
+    "IsActive": true
+  }
+
+]

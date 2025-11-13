@@ -9,6 +9,12 @@ namespace Identity.Core.Entities
 
         public virtual ICollection<ApplicationUserRole> UserRoles { get; set; } = new List<ApplicationUserRole>();
 
+
+        #region Pre for new Privilage method
+        public virtual ICollection<UserRolePermReso> UserRolePermResos { get; set; } = new List<UserRolePermReso>();
         public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
+
+        #endregion
     }
 }

@@ -42,6 +42,7 @@ namespace Identity.Application.DTOs.Users
         public MFAMethod MFAMethod { get; set; }
         public DateTime? MFACodeExpiry { get; set; }
         public bool IsActive { get; set; }
+        public PrivilageType PrivilageType { get; set; }
 
         // ---------- Dates ----------
         public DateTime CreatedAt { get; set; }

@@ -1,8 +1,10 @@
 ﻿using Identity.Application.Common;
 using Identity.Application.DTOs.Users;
 using Identity.Application.Interfaces.Users;
+using Identity.Application.Interfaces.UsrRolPermRes;
 using Identity.Application.Mappers;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,12 +18,14 @@ namespace Identity.Infrastructure.Services.Users
         private readonly ApplicationDbContext _context;
         private readonly ILogger<UserService> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IUsrRolPermResService _usrRolPermResService;
 
-        public UserService(ApplicationDbContext context, ILogger<UserService> logger, UserManager<ApplicationUser> userManager)
+        public UserService(ApplicationDbContext context, ILogger<UserService> logger, UserManager<ApplicationUser> userManager, IUsrRolPermResService usrRolPermResService)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
+            _usrRolPermResService = usrRolPermResService;
         }
         public async Task<UserDto?> GetByIdAsync(Guid id)
         {
@@ -127,6 +131,17 @@ namespace Identity.Infrastructure.Services.Users
             if (user == null)
                 return (false, "User not found");
 
+            // تحقق من تغيير PrivilageType فقط إذا تم تغييره
+            if (dto.PrivilageType != user.PrivilageType)
+            {
+                var validationError = await ValidateUserPermissionsAsync(user.Id, dto.PrivilageType);
+                if (validationError != null)
+                    return (false, validationError);
+
+                user.PrivilageType = dto.PrivilageType;
+            }
+
+
             user.FirstName = dto.FirstName ?? user.FirstName;
             user.LastName = dto.LastName ?? user.LastName;
             user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
@@ -182,5 +197,43 @@ namespace Identity.Infrastructure.Services.Users
 
         }
 
+        #region Private Functions
+
+        private async Task<string?> ValidateUserPermissionsAsync(Guid userId, PrivilageType newType)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) return "User not found";
+
+            switch (newType)
+            {
+                case PrivilageType.CustomRolesAndPermission:
+                    // يجب التأكد أنه ليس لديه أدوار مسبقة
+                    var roles = await _userManager.GetRolesAsync(user);
+                    if (roles.Any()) return "Cannot change PrivilageType to CustomRolesAndPermission: user has assigned roles.";
+                    break;
+
+                case PrivilageType.PredifinedRoles:
+
+                    var hasCustomPerms = await _usrRolPermResService.HasCustomPermissionsAsync(userId);
+                    if (hasCustomPerms)
+                        return "Cannot change PrivilageType to PredifinedRoles: user has custom permissions.";
+                    break;
+
+                case PrivilageType.None:
+                    // يجب التأكد أنه ليس لديه أي أدوار أو صلاحيات مخصصة
+                    var anyRoles = await _context.UserRoles.AnyAsync(x => x.UserId == userId);
+                    var anyCustom = await _context.UserRolePermResos.AnyAsync(x => x.UserId == userId);
+                    if (anyRoles || anyCustom)
+                        return "Cannot change PrivilageType to None: user has roles or custom permissions.";
+                    break;
+
+                default:
+                    break;
+            }
+
+            return null; // كل شيء صحيح
+        }
+
+        #endregion
     }
 }
