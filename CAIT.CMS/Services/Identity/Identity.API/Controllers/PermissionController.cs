@@ -82,9 +82,9 @@ namespace Identity.API.Controllers
 
         [HttpGet("check")]
         [AllowAnonymous] // for internally between Services
-        public async Task<IActionResult> Check(Guid userId, string permission, Guid? resourceId = null)
+        public async Task<IActionResult> Check(Guid userId, string permission, Guid? resourceId = null, Guid? parentResourceId = null)
         {
-            bool has = await _checker.HasPermissionAsync(userId, permission, resourceId);
+            bool has = await _checker.HasPermissionAsync(userId, permission, resourceId, parentResourceId);
             return Ok(new { allowed = has });
         }
 

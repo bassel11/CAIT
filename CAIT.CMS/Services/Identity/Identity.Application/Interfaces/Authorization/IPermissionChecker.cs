@@ -2,7 +2,8 @@
 {
     public interface IPermissionChecker
     {
-        Task<bool> HasPermissionAsync(Guid userId, string permissionName, Guid? resourceId = null, Guid? parentResourceId = null); void InvalidateCache(Guid userId);
+        Task<bool> HasPermissionAsync(Guid userId, string permissionName, Guid? resourceId = null, Guid? parentResourceId = null);
+        void InvalidateCache(Guid userId);
     }
 
 }
