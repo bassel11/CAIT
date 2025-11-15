@@ -24,6 +24,7 @@ namespace CommitteeAPI.Controllers
 
         [HttpGet("{id}", Name = "GetCommitteesById")]
         [ProducesResponseType(typeof(IEnumerable<CommitteeResponse>), (int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:Meeting.Create")]
         public async Task<ActionResult<IEnumerable<CommitteeResponse>>> GetCommitteesById(Guid id)
         {
             var query = new GetCommitteeListQuery(id);

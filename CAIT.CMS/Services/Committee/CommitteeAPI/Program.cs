@@ -1,13 +1,17 @@
 ﻿using CommitteeAPI.Extensions;
+using CommitteeApplication.Authorization;
 using CommitteeApplication.Behaviour;
 using CommitteeApplication.Handlers;
+using CommitteeApplication.Interfaces.Authorization;
 using CommitteeApplication.Mappers;
 using CommitteeCore.Repositories;
+using CommitteeInfrastructure.Authorization;
 using CommitteeInfrastructure.Data;
 using CommitteeInfrastructure.Repositories;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
@@ -21,6 +25,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CommitteeContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CommitteeConnectionString"))
 );
+
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Services:IdentityBaseUrl"]);
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
 
 // ==========================
 // 2️⃣ Repositories
@@ -112,6 +127,7 @@ app.UseHttpsRedirection();
 
 // ✅ Authentication must come before Authorization
 app.UseAuthentication();
+app.UseMiddleware<ResourceExtractionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

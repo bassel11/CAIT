@@ -6,8 +6,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5259
+          "Host": "committeeapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/committee/{everything}",
@@ -23,8 +23,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/login",
@@ -35,8 +35,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/register",
@@ -47,8 +47,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/refresh-token",
@@ -59,8 +59,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/verify-mfa",
@@ -71,8 +71,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/enable-mfa",
@@ -83,8 +83,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/deactivateUser",
@@ -97,8 +97,8 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5281
+          "Host": "identityapi",
+          "Port": 8080
         }
       ],
       "UpstreamPathTemplate": "/auth/change-password",
@@ -109,6 +109,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "http://localhost:5218"
+    "BaseUrl": "http://localhost:8010"
   }
 }
