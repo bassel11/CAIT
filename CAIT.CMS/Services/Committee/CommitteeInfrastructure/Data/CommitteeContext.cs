@@ -40,6 +40,11 @@ namespace CommitteeInfrastructure.Data
             modelBuilder.Entity<Committee>()
                 .HasIndex(c => c.Name)
                 .IsUnique();
+
+            modelBuilder.Entity<CommitteeMember>()
+            .HasIndex(cm => new { cm.CommitteeId, cm.UserId })
+            .IsUnique();
+
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
