@@ -1,22 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace CommitteeCore.Entities
 {
     public class Committee
     {
         public Guid Id { get; set; } = Guid.NewGuid();
+
+        [Required]
         public string Name { get; set; }
+
+        [Required]
         public string Purpose { get; set; }
+
+        [Required]
         public string Scope { get; set; }
+
+        [Required]
         public DateTime StartDate { get; set; }
+
+        [Required]
         public DateTime EndDate { get; set; }
+
+        [Required]
         public CommitteeType Type { get; set; }
         public CommitteeStatus Status { get; set; } = CommitteeStatus.Draft;
         public decimal? Budget { get; set; }
+
+        [Required]
         public string CreationDecisionText { get; set; } // Official decision text
         public string UpdatedDecisionText { get; set; }
         public ICollection<CommitteeMember> CommitteeMembers { get; set; }
