@@ -1,11 +1,10 @@
 ﻿using FluentValidation;
 using Identity.Application.Common;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Text.Json;
 
-namespace Identity.Application.Middlewares
+namespace Identity.API.Middlewares
 {
     public class ErrorHandlerMiddleware
     {

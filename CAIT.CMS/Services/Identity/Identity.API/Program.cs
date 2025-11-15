@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.AspNetCore;
+using Identity.API.Middlewares;
 using Identity.API.Models;
 using Identity.Application.Authorization;
 using Identity.Application.Interfaces;
@@ -10,7 +11,6 @@ using Identity.Application.Interfaces.Roles;
 using Identity.Application.Interfaces.UserRoles;
 using Identity.Application.Interfaces.Users;
 using Identity.Application.Interfaces.UsrRolPermRes;
-using Identity.Application.Middlewares;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
 using Identity.Infrastructure.Authorization;

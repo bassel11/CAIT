@@ -1,4 +1,5 @@
 ﻿using CommitteeAPI.Extensions;
+using CommitteeAPI.Middleware;
 using CommitteeApplication.Authorization;
 using CommitteeApplication.Behaviour;
 using CommitteeApplication.Handlers.Committees;
@@ -157,7 +158,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// ✅ Authentication must come before Authorization
+
+//  ضع Middleware الاستثناءات هنا
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+
+// Authentication must come before Authorization
 app.UseAuthentication();
 app.UseMiddleware<ResourceExtractionMiddleware>();
 app.UseAuthorization();
