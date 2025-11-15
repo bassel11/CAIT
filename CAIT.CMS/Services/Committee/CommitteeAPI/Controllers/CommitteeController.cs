@@ -34,6 +34,7 @@ namespace CommitteeAPI.Controllers
         //Just for testing 
         [HttpPost(Name = "AddCommittee")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:Committee.Create")]
         public async Task<ActionResult<int>> AddCommittee([FromBody] AddCommitteeCommand command)
         {
             var result = await _mediator.Send(command);
@@ -42,12 +43,14 @@ namespace CommitteeAPI.Controllers
         [HttpPut(Name = "UpdateCommittee")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Policy = "Permission:Committee.Update")]
         public async Task<ActionResult<int>> UpdateOrder([FromBody] UpdateCommitteeCommand command)
         {
             var result = await _mediator.Send(command);
             return NoContent();
         }
         [HttpDelete("{id}", Name = "DeleteCommittee")]
+        [Authorize(Policy = "Permission:Committee.Delete")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteCommittee(Guid id)
