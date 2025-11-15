@@ -198,6 +198,75 @@
     "Description": "Remove Custom Permissions of User",
     "IsGlobal": true,
     "IsActive": true
+  },
+
+  {
+    "Name": "Committee.View",
+    "ResourceType": 3,
+    "Action": 0,
+    "Description": "View Committees",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Committee.Create",
+    "ResourceType": 3,
+    "Action": 1,
+    "Description": "Create New Committee",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Committee.Update",
+    "ResourceType": 3,
+    "Action": 2,
+    "Description": "Update Committee",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Committee.Delete",
+    "ResourceType": 3,
+    "Action": 3,
+    "Description": "Delete Committee",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
+  {
+    "Name": "CommitteeMember.View",
+    "ResourceType": 3,
+    "Action": 0,
+    "Description": "View Committee Members",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeMember.Create",
+    "ResourceType": 3,
+    "Action": 1,
+    "Description": "Create Committee Members",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeMember.Update",
+    "ResourceType": 3,
+    "Action": 2,
+    "Description": "Update Committee Members",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeMember.Delete",
+    "ResourceType": 3,
+    "Action": 3,
+    "Description": "Delete Committee Members",
+    "IsGlobal": false,
+    "IsActive": true
   }
+
+
+
 
 ]

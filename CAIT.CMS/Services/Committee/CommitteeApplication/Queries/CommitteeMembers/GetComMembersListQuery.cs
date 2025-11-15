@@ -1,7 +1,7 @@
 ﻿using CommitteeApplication.Responses;
 using MediatR;
 
-namespace CommitteeApplication.Queries
+namespace CommitteeApplication.Queries.CommitteeMembers
 {
     public class GetComMembersListQuery : IRequest<List<CommitteeMemberResponse>>
     {

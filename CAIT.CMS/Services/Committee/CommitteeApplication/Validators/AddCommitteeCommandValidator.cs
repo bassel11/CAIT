@@ -1,4 +1,4 @@
-﻿using CommitteeApplication.Commands;
+﻿using CommitteeApplication.Commands.Committee;
 using FluentValidation;
 using System;
 using System.Collections.Generic;

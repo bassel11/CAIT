@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using CommitteeApplication.Commands;
+using CommitteeApplication.Commands.Committee;
 using CommitteeApplication.Exceptions;
 using CommitteeCore.Entities;
 using CommitteeCore.Repositories;

@@ -1,5 +1,5 @@
 ﻿using CommitteeApplication.Commands.CommitteeMembers;
-using CommitteeApplication.Queries;
+using CommitteeApplication.Queries.CommitteeMembers;
 using CommitteeApplication.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

@@ -1,5 +1,5 @@
-﻿using CommitteeApplication.Commands;
-using CommitteeApplication.Queries;
+﻿using CommitteeApplication.Commands.Committee;
+using CommitteeApplication.Queries.Committee;
 using CommitteeApplication.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -24,7 +24,7 @@ namespace CommitteeAPI.Controllers
 
         [HttpGet("{id}", Name = "GetCommitteesById")]
         [ProducesResponseType(typeof(IEnumerable<CommitteeResponse>), (int)HttpStatusCode.OK)]
-        [Authorize(Policy = "Permission:Meeting.Create")]
+        [Authorize(Policy = "Permission:Committee.View")]
         public async Task<ActionResult<IEnumerable<CommitteeResponse>>> GetCommitteesById(Guid id)
         {
             var query = new GetCommitteeListQuery(id);

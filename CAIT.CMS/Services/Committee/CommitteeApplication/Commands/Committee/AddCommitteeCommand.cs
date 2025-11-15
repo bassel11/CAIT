@@ -1,16 +1,10 @@
 ﻿using CommitteeCore.Entities;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CommitteeApplication.Commands
+namespace CommitteeApplication.Commands.Committee
 {
-    public class UpdateCommitteeCommand :IRequest<Unit>
+    public class AddCommitteeCommand : IRequest<Guid>
     {
-        public Guid Id { get; set; }
         public string Name { get; set; }
         public string Purpose { get; set; }
         public string Scope { get; set; }
@@ -23,8 +17,8 @@ namespace CommitteeApplication.Commands
         public string UpdatedDecisionText { get; set; }
 
         // يمكن استخدام Count فقط لتقليل حجم الاستجابة
-        public int MembersCount { get; set; }
-        public int DocumentsCount { get; set; }
-        public int DecisionsCount { get; set; }
+        //public int MembersCount { get; set; }
+        //public int DocumentsCount { get; set; }
+        //public int DecisionsCount { get; set; }
     }
 }

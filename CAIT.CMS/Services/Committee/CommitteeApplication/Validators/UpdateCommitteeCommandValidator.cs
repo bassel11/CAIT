@@ -1,4 +1,4 @@
-﻿using CommitteeApplication.Commands;
+﻿using CommitteeApplication.Commands.Committee;
 using FluentValidation;
 
 namespace CommitteeApplication.Validators

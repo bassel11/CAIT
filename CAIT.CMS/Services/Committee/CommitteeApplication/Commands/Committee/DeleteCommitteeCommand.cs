@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CommitteeApplication.Commands
+namespace CommitteeApplication.Commands.Committee
 {
     public class DeleteCommitteeCommand : IRequest<Unit>
     {

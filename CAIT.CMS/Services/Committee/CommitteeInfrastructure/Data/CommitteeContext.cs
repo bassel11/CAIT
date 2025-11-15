@@ -37,6 +37,10 @@ namespace CommitteeInfrastructure.Data
             modelBuilder.Entity<Committee>()
                 .Property(c => c.Budget)
                 .HasPrecision(18, 2); // <-- يمكنك تعديل الدقة والقياس حسب حاجتك
+
+            modelBuilder.Entity<Committee>()
+            .HasIndex(c => c.Name)
+            .IsUnique();
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

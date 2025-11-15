@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using CommitteeApplication.Queries;
+using CommitteeApplication.Queries.Committee;
 using CommitteeApplication.Responses;
 using CommitteeCore.Repositories;
 using MediatR;
