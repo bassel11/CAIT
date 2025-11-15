@@ -3,7 +3,6 @@ using CommitteeAPI.Middleware;
 using CommitteeApplication.Authorization;
 using CommitteeApplication.Behaviour;
 using CommitteeApplication.Handlers.Committees;
-using CommitteeApplication.Interfaces.Authorization;
 using CommitteeApplication.Mappers;
 using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Authorization;
@@ -30,10 +29,11 @@ builder.Services.AddDbContext<CommitteeContext>(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["Services:IdentityBaseUrl"]);
-});
+//builder.Services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
+//{
+//    client.BaseAddress = new Uri(builder.Configuration["Services:IdentityBaseUrl"]);
+//});
+builder.Services.AddIdentityHttpClients(builder.Configuration);
 
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
