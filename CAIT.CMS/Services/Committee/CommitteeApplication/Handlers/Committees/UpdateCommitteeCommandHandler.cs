@@ -5,13 +5,8 @@ using CommitteeCore.Entities;
 using CommitteeCore.Repositories;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CommitteeApplication.Handlers
+namespace CommitteeApplication.Handlers.Committees
 {
     public class UpdateCommitteeCommandHandler : IRequestHandler<UpdateCommitteeCommand, Unit>
     {

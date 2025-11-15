@@ -1,7 +1,7 @@
 ﻿using CommitteeAPI.Extensions;
 using CommitteeApplication.Authorization;
 using CommitteeApplication.Behaviour;
-using CommitteeApplication.Handlers;
+using CommitteeApplication.Handlers.Committees;
 using CommitteeApplication.Interfaces.Authorization;
 using CommitteeApplication.Mappers;
 using CommitteeCore.Repositories;
