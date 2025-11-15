@@ -42,11 +42,13 @@ builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorization
 // ==========================
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
 builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
+builder.Services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
 
 // ==========================
 // 3️⃣ AutoMapper
 // ==========================
 builder.Services.AddAutoMapper(typeof(CommitteeMappingProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(ComMemberMappingProfile).Assembly);
 
 // ==========================
 // 4️⃣ MediatR
