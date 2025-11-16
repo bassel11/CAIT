@@ -16,22 +16,23 @@ namespace CommitteeInfrastructure.Data
         public DbSet<Committee> Committees { get; set; }
         public DbSet<CommitteeMember> CommitteeMembers { get; set; }
         public DbSet<CommitteeMemberRole> CommitteeMemberRoles { get; set; }
+
+        public DbSet<CommitteeStatus> CommitteeStatuses { get; set; }
+        public DbSet<CommitteeStatusHistory> CommitteeStatusHistories { get; set; }
+
+        public DbSet<CommitteeAuditLog> CommitteeAuditLogs { get; set; }
+
         public DbSet<CommitteeDocument> CommitteeDocuments { get; set; }
         public DbSet<CommitteeDecision> CommitteeDecisions { get; set; }
-
-
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-        //    if (!optionsBuilder.IsConfigured)
-        //    {
-        //        // Connection string مباشرة → LocalDB
-        //        optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=CommitteeDb;Trusted_Connection=True;");
-        //    }
-        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+
+            // ---------------------------------------
+            // Committee
+            // ---------------------------------------
 
             modelBuilder.Entity<Committee>()
                 .Property(c => c.Budget)
@@ -41,9 +42,92 @@ namespace CommitteeInfrastructure.Data
                 .HasIndex(c => c.Name)
                 .IsUnique();
 
+            // CommitteeStatus (Lookup)
+            modelBuilder.Entity<CommitteeStatus>()
+                .HasKey(s => s.Id);
+
+            modelBuilder.Entity<CommitteeStatus>()
+                .Property(s => s.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            // Committee (FK to CommitteeStatus)
+            modelBuilder.Entity<Committee>()
+                .HasOne(c => c.Status)
+                .WithMany(s => s.Committees)
+                .HasForeignKey(c => c.StatusId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+
+
+            // ---------------------------------------
+            // CommitteeMember
+            // ---------------------------------------
+
             modelBuilder.Entity<CommitteeMember>()
             .HasIndex(cm => new { cm.CommitteeId, cm.UserId })
             .IsUnique();
+
+            modelBuilder.Entity<CommitteeMember>()
+                .Property(m => m.Affiliation)
+                .HasMaxLength(200);
+
+            modelBuilder.Entity<CommitteeMember>()
+                .HasOne(m => m.Committee)
+                .WithMany(c => c.CommitteeMembers)
+                .HasForeignKey(m => m.CommitteeId);
+
+
+            // ---------------------------------------
+            // CommitteeMemberRole
+            // ---------------------------------------
+            modelBuilder.Entity<CommitteeMemberRole>()
+                .HasKey(r => r.Id);
+
+            modelBuilder.Entity<CommitteeMemberRole>()
+                .HasOne(r => r.CommitteeMember)
+                .WithMany(m => m.CommitteeMemberRoles)
+                .HasForeignKey(r => r.CommitteeMemberId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // ---------------------------------------
+            // CommitteeStatusHistory
+            // ---------------------------------------
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .HasKey(h => h.Id);
+
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .HasOne(h => h.Committee)
+                .WithMany(c => c.CommitteeStatusHistories)
+                .HasForeignKey(h => h.CommitteeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // ---------------------------------------
+            // CommitteeAuditLog
+            // ---------------------------------------
+            modelBuilder.Entity<CommitteeAuditLog>()
+                .HasKey(a => a.Id);
+
+            modelBuilder.Entity<CommitteeAuditLog>()
+                .HasOne(a => a.Committee)
+                .WithMany(c => c.CommitteeAuditLogs)
+                .HasForeignKey(a => a.CommitteeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ================================
+            // SEEDING: CommitteeStatus
+            // ================================
+            modelBuilder.Entity<CommitteeStatus>().HasData(
+                new CommitteeStatus { Id = 1, Name = "Draft" },
+                new CommitteeStatus { Id = 2, Name = "Active" },
+                new CommitteeStatus { Id = 3, Name = "Suspended" },
+                new CommitteeStatus { Id = 4, Name = "Completed" },
+                new CommitteeStatus { Id = 5, Name = "Dissolved" },
+                new CommitteeStatus { Id = 6, Name = "Archived" }
+            );
 
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

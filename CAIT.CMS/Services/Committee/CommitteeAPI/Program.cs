@@ -2,8 +2,9 @@
 using CommitteeAPI.Middleware;
 using CommitteeApplication.Authorization;
 using CommitteeApplication.Behaviour;
-using CommitteeApplication.Handlers.Committees;
-using CommitteeApplication.Mappers;
+using CommitteeApplication.Features.Committees.Commands.Handlers;
+using CommitteeApplication.Mappers.CommitteeMembers;
+using CommitteeApplication.Mappers.Committees;
 using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Authorization;
 using CommitteeInfrastructure.Data;
@@ -12,8 +13,11 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 
@@ -135,6 +139,28 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+
+// ==========================
+//  Localization Services
+// ==========================
+builder.Services.AddLocalization();
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[]
+    {
+        new CultureInfo("en"),
+        new CultureInfo("ar")
+    };
+
+    options.DefaultRequestCulture = new RequestCulture("en");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+
+    options.ApplyCurrentCultureToResponseHeaders = true;
+});
+
+
 var app = builder.Build();
 
 // ==========================
@@ -155,6 +181,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Localization Middleware (يجب أن يكون فوق UseHttpsRedirection)
+var locOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
+app.UseRequestLocalization(locOptions);
+
 
 app.UseHttpsRedirection();
 

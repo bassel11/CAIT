@@ -1,6 +1,6 @@
-﻿using CommitteeApplication.Commands.CommitteeMembers;
-using CommitteeApplication.Queries.CommitteeMembers;
-using CommitteeApplication.Responses;
+﻿using CommitteeApplication.Features.CommitteeMembers.Commands.Models;
+using CommitteeApplication.Features.CommitteeMembers.Queries.Models;
+using CommitteeApplication.Features.CommitteeMembers.Queries.Results;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

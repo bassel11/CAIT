@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Extensions\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\CommitteeApplication\CommitteeApplication.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,6 @@
-﻿using CommitteeApplication.Commands.Committee;
-using CommitteeApplication.Queries.Committee;
-using CommitteeApplication.Responses;
+﻿using CommitteeApplication.Features.Committees.Commands.Models;
+using CommitteeApplication.Features.Committees.Queries.Models;
+using CommitteeApplication.Features.Committees.Queries.Results;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,11 +23,11 @@ namespace CommitteeAPI.Controllers
         }
 
         [HttpGet("{id}", Name = "GetCommitteesById")]
-        [ProducesResponseType(typeof(IEnumerable<CommitteeResponse>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(IEnumerable<GetCommitteeByIdResponse>), (int)HttpStatusCode.OK)]
         [Authorize(Policy = "Permission:Committee.View")]
-        public async Task<ActionResult<IEnumerable<CommitteeResponse>>> GetCommitteesById(Guid id)
+        public async Task<ActionResult<IEnumerable<GetCommitteeByIdResponse>>> GetCommitteesById(Guid id)
         {
-            var query = new GetCommitteeListQuery(id);
+            var query = new GetCommitteeByIdQuery(id);
             var orders = await _mediator.Send(query);
             return Ok(orders);
         }

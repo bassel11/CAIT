@@ -1,4 +1,4 @@
-﻿using CommitteeApplication.Responses.Roles;
+﻿using CommitteeApplication.Features.Roles.Queries.Results;
 
 namespace CommitteeApplication.Interfaces.Roles
 {

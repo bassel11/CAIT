@@ -7,6 +7,7 @@ namespace CommitteeInfrastructure.Data
     {
         public static async Task SeedAsync(CommitteeContext context, ILogger<CommitteeContextSeed> logger)
         {
+            // لا نقوم بعمل Seed للجنة إذا كانت موجودة
             if (!context.Committees.Any())
             {
                 context.Committees.AddRange(GetPreconfiguredCommittees());
@@ -24,13 +25,20 @@ namespace CommitteeInfrastructure.Data
                     Name = "IT Governance Committee",
                     Purpose = "Oversee IT strategy and alignment with business objectives.",
                     Scope = "Covers IT infrastructure, policies, and digital transformation.",
-                    StartDate = DateTime.Now,
-                    EndDate = DateTime.Now.AddYears(1),
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddYears(1),
+
+                    // New proper Committee Type
                     Type = CommitteeType.Permanent,
-                    Status = CommitteeStatus.Active,
+
+                    // New StatusId based on lookup table
+                    // 1 = Active  حسب الـ SEED الموجود في DbContext
+                    StatusId = 1,
+
                     Budget = 50000,
-                    CreationDecisionText = "Approved by the Board.",
-                    UpdatedDecisionText = null,                  
+
+                    // Decision data
+                    CreationDecisionText = "Approved by the Board."
                 }
             };
         }

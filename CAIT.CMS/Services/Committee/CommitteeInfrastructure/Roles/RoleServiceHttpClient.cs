@@ -1,5 +1,5 @@
-﻿using CommitteeApplication.Interfaces.Roles;
-using CommitteeApplication.Responses.Roles;
+﻿using CommitteeApplication.Features.Roles.Queries.Results;
+using CommitteeApplication.Interfaces.Roles;
 using System.Net.Http.Json;
 
 namespace CommitteeInfrastructure.Roles

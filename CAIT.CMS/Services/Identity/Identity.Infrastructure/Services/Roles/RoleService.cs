@@ -27,8 +27,8 @@ namespace Identity.Infrastructure.Services.Roles
         public async Task<PagedResult<RoleDto>> GetRolesAsync(RoleFilterDto filter)
         {
             var query = _context.Roles
-      .Include(r => r.UserRoles)
-      .AsQueryable();
+              .Include(r => r.UserRoles)
+              .AsQueryable();
 
             // 🧭 الفلاتر
             if (!string.IsNullOrWhiteSpace(filter.Search))

@@ -54,7 +54,7 @@ namespace CommitteeInfrastructure.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
+                    b.Property<int>("StatusId")
                         .HasColumnType("int");
 
                     b.Property<int>("Type")
@@ -69,7 +69,47 @@ namespace CommitteeInfrastructure.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
+                    b.HasIndex("StatusId");
+
                     b.ToTable("Committees");
+                });
+
+            modelBuilder.Entity("CommitteeCore.Entities.CommitteeAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ActionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommitteeMemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DecisionText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommitteeId");
+
+                    b.ToTable("CommitteeAuditLogs");
                 });
 
             modelBuilder.Entity("CommitteeCore.Entities.CommitteeDecision", b =>
@@ -145,16 +185,13 @@ namespace CommitteeInfrastructure.Migrations
 
                     b.Property<string>("Affiliation")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<Guid>("CommitteeId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ContactDetails")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -178,15 +215,124 @@ namespace CommitteeInfrastructure.Migrations
                     b.Property<Guid>("CommitteeMemberId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CommitteeMemberId");
 
                     b.ToTable("CommitteeMemberRoles");
+                });
+
+            modelBuilder.Entity("CommitteeCore.Entities.CommitteeStatus", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CommitteeStatuses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Draft"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Active"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Suspended"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Completed"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Dissolved"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Name = "Archived"
+                        });
+                });
+
+            modelBuilder.Entity("CommitteeCore.Entities.CommitteeStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CommitteeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("CommitteeStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DecisionDocumentUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("NewStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OldStatusId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommitteeId");
+
+                    b.HasIndex("CommitteeStatusId");
+
+                    b.ToTable("CommitteeStatusHistories");
+                });
+
+            modelBuilder.Entity("CommitteeCore.Entities.Committee", b =>
+                {
+                    b.HasOne("CommitteeCore.Entities.CommitteeStatus", "Status")
+                        .WithMany("Committees")
+                        .HasForeignKey("StatusId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Status");
+                });
+
+            modelBuilder.Entity("CommitteeCore.Entities.CommitteeAuditLog", b =>
+                {
+                    b.HasOne("CommitteeCore.Entities.Committee", "Committee")
+                        .WithMany("CommitteeAuditLogs")
+                        .HasForeignKey("CommitteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Committee");
                 });
 
             modelBuilder.Entity("CommitteeCore.Entities.CommitteeDecision", b =>
@@ -233,18 +379,44 @@ namespace CommitteeInfrastructure.Migrations
                     b.Navigation("CommitteeMember");
                 });
 
+            modelBuilder.Entity("CommitteeCore.Entities.CommitteeStatusHistory", b =>
+                {
+                    b.HasOne("CommitteeCore.Entities.Committee", "Committee")
+                        .WithMany("CommitteeStatusHistories")
+                        .HasForeignKey("CommitteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CommitteeCore.Entities.CommitteeStatus", null)
+                        .WithMany("CommitteeStatusHistories")
+                        .HasForeignKey("CommitteeStatusId");
+
+                    b.Navigation("Committee");
+                });
+
             modelBuilder.Entity("CommitteeCore.Entities.Committee", b =>
                 {
+                    b.Navigation("CommitteeAuditLogs");
+
                     b.Navigation("CommitteeDecisions");
 
                     b.Navigation("CommitteeDocuments");
 
                     b.Navigation("CommitteeMembers");
+
+                    b.Navigation("CommitteeStatusHistories");
                 });
 
             modelBuilder.Entity("CommitteeCore.Entities.CommitteeMember", b =>
                 {
                     b.Navigation("CommitteeMemberRoles");
+                });
+
+            modelBuilder.Entity("CommitteeCore.Entities.CommitteeStatus", b =>
+                {
+                    b.Navigation("CommitteeStatusHistories");
+
+                    b.Navigation("Committees");
                 });
 #pragma warning restore 612, 618
         }
