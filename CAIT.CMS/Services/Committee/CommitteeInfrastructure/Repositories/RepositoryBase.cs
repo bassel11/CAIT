@@ -17,6 +17,13 @@ public class RepositoryBase<T> : IAsyncRepository<T> where T : class
         return _dbContext.Set<T>().AsNoTracking();
     }
 
+    public async Task<List<T>> GetAllNoTrackingAsync()
+    {
+        return await _dbContext.Set<T>()
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
     public IQueryable<T> GetTable()
     {
         return _dbContext.Set<T>();

@@ -1,7 +1,6 @@
 ﻿using CommitteeCore.Entities;
 using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace CommitteeInfrastructure.Repositories
 {
@@ -12,13 +11,13 @@ namespace CommitteeInfrastructure.Repositories
 
         }
 
-        public async Task<IEnumerable<Committee>> GetCommitteesById(Guid id)
-        {
-            var committeesList = await _dbContext.Committees
-            .Where(o => o.Id == id)
-            .ToListAsync();
-            return committeesList;
-        }
+        //public async Task<IEnumerable<Committee>> GetCommitteesById(Guid id)
+        //{
+        //    var committeesList = await _dbContext.Committees
+        //    .Where(o => o.Id == id)
+        //    .ToListAsync();
+        //    return committeesList;
+        //}
 
     }
 }

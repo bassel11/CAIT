@@ -8,6 +8,7 @@ namespace CommitteeCore.Repositories
         IQueryable<T> GetTable();
         IQueryable<T> GetTableNoTracking();
 
+        Task<List<T>> GetAllNoTrackingAsync();
         // Get All
         Task<IReadOnlyList<T>> GetAllAsync();
         Task<IReadOnlyList<T>> GetAllAsync(Expression<Func<T, bool>> predicate);

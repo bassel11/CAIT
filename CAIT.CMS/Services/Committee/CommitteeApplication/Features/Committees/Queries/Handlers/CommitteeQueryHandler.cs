@@ -35,9 +35,9 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
         #region Actions
         public async Task<Response<List<GetCommitteeByIdResponse>>> Handle(GetCommitteeByIdQuery request, CancellationToken cancellationToken)
         {
-            var committeeList = await _committeeRepository.GetCommitteesById(request.Id);
+            var committeeList = await _committeeRepository.GetByIdAsync(request.Id);
 
-            if (committeeList == null || !committeeList.Any())
+            if (committeeList == null)
                 return NotFound<List<GetCommitteeByIdResponse>>(
                     _stringLocalizer[SharedResourcesKeys.NotFound]);
 
@@ -48,7 +48,9 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
 
         public async Task<Response<List<GetCommitteeListResponse>>> Handle(GetCommitteeListQuery request, CancellationToken cancellationToken)
         {
-            var committeeList = await _committeeRepository.GetAllAsync();
+            var committeeList = await _committeeRepository
+                .GetAllNoTrackingAsync();
+
             var committeeListMapper = _mapper.Map<List<GetCommitteeListResponse>>(committeeList);
             var result = Success(committeeListMapper);
             return result;
