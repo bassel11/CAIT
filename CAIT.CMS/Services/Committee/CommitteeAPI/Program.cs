@@ -5,10 +5,12 @@ using CommitteeApplication.Behaviour;
 using CommitteeApplication.Features.Committees.Commands.Handlers;
 using CommitteeApplication.Mappers.CommitteeMembers;
 using CommitteeApplication.Mappers.Committees;
+using CommitteeApplication.Wrappers;
 using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Authorization;
 using CommitteeInfrastructure.Data;
 using CommitteeInfrastructure.Repositories;
+using CommitteeInfrastructure.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -48,6 +50,8 @@ builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorization
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
 builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
 builder.Services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
+builder.Services.AddScoped<IPaginationService, PaginationService>();
+
 
 // ==========================
 // 3️⃣ AutoMapper
@@ -166,11 +170,29 @@ var app = builder.Build();
 // ==========================
 // Apply Migrations & Seed
 // ==========================
-app.MigrateDatabase<CommitteeContext>((context, services) =>
+using (var scope = app.Services.CreateScope())
 {
-    var logger = services.GetService<ILogger<CommitteeContextSeed>>();
-    CommitteeContextSeed.SeedAsync(context, logger).Wait();
-});
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        var context = services.GetRequiredService<CommitteeContext>();
+        var logger = services.GetRequiredService<ILogger<CommitteeContextSeed>>();
+
+        // تطبيق أي Migrations أولاً
+        await context.Database.MigrateAsync();
+
+        // Seed البيانات (100 لجنة عشوائية)
+        await CommitteeContextSeed.SeedAsync(context, logger);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        throw; // يمكن إعادة رفع الاستثناء
+    }
+}
+
 
 // ==========================
 // HTTP Pipeline

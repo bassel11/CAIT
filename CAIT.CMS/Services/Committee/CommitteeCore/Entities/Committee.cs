@@ -30,6 +30,8 @@ namespace CommitteeCore.Entities
         [Required]
         public string CreationDecisionText { get; set; } // Official decision text
         public string UpdatedDecisionText { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public ICollection<CommitteeMember> CommitteeMembers { get; set; } = new HashSet<CommitteeMember>();
         public ICollection<CommitteeDocument> CommitteeDocuments { get; set; } = new HashSet<CommitteeDocument>();
         public ICollection<CommitteeDecision> CommitteeDecisions { get; set; } = new HashSet<CommitteeDecision>();

@@ -1,6 +1,7 @@
 ﻿using CommitteeApplication.Features.Committees.Commands.Models;
 using CommitteeApplication.Features.Committees.Queries.Models;
 using CommitteeApplication.Features.Committees.Queries.Results;
+using CommitteeApplication.Wrappers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +48,10 @@ namespace CommitteeAPI.Controllers
         public async Task<ActionResult<int>> UpdateOrder([FromBody] UpdateCommitteeCommand command)
         {
             var result = await _mediator.Send(command);
-            return NoContent();
+            return Ok(new
+            {
+                message = "Committee updated successfully"
+            });
         }
         [HttpDelete("{id}", Name = "DeleteCommittee")]
         [Authorize(Policy = "Permission:Committee.Delete")]
@@ -57,7 +61,22 @@ namespace CommitteeAPI.Controllers
         {
             var cmd = new DeleteCommitteeCommand() { Id = id };
             await _mediator.Send(cmd);
-            return NoContent();
+            return Ok(new
+            {
+                message = "Committee deleted successfully"
+            });
         }
+
+
+        [HttpPost("filtered", Name = "GetFilteredCommittees")]
+        [ProducesResponseType(typeof(PaginatedResult<GetComitsFilteredResponse>), (int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:Committee.View")]
+        public async Task<ActionResult<PaginatedResult<GetComitsFilteredResponse>>> GetFilteredCommittees([FromBody] GetComitsFilteredQuery query)
+        {
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
+
     }
 }

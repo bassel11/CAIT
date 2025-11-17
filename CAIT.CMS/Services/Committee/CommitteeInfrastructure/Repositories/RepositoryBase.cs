@@ -64,4 +64,9 @@ public class RepositoryBase<T> : IAsyncRepository<T> where T : class
         await _dbContext.SaveChangesAsync();
         return entity;
     }
+
+    public IQueryable<T> Query()
+    {
+        return _dbContext.Set<T>().AsNoTracking();
+    }
 }

@@ -7,40 +7,42 @@ namespace CommitteeInfrastructure.Data
     {
         public static async Task SeedAsync(CommitteeContext context, ILogger<CommitteeContextSeed> logger)
         {
-            // لا نقوم بعمل Seed للجنة إذا كانت موجودة
+            // Seed فقط إذا لم يكن هناك بيانات مسبقة
             if (!context.Committees.Any())
             {
-                context.Committees.AddRange(GetPreconfiguredCommittees());
+                var committees = GetPreconfiguredCommittees();
+                context.Committees.AddRange(committees);
                 await context.SaveChangesAsync();
-                logger.LogInformation($"Committee database seeded with sample data: {typeof(CommitteeContext).Name}");
+                logger.LogInformation($"Committee database seeded with {committees.Count} sample committees.");
             }
         }
 
-        private static IEnumerable<Committee> GetPreconfiguredCommittees()
+        private static List<Committee> GetPreconfiguredCommittees()
         {
-            return new List<Committee>
+            var random = new Random();
+            var committees = new List<Committee>();
+
+            for (int i = 1; i <= 100; i++)
             {
-                new Committee
+                var startDate = DateTime.UtcNow.AddDays(random.Next(-30, 30));
+                var endDate = startDate.AddMonths(random.Next(1, 12));
+
+                committees.Add(new Committee
                 {
-                    Name = "IT Governance Committee",
-                    Purpose = "Oversee IT strategy and alignment with business objectives.",
-                    Scope = "Covers IT infrastructure, policies, and digital transformation.",
-                    StartDate = DateTime.UtcNow,
-                    EndDate = DateTime.UtcNow.AddYears(1),
+                    Name = $"Committee {i}",
+                    Purpose = $"Purpose for Committee {i}",
+                    Scope = $"Scope for Committee {i}",
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Type = (CommitteeType)random.Next(0, 2), // 0 أو 1
+                    StatusId = random.Next(1, 7), // يوجد 6 StatusIds حسب Seed في OnModelCreating
+                    Budget = random.Next(1000, 100000),
+                    CreationDecisionText = $"Decision text for Committee {i}",
+                    UpdatedDecisionText = $"Updated decision text for Committee {i}"
+                });
+            }
 
-                    // New proper Committee Type
-                    Type = CommitteeType.Permanent,
-
-                    // New StatusId based on lookup table
-                    // 1 = Active  حسب الـ SEED الموجود في DbContext
-                    StatusId = 1,
-
-                    Budget = 50000,
-
-                    // Decision data
-                    CreationDecisionText = "Approved by the Board."
-                }
-            };
+            return committees;
         }
     }
 }

@@ -42,6 +42,12 @@ namespace CommitteeInfrastructure.Data
                 .HasIndex(c => c.Name)
                 .IsUnique();
 
+            modelBuilder.Entity<Committee>()
+                .Property(c => c.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+
+
             // CommitteeStatus (Lookup)
             modelBuilder.Entity<CommitteeStatus>()
                 .HasKey(s => s.Id);

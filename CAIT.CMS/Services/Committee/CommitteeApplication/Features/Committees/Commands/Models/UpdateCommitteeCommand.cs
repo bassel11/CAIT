@@ -1,14 +1,9 @@
 ﻿using CommitteeCore.Entities;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CommitteeApplication.Features.Committees.Commands.Models
 {
-    public class UpdateCommitteeCommand :IRequest<Unit>
+    public class UpdateCommitteeCommand : IRequest<Unit>
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
@@ -17,7 +12,7 @@ namespace CommitteeApplication.Features.Committees.Commands.Models
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public CommitteeType Type { get; set; }
-        public CommitteeStatus Status { get; set; }
+        public int StatusId { get; set; }
         public decimal? Budget { get; set; }
         public string CreationDecisionText { get; set; }
         public string UpdatedDecisionText { get; set; }

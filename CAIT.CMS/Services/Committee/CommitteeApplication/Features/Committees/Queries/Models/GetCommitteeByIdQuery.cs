@@ -4,7 +4,7 @@ using MediatR;
 
 namespace CommitteeApplication.Features.Committees.Queries.Models
 {
-    public class GetCommitteeByIdQuery : IRequest<Response<List<GetCommitteeByIdResponse>>>
+    public class GetCommitteeByIdQuery : IRequest<Response<GetCommitteeByIdResponse>>
     {
         public Guid Id { get; set; }
         public GetCommitteeByIdQuery(Guid id)
