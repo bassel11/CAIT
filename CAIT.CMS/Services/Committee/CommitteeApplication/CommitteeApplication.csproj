@@ -21,10 +21,4 @@
     <ProjectReference Include="..\CommitteeCore\CommitteeCore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\CommitteeMemberRoles\Queries\Handlers\" />
-    <Folder Include="Features\CommitteeMemberRoles\Queries\Models\" />
-    <Folder Include="Features\CommitteeMemberRoles\Queries\Results\" />
-  </ItemGroup>
-
 </Project>

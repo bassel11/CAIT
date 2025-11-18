@@ -124,6 +124,10 @@ namespace CommitteeInfrastructure.Data
                 .HasForeignKey(h => h.CommitteeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .Property(h => h.DecisionText)
+                .IsRequired();
+
 
             // ---------------------------------------
             // CommitteeAuditLog

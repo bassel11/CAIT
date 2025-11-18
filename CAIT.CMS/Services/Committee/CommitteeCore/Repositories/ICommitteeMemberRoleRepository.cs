@@ -8,5 +8,6 @@ namespace CommitteeCore.Repositories
         Task AddRolesAsync(IEnumerable<CommitteeMemberRole> roles);
         Task RemoveRolesAsync(IEnumerable<CommitteeMemberRole> roles);
         Task<bool> RoleExistsAsync(Guid committeeMemberId, Guid roleId);
+        IQueryable<CommitteeMemberRole> QueryRolesByMemberId(Guid committeeMemberId);
     }
 }

@@ -35,5 +35,13 @@ namespace CommitteeInfrastructure.Repositories
             return await _dbContext.CommitteeMemberRoles
                 .AnyAsync(r => r.CommitteeMemberId == committeeMemberId && r.RoleId == roleId);
         }
+
+        public IQueryable<CommitteeMemberRole> QueryRolesByMemberId(Guid committeeMemberId)
+        {
+            // فقط IQueryable للـ Entity مع AsNoTracking
+            return _dbContext.CommitteeMemberRoles
+                .AsNoTracking()
+                .Where(r => r.CommitteeMemberId == committeeMemberId);
+        }
     }
 }

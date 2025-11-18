@@ -14,7 +14,7 @@
         public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
 
         // Linked decision
-        public string DecisionText { get; set; }
+        public string DecisionText { get; set; } = string.Empty!;
         public string DecisionDocumentUrl { get; set; }
     }
 }
