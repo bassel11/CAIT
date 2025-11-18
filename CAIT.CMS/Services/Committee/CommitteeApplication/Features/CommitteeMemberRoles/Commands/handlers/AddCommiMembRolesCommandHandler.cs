@@ -31,17 +31,25 @@ namespace CommitteeApplication.Features.CommitteeMemberRoles.Commands.handlers
             if (member == null)
                 throw new KeyNotFoundException("Committee member not found");
 
-            // تجاهل الأدوار المكررة
             var existingRoles = await _rolesRepository.GetRolesByMemberIdAsync(member.Id);
 
-            var rolesToAdd = request.RoleIds
-                .Where(rid => !existingRoles.Any(er => er.RoleId == rid))
-                .Select(rid => new CommitteeMemberRole
+            var rolesToAdd = new List<CommitteeMemberRole>();
+            var ignoredRoles = new List<Guid>();
+
+            foreach (var rid in request.RoleIds)
+            {
+                if (existingRoles.Any(er => er.RoleId == rid))
+                {
+                    ignoredRoles.Add(rid);
+                    continue; // تجاهل الدور المكرر
+                }
+
+                rolesToAdd.Add(new CommitteeMemberRole
                 {
                     CommitteeMemberId = member.Id,
                     RoleId = rid
-                })
-                .ToList();
+                });
+            }
 
             if (rolesToAdd.Any())
                 await _rolesRepository.AddRolesAsync(rolesToAdd);
@@ -49,7 +57,8 @@ namespace CommitteeApplication.Features.CommitteeMemberRoles.Commands.handlers
             return new AddCommiMembRolesResult
             {
                 CommitteeMemberId = member.Id,
-                AddedRoleIds = rolesToAdd.Select(r => r.RoleId).ToList()
+                AddedRoleIds = rolesToAdd.Select(r => r.RoleId).ToList(),
+                IgnoredRoleIds = ignoredRoles
             };
         }
     }

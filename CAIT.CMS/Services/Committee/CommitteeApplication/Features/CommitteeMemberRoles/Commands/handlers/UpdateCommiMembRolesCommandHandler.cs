@@ -26,6 +26,11 @@ namespace CommitteeApplication.Features.CommitteeMemberRoles.Commands.handlers
             if (role == null)
                 throw new KeyNotFoundException($"CommitteeMemberRole {request.Id} not found");
 
+            // تحقق إذا كان نفس العضو لديه نفس الدور مسبقًا
+            bool duplicateExists = await _rolesRepository.RoleExistsAsync(role.CommitteeMemberId, request.RoleId);
+            if (duplicateExists)
+                throw new InvalidOperationException("The member already has this role assigned.");
+
             role.RoleId = request.RoleId;
             await _rolesRepository.UpdateAsync(role);
 

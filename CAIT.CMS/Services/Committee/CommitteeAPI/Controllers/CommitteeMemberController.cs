@@ -86,17 +86,17 @@ namespace CommitteeAPI.Controllers
         [Authorize(Policy = "Permission:CommitteeMember.Delete")]
         public async Task<ActionResult<RemoveCommitteeMembersResult>> RemoveCommitteeMembers([FromBody] RemoveCommitteeMembersCommand command)
         {
-            if (command.MembersIds == null || !command.MembersIds.Any())
-                return BadRequest("No member IDs provided for removal.");
+            //if (command.MembersIds == null || !command.MembersIds.Any())
+            //    return BadRequest("No member IDs provided for removal.");
 
             var result = await _mediator.Send(command);
 
-            if (!result.RemovedMemberIds.Any() && result.NotFoundMemberIds.Any())
-                return NotFound(new
-                {
-                    message = "No members were removed. All provided IDs were not found in the committee.",
-                    notFoundMemberIds = result.NotFoundMemberIds
-                });
+            //if (!result.RemovedMemberIds.Any() && result.NotFoundMemberIds.Any())
+            //    return NotFound(new
+            //    {
+            //        message = "No members were removed. All provided IDs were not found in the committee.",
+            //        notFoundMemberIds = result.NotFoundMemberIds
+            //    });
 
             return Ok(result);
         }

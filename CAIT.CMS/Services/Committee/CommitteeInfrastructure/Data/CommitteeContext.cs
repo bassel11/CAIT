@@ -97,6 +97,11 @@ namespace CommitteeInfrastructure.Data
                 .HasForeignKey(r => r.CommitteeMemberId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<CommitteeMemberRole>()
+            .HasIndex(r => new { r.CommitteeMemberId, r.RoleId })
+            .IsUnique()
+            .HasDatabaseName("UX_CommitteeMember_Role"); // اسم مخصص للمفتاح الفريد
+
 
             // ---------------------------------------
             // CommitteeStatusHistory
