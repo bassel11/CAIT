@@ -50,6 +50,7 @@ builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorization
 builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
 builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
 builder.Services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
+builder.Services.AddScoped<ICommitteeMemberRoleRepository, CommitteeMemberRoleRepository>();
 builder.Services.AddScoped<IPaginationService, PaginationService>();
 
 

@@ -264,8 +264,41 @@
     "Description": "Delete Committee Members",
     "IsGlobal": false,
     "IsActive": true
-  }
+  },
 
+
+  {
+    "Name": "CommitteeMemberRole.View",
+    "ResourceType": 3,
+    "Action": 0,
+    "Description": "View Committee Member Role/s",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeMemberRole.Create",
+    "ResourceType": 3,
+    "Action": 1,
+    "Description": "Create Committee Member Role/s",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeMemberRole.Update",
+    "ResourceType": 3,
+    "Action": 2,
+    "Description": "Update Committee Member Role/s",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeMemberRole.Delete",
+    "ResourceType": 3,
+    "Action": 3,
+    "Description": "Delete Committee Member Role/s",
+    "IsGlobal": false,
+    "IsActive": true
+  }
 
 
 

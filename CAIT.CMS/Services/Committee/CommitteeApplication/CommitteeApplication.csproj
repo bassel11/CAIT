@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Features\CommitteeMembers\Commands\Validators\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.0" />
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
@@ -23,6 +19,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CommitteeCore\CommitteeCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\CommitteeMemberRoles\Queries\Handlers\" />
+    <Folder Include="Features\CommitteeMemberRoles\Queries\Models\" />
+    <Folder Include="Features\CommitteeMemberRoles\Queries\Results\" />
   </ItemGroup>
 
 </Project>
