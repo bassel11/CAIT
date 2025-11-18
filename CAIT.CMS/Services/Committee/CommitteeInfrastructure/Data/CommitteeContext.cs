@@ -46,6 +46,12 @@ namespace CommitteeInfrastructure.Data
                 .Property(c => c.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
+            // Committee (FK to CommitteeStatus)
+            modelBuilder.Entity<Committee>()
+                .HasOne(c => c.Status)
+                .WithMany(s => s.Committees)
+                .HasForeignKey(c => c.StatusId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
             // CommitteeStatus (Lookup)
@@ -57,13 +63,9 @@ namespace CommitteeInfrastructure.Data
                 .IsRequired()
                 .HasMaxLength(100);
 
-            // Committee (FK to CommitteeStatus)
-            modelBuilder.Entity<Committee>()
-                .HasOne(c => c.Status)
-                .WithMany(s => s.Committees)
-                .HasForeignKey(c => c.StatusId)
-                .OnDelete(DeleteBehavior.Restrict);
-
+            modelBuilder.Entity<CommitteeStatus>()
+                .Property(c => c.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
 
 
 
@@ -84,6 +86,9 @@ namespace CommitteeInfrastructure.Data
                 .WithMany(c => c.CommitteeMembers)
                 .HasForeignKey(m => m.CommitteeId);
 
+            modelBuilder.Entity<CommitteeMember>()
+                .Property(c => c.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
 
             // ---------------------------------------
             // CommitteeMemberRole
@@ -96,6 +101,10 @@ namespace CommitteeInfrastructure.Data
                 .WithMany(m => m.CommitteeMemberRoles)
                 .HasForeignKey(r => r.CommitteeMemberId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CommitteeMemberRole>()
+                .Property(c => c.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
 
             modelBuilder.Entity<CommitteeMemberRole>()
             .HasIndex(r => new { r.CommitteeMemberId, r.RoleId })
@@ -132,13 +141,13 @@ namespace CommitteeInfrastructure.Data
             // SEEDING: CommitteeStatus
             // ================================
             modelBuilder.Entity<CommitteeStatus>().HasData(
-                new CommitteeStatus { Id = 1, Name = "Draft" },
-                new CommitteeStatus { Id = 2, Name = "Active" },
-                new CommitteeStatus { Id = 3, Name = "Suspended" },
-                new CommitteeStatus { Id = 4, Name = "Completed" },
-                new CommitteeStatus { Id = 5, Name = "Dissolved" },
-                new CommitteeStatus { Id = 6, Name = "Archived" }
-            );
+            new CommitteeStatus { Id = 1, Name = "Draft", CreatedAt = new DateTime(2025, 11, 1) },
+            new CommitteeStatus { Id = 2, Name = "Active", CreatedAt = new DateTime(2025, 11, 1) },
+            new CommitteeStatus { Id = 3, Name = "Suspended", CreatedAt = new DateTime(2025, 11, 1) },
+            new CommitteeStatus { Id = 4, Name = "Completed", CreatedAt = new DateTime(2025, 11, 1) },
+            new CommitteeStatus { Id = 5, Name = "Dissolved", CreatedAt = new DateTime(2025, 11, 1) },
+            new CommitteeStatus { Id = 6, Name = "Archived", CreatedAt = new DateTime(2025, 11, 1) }
+);
 
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

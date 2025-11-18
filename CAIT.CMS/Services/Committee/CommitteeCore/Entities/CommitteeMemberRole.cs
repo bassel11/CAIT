@@ -8,5 +8,6 @@
 
         //public string Role { get; set; } // e.g., Chairman + Member
         public Guid RoleId { get; set; }      // Identity Role ID
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

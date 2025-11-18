@@ -4,6 +4,7 @@ using CommitteeInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommitteeInfrastructure.Migrations
 {
     [DbContext(typeof(CommitteeContext))]
-    partial class CommitteeContextModelSnapshot : ModelSnapshot
+    [Migration("20251118132558_AddCreatedAt_For_Tables")]
+    partial class AddCreatedAt_For_Tables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -268,37 +271,37 @@ namespace CommitteeInfrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 25, 57, 494, DateTimeKind.Utc).AddTicks(2529),
                             Name = "Draft"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 25, 57, 494, DateTimeKind.Utc).AddTicks(3526),
                             Name = "Active"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 25, 57, 494, DateTimeKind.Utc).AddTicks(3528),
                             Name = "Suspended"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 25, 57, 494, DateTimeKind.Utc).AddTicks(3529),
                             Name = "Completed"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 25, 57, 494, DateTimeKind.Utc).AddTicks(3530),
                             Name = "Dissolved"
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 25, 57, 494, DateTimeKind.Utc).AddTicks(3531),
                             Name = "Archived"
                         });
                 });
@@ -317,6 +320,11 @@ namespace CommitteeInfrastructure.Migrations
 
                     b.Property<int?>("CommitteeStatusId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<string>("DecisionDocumentUrl")
                         .IsRequired()

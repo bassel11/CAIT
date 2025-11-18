@@ -4,6 +4,7 @@ using CommitteeInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommitteeInfrastructure.Migrations
 {
     [DbContext(typeof(CommitteeContext))]
-    partial class CommitteeContextModelSnapshot : ModelSnapshot
+    [Migration("20251118133107_AddCreatedAt_For_Tables_Fix")]
+    partial class AddCreatedAt_For_Tables_Fix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -268,37 +271,37 @@ namespace CommitteeInfrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 31, 6, 554, DateTimeKind.Utc).AddTicks(5596),
                             Name = "Draft"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 31, 6, 554, DateTimeKind.Utc).AddTicks(6243),
                             Name = "Active"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 31, 6, 554, DateTimeKind.Utc).AddTicks(6244),
                             Name = "Suspended"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 31, 6, 554, DateTimeKind.Utc).AddTicks(6245),
                             Name = "Completed"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 31, 6, 554, DateTimeKind.Utc).AddTicks(6246),
                             Name = "Dissolved"
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2025, 11, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 11, 18, 13, 31, 6, 554, DateTimeKind.Utc).AddTicks(6247),
                             Name = "Archived"
                         });
                 });
