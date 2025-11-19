@@ -1,5 +1,6 @@
 ﻿using CommitteeApplication.Features.CommitteeStatuses.Queries.Models;
 using CommitteeApplication.Features.CommitteeStatuses.Queries.Results;
+using CommitteeApplication.Wrappers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,16 @@ namespace CommitteeAPI.Controllers
             var query = new GetCommitteeStatusesQuery();
             var data = await _mediator.Send(query);
             return Ok(data);
+        }
+
+
+        [HttpPost("filtered", Name = "GetFilteredCommitteeStatuses")]
+        [ProducesResponseType(typeof(PaginatedResult<GetCommitteeStatusResponse>), (int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:CommitteeStatus.View")]
+        public async Task<ActionResult<PaginatedResult<GetCommitteeStatusResponse>>> GetFilteredCommitStatuses([FromBody] GetCommitStatFilterdQuery query)
+        {
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         #endregion

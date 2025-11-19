@@ -15,7 +15,7 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
                 , IRequestHandler<GetComitMembsFilteredQuery, PaginatedResult<CommitMembsFilterResponse>>
     {
 
-        #region
+        #region Fields
 
         private readonly ICommitteeMemberRepository _commitMembRepository;
         private readonly IMapper _mapper;
