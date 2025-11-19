@@ -21,4 +21,9 @@
     <ProjectReference Include="..\CommitteeCore\CommitteeCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\StatusHistories\Commands\Validators\" />
+    <Folder Include="Features\StatusHistories\Commands\Results\" />
+  </ItemGroup>
+
 </Project>

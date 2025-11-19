@@ -52,6 +52,7 @@ builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>))
 builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
 builder.Services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
 builder.Services.AddScoped<ICommitteeMemberRoleRepository, CommitteeMemberRoleRepository>();
+builder.Services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
 builder.Services.AddScoped<IPaginationService, PaginationService>();
 
 
