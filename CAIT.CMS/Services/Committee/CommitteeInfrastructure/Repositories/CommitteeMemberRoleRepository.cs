@@ -1,5 +1,4 @@
 ﻿using CommitteeCore.Entities;
-using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,30 +17,39 @@ namespace CommitteeInfrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Guid>> GetRoleIdsByMemberIdAsync(Guid committeeMemberId)
+        {
+            return await _dbContext.CommitteeMemberRoles
+                .Where(r => r.CommitteeMemberId == committeeMemberId)
+                .Select(r => r.RoleId)
+                .ToListAsync();
+        }
+
         public async Task AddRolesAsync(IEnumerable<CommitteeMemberRole> roles)
         {
+            if (roles == null || !roles.Any()) return;
+
             await _dbContext.CommitteeMemberRoles.AddRangeAsync(roles);
             await _dbContext.SaveChangesAsync();
         }
 
         public async Task RemoveRolesAsync(IEnumerable<CommitteeMemberRole> roles)
         {
+            if (roles == null || !roles.Any()) return;
+
             _dbContext.CommitteeMemberRoles.RemoveRange(roles);
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<bool> RoleExistsAsync(Guid committeeMemberId, Guid roleId)
+        public async Task<bool> RoleExistsAsync(Guid committeeMemberId, Guid roleId, Guid? excludeId = null)
         {
-            return await _dbContext.CommitteeMemberRoles
-                .AnyAsync(r => r.CommitteeMemberId == committeeMemberId && r.RoleId == roleId);
-        }
+            var query = _dbContext.CommitteeMemberRoles
+                .Where(r => r.CommitteeMemberId == committeeMemberId && r.RoleId == roleId);
 
-        public IQueryable<CommitteeMemberRole> QueryRolesByMemberId(Guid committeeMemberId)
-        {
-            // فقط IQueryable للـ Entity مع AsNoTracking
-            return _dbContext.CommitteeMemberRoles
-                .AsNoTracking()
-                .Where(r => r.CommitteeMemberId == committeeMemberId);
+            if (excludeId.HasValue)
+                query = query.Where(r => r.Id != excludeId.Value);
+
+            return await query.AnyAsync();
         }
     }
 }

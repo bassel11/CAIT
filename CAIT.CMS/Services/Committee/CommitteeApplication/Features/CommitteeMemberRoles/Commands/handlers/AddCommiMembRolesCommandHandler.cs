@@ -1,65 +1,62 @@
-﻿using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Models;
+﻿using AutoMapper;
+using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Models;
 using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Results;
 using CommitteeCore.Entities;
 using CommitteeCore.Repositories;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace CommitteeApplication.Features.CommitteeMemberRoles.Commands.handlers
+public class AddCommiMembRolesCommandHandler
+    : IRequestHandler<AddCommiMembRolesCommand, AddCommiMembRolesResult>
 {
-    public class AddCommiMembRolesCommandHandler
-        : IRequestHandler<AddCommiMembRolesCommand, AddCommiMembRolesResult>
+    private readonly ICommitteeMemberRoleRepository _rolesRepository;
+    private readonly ICommitteeMemberRepository _memberRepository;
+    private readonly IMapper _mapper;
+    private readonly ILogger<AddCommiMembRolesCommandHandler> _logger;
+
+    public AddCommiMembRolesCommandHandler(
+        ICommitteeMemberRoleRepository rolesRepository,
+        ICommitteeMemberRepository memberRepository,
+        IMapper mapper,
+        ILogger<AddCommiMembRolesCommandHandler> logger)
     {
-        private readonly ICommitteeMemberRoleRepository _rolesRepository;
-        private readonly ICommitteeMemberRepository _memberRepository;
-        private readonly ILogger<AddCommiMembRolesCommandHandler> _logger;
+        _rolesRepository = rolesRepository;
+        _memberRepository = memberRepository;
+        _mapper = mapper;
+        _logger = logger;
+    }
 
-        public AddCommiMembRolesCommandHandler(
-            ICommitteeMemberRoleRepository rolesRepository,
-            ICommitteeMemberRepository memberRepository,
-            ILogger<AddCommiMembRolesCommandHandler> logger)
-        {
-            _rolesRepository = rolesRepository;
-            _memberRepository = memberRepository;
-            _logger = logger;
-        }
+    public async Task<AddCommiMembRolesResult> Handle(AddCommiMembRolesCommand request, CancellationToken cancellationToken)
+    {
+        var member = await _memberRepository.GetByIdAsync(request.CommitteeMemberId);
+        if (member == null)
+            throw new KeyNotFoundException("Committee member not found");
 
-        public async Task<AddCommiMembRolesResult> Handle(AddCommiMembRolesCommand request, CancellationToken cancellationToken)
-        {
-            var member = await _memberRepository.GetByIdAsync(request.CommitteeMemberId);
+        // bulk check existing role ids
+        var existingRoleIds = await _rolesRepository.GetRoleIdsByMemberIdAsync(member.Id);
 
-            if (member == null)
-                throw new KeyNotFoundException("Committee member not found");
+        var newRoleIds = request.RoleIds.Except(existingRoleIds).Distinct().ToList();
+        var ignoredRoleIds = request.RoleIds.Except(newRoleIds).ToList();
 
-            var existingRoles = await _rolesRepository.GetRolesByMemberIdAsync(member.Id);
-
-            var rolesToAdd = new List<CommitteeMemberRole>();
-            var ignoredRoles = new List<Guid>();
-
-            foreach (var rid in request.RoleIds)
-            {
-                if (existingRoles.Any(er => er.RoleId == rid))
-                {
-                    ignoredRoles.Add(rid);
-                    continue; // تجاهل الدور المكرر
-                }
-
-                rolesToAdd.Add(new CommitteeMemberRole
-                {
-                    CommitteeMemberId = member.Id,
-                    RoleId = rid
-                });
-            }
-
-            if (rolesToAdd.Any())
-                await _rolesRepository.AddRolesAsync(rolesToAdd);
-
-            return new AddCommiMembRolesResult
+        var rolesToAdd = newRoleIds
+            .Select(rid => _mapper.Map<CommitteeMemberRole>(new SingleCommiMembRoleItem
             {
                 CommitteeMemberId = member.Id,
-                AddedRoleIds = rolesToAdd.Select(r => r.RoleId).ToList(),
-                IgnoredRoleIds = ignoredRoles
-            };
+                RoleId = rid
+            }))
+            .ToList();
+
+        if (rolesToAdd.Any())
+        {
+            await _rolesRepository.AddRolesAsync(rolesToAdd);
+            _logger.LogInformation($"Added {rolesToAdd.Count} new roles for member {member.Id}");
         }
+
+        return new AddCommiMembRolesResult
+        {
+            CommitteeMemberId = member.Id,
+            AddedRoleIds = newRoleIds,
+            IgnoredRoleIds = ignoredRoleIds
+        };
     }
 }
