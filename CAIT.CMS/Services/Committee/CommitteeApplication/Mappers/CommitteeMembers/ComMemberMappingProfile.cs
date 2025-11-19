@@ -10,6 +10,7 @@ namespace CommitteeApplication.Mappers.CommitteeMembers
         public ComMemberMappingProfile()
         {
             CreateMap<CommitteeMember, CommitteeMemberResponse>().ReverseMap();
+            CreateMap<CommitteeMember, CommitMembsFilterResponse>().ReverseMap();
             CreateMap<AddCommitteeMemberCommand, CommitteeMember>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore()); // Id يولد تلقائياً
             CreateMap<UpdateCommitteeMemberCommand, CommitteeMember>()

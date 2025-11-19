@@ -2,6 +2,7 @@
 using CommitteeApplication.Features.CommitteeMembers.Commands.Results;
 using CommitteeApplication.Features.CommitteeMembers.Queries.Models;
 using CommitteeApplication.Features.CommitteeMembers.Queries.Results;
+using CommitteeApplication.Wrappers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -101,6 +102,14 @@ namespace CommitteeAPI.Controllers
             return Ok(result);
         }
 
+        [HttpPost("filtered", Name = "GetFilteredCommitteeMembers")]
+        [ProducesResponseType(typeof(PaginatedResult<CommitMembsFilterResponse>), (int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:Committee.View")]
+        public async Task<ActionResult<PaginatedResult<CommitMembsFilterResponse>>> GetFilteredCommittees([FromBody] GetComitMembsFilteredQuery query)
+        {
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
 
     }
 }

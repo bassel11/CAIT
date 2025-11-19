@@ -3,6 +3,7 @@ using CommitteeAPI.Middleware;
 using CommitteeApplication.Authorization;
 using CommitteeApplication.Behaviour;
 using CommitteeApplication.Features.Committees.Commands.Handlers;
+using CommitteeApplication.Mappers.CommitteeMemberRoles;
 using CommitteeApplication.Mappers.CommitteeMembers;
 using CommitteeApplication.Mappers.Committees;
 using CommitteeApplication.Wrappers;
@@ -59,6 +60,7 @@ builder.Services.AddScoped<IPaginationService, PaginationService>();
 // ==========================
 builder.Services.AddAutoMapper(typeof(CommitteeMappingProfile).Assembly);
 builder.Services.AddAutoMapper(typeof(ComMemberMappingProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(CommiMembRolesMappingProfile).Assembly);
 
 // ==========================
 // 4️⃣ MediatR

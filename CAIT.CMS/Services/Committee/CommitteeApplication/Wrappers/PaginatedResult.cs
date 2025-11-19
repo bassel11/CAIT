@@ -23,6 +23,12 @@
             return new(true, data, null, count, page, pageSize);
         }
 
+        public static PaginatedResult<T> Failure(string message)
+        {
+            return new(false, new List<T>(), new List<string> { message });
+        }
+
+
         public int CurrentPage { get; set; }
 
         public int TotalPages { get; set; }

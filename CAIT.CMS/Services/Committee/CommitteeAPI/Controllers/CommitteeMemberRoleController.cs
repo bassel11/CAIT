@@ -1,8 +1,11 @@
 ﻿using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Models;
 using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Results;
+using CommitteeApplication.Features.CommitteeMemberRoles.Queries.Models;
+using CommitteeApplication.Features.CommitteeMemberRoles.Queries.Results;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
@@ -20,6 +23,15 @@ namespace CommitteeAPI.Controllers
             _logger = logger;
         }
 
+        [HttpGet("{committeeMemberId}", Name = "GetRolesByMemberId")]
+        [ProducesResponseType(typeof(IEnumerable<GetCommiMembRolesResponse>), (int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:CommitteeMemberRole.View")]
+        public async Task<ActionResult<IEnumerable<GetCommiMembRolesResponse>>> GetRolesByMemberId(Guid committeeMemberId)
+        {
+            var query = new GetCommiMembRolesQuery(committeeMemberId);
+            var data = await _mediator.Send(query);
+            return Ok(data);
+        }
 
         [HttpPost("AddMemberRoles")]
         [Authorize(Policy = "Permission:CommitteeMemberRole.Create")]

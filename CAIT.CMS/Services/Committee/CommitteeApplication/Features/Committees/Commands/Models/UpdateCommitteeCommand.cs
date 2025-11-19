@@ -17,9 +17,9 @@ namespace CommitteeApplication.Features.Committees.Commands.Models
         public string CreationDecisionText { get; set; }
         public string UpdatedDecisionText { get; set; }
 
-        // يمكن استخدام Count فقط لتقليل حجم الاستجابة
-        public int MembersCount { get; set; }
-        public int DocumentsCount { get; set; }
-        public int DecisionsCount { get; set; }
+        //// يمكن استخدام Count فقط لتقليل حجم الاستجابة
+        //public int MembersCount { get; set; }
+        //public int DocumentsCount { get; set; }
+        //public int DecisionsCount { get; set; }
     }
 }
