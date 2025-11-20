@@ -29,7 +29,14 @@ namespace CommitteeApplication.Authorization
             if (http?.Items.TryGetValue("ResourceId", out var r) == true && r is Guid g)
                 resourceId = g;
 
-            var allowed = await _permissionService.HasPermissionAsync(Guid.Parse(userId), requirement.PermissionName, resourceId);
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                context.Fail();
+                return;
+            }
+
+            var allowed = await _permissionService.HasPermissionAsync(userGuid, requirement.PermissionName, resourceId);
+            //var allowed = await _permissionService.HasPermissionAsync(Guid.Parse(userId), requirement.PermissionName, resourceId);
             if (allowed)
                 context.Succeed(requirement);
             else
