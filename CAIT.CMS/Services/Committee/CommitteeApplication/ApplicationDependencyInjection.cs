@@ -1,4 +1,5 @@
 ﻿using CommitteeApplication.Behaviour;
+using CommitteeApplication.Common.CurrentUser;
 using CommitteeApplication.Features.StatusHistories.Commands.Handlers;
 using CommitteeApplication.Features.StatusHistories.Commands.Validators;
 using FluentValidation;
@@ -23,6 +24,8 @@ namespace CommitteeApplication
             // Pipeline Behaviours
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
+
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             return services;
         }

@@ -17,7 +17,8 @@ namespace CommitteeAPI.Controllers
         private readonly IMediator _mediator;
         private readonly ILogger<CommitteeController> _logger;
 
-        public CommitteeController(IMediator mediator, ILogger<CommitteeController> logger)
+        public CommitteeController(IMediator mediator
+                                   , ILogger<CommitteeController> logger)
         {
             _mediator = mediator;
             _logger = logger;
