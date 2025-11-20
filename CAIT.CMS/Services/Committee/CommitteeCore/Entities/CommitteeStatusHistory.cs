@@ -9,7 +9,9 @@
 
         // Old/New Status
         public int OldStatusId { get; set; }
+        public CommitteeStatus OldStatus { get; set; }
         public int NewStatusId { get; set; }
+        public CommitteeStatus NewStatus { get; set; }
 
         public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
 

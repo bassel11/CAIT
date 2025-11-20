@@ -56,7 +56,7 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
             query = query.ApplyDynamicFilters(request.Filters);
 
             // ↕ Multi Sorting
-            query = query.ApplySorting(request.SortBy);
+            query = query.ApplySorting(request.SortBy, defaultSort: "CreatedAt desc");
 
             // 🧯 Projection
             var projected = _mapper.ProjectTo<CommitMembsFilterResponse>(query);

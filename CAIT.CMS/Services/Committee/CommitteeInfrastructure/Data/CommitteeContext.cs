@@ -13,6 +13,15 @@ namespace CommitteeInfrastructure.Data
 
         }
 
+        // تمت اضافته من اجل رؤية SQL Query الحاصلة من خلال Console
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    optionsBuilder
+        //        .EnableSensitiveDataLogging() // لعرض قيم المتغيرات
+        //        .LogTo(Console.WriteLine, LogLevel.Information); // أو ILogger
+        //}
+
         public DbSet<Committee> Committees { get; set; }
         public DbSet<CommitteeMember> CommitteeMembers { get; set; }
         public DbSet<CommitteeMemberRole> CommitteeMemberRoles { get; set; }
@@ -124,10 +133,33 @@ namespace CommitteeInfrastructure.Data
                 .HasForeignKey(h => h.CommitteeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Relationship OldStatus
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .HasOne(h => h.OldStatus)
+                .WithMany(s => s.OldStatusHistories)
+                .HasForeignKey(h => h.OldStatusId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Relationship NewStatus
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .HasOne(h => h.NewStatus)
+                .WithMany(s => s.NewStatusHistories)
+                .HasForeignKey(h => h.NewStatusId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<CommitteeStatusHistory>()
                 .Property(h => h.DecisionText)
                 .IsRequired();
 
+            // 🔹 Index على CommitteeId لتحسين أداء الاستعلامات
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .HasIndex(h => h.CommitteeId)
+                .HasDatabaseName("IX_CommitteeStatusHistories_CommitteeId");
+
+            // 🔹 Index مركب على CommitteeId + ChangedAt لتحسين Pagination مع Filter
+            modelBuilder.Entity<CommitteeStatusHistory>()
+                .HasIndex(h => new { h.CommitteeId, h.ChangedAt })
+                .HasDatabaseName("IX_CommitteeStatusHistories_CommitteeId_ChangedAt");
 
             // ---------------------------------------
             // CommitteeAuditLog

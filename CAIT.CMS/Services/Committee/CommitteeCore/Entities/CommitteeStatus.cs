@@ -7,6 +7,10 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<Committee> Committees { get; set; }
-        public ICollection<CommitteeStatusHistory> CommitteeStatusHistories { get; set; }
+        // History where this status was the previous state
+        public ICollection<CommitteeStatusHistory> OldStatusHistories { get; set; }
+
+        // History where this status became the new state
+        public ICollection<CommitteeStatusHistory> NewStatusHistories { get; set; }
     }
 }

@@ -8,6 +8,7 @@ namespace CommitteeApplication.Features.StatusHistories.Queries.Models
     public class GetCommitStatusHistoryQuery
         : PaginationRequest, IRequest<PaginatedResult<CommitStatusHistoryResponse>>
     {
-        public Guid CommitteeId { get; set; }
+        public Guid? CommitteeId { get; set; } = null;
+
     }
 }

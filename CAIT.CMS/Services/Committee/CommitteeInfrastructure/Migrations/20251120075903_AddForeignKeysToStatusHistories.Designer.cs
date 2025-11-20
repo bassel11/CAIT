@@ -4,6 +4,7 @@ using CommitteeInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommitteeInfrastructure.Migrations
 {
     [DbContext(typeof(CommitteeContext))]
-    partial class CommitteeContextModelSnapshot : ModelSnapshot
+    [Migration("20251120075903_AddForeignKeysToStatusHistories")]
+    partial class AddForeignKeysToStatusHistories
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -331,15 +334,11 @@ namespace CommitteeInfrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CommitteeId")
-                        .HasDatabaseName("IX_CommitteeStatusHistories_CommitteeId");
+                    b.HasIndex("CommitteeId");
 
                     b.HasIndex("NewStatusId");
 
                     b.HasIndex("OldStatusId");
-
-                    b.HasIndex("CommitteeId", "ChangedAt")
-                        .HasDatabaseName("IX_CommitteeStatusHistories_CommitteeId_ChangedAt");
 
                     b.ToTable("CommitteeStatusHistories");
                 });

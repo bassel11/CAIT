@@ -1,19 +1,10 @@
 ﻿using CommitteeAPI.Extensions;
 using CommitteeAPI.Middleware;
+using CommitteeApplication;
 using CommitteeApplication.Authorization;
-using CommitteeApplication.Behaviour;
-using CommitteeApplication.Features.Committees.Commands.Handlers;
-using CommitteeApplication.Mappers.CommitteeMemberRoles;
-using CommitteeApplication.Mappers.CommitteeMembers;
-using CommitteeApplication.Mappers.Committees;
-using CommitteeApplication.Wrappers;
-using CommitteeCore.Repositories;
+using CommitteeInfrastructure;
 using CommitteeInfrastructure.Authorization;
 using CommitteeInfrastructure.Data;
-using CommitteeInfrastructure.Repositories;
-using CommitteeInfrastructure.Services;
-using FluentValidation;
-using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
@@ -21,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
-using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,48 +26,17 @@ builder.Services.AddDbContext<CommitteeContext>(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
-//builder.Services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
-//{
-//    client.BaseAddress = new Uri(builder.Configuration["Services:IdentityBaseUrl"]);
-//});
+
 builder.Services.AddIdentityHttpClients(builder.Configuration);
 
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
 
 // ==========================
-// 2️⃣ Repositories
+// Register Services of All Layers
 // ==========================
-builder.Services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
-builder.Services.AddScoped<ICommitteeRepository, CommitteeRepository>();
-builder.Services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
-builder.Services.AddScoped<ICommitteeMemberRoleRepository, CommitteeMemberRoleRepository>();
-builder.Services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
-builder.Services.AddScoped<IPaginationService, PaginationService>();
-
-
-// ==========================
-// 3️⃣ AutoMapper
-// ==========================
-builder.Services.AddAutoMapper(typeof(CommitteeMappingProfile).Assembly);
-builder.Services.AddAutoMapper(typeof(ComMemberMappingProfile).Assembly);
-builder.Services.AddAutoMapper(typeof(CommiMembRolesMappingProfile).Assembly);
-
-// ==========================
-// 4️⃣ MediatR
-// ==========================
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AddCommitteeCommandHandler).Assembly));
-
-// ==========================
-// 5️⃣ FluentValidation
-// ==========================
-builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-
-// ==========================
-// 6️⃣ Pipeline Behaviours
-// ==========================
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
+builder.Services.AddApplicationServices()
+                .AddInfrastructureServices();
 
 // ==========================
 // 7️⃣ JWT Authentication

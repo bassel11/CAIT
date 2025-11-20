@@ -307,8 +307,23 @@
     "Description": "View Committees Status",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "CommitteeStatusHistory.View",
+    "ResourceType": 3,
+    "Action": 0,
+    "Description": "View Committees Status History",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeStatusHistory.Create",
+    "ResourceType": 3,
+    "Action": 1,
+    "Description": "View Committees Status History",
+    "IsGlobal": false,
+    "IsActive": true
   }
-
-
 
 ]
