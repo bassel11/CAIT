@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CommitteeApplication.Common.CurrentUser;
 using CommitteeApplication.Extensions;
 using CommitteeApplication.Features.Committees.Queries.Models;
 using CommitteeApplication.Features.Committees.Queries.Results;
@@ -21,6 +22,7 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _stringLocalizer;
         private readonly IPaginationService _paginationService;
+        private readonly ICurrentUserService _currentUser;
         #endregion
 
 
@@ -28,12 +30,14 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
         public CommitteeQueryHandler(ICommitteeRepository committeeRepository
                                     , IMapper mapper
                                     , IStringLocalizer<SharedResources> stringLocalizer
-                                    , IPaginationService paginationService) : base(stringLocalizer)
+                                    , IPaginationService paginationService
+                                    , ICurrentUserService currentUser) : base(stringLocalizer)
         {
             _committeeRepository = committeeRepository;
             _mapper = mapper;
             _stringLocalizer = stringLocalizer;
             _paginationService = paginationService;
+            _currentUser = currentUser;
         }
         #endregion
 
@@ -64,9 +68,23 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
 
         public async Task<PaginatedResult<GetComitsFilteredResponse>> Handle(GetComitsFilteredQuery request, CancellationToken cancellationToken)
         {
-            var query = _committeeRepository.Query(); // ← هنا
+            var query = _committeeRepository.Query();
 
-            // 🔍 Search
+            // ---------------------------------------------------------
+            // 1) SuperAdmin → يشاهد جميع اللجان بدون قيود
+            // ---------------------------------------------------------
+            if (!_currentUser.IsSuperAdmin)
+            {
+                var userId = _currentUser.UserId;
+
+                // انضمام بسيط للحصول على اللجان التي هو عضو فيها فقط
+                query = query
+                    .Where(c => c.CommitteeMembers.Any(m => m.UserId == userId));
+            }
+
+            // ---------------------------------------------------------
+            // 2) Search
+            // ---------------------------------------------------------
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 query = query.ApplySearch(request.Search, c =>
@@ -76,18 +94,29 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
                 );
             }
 
-
-            // 🧩 Dynamic Filters
+            // ---------------------------------------------------------
+            // 3) Dynamic Filters
+            // ---------------------------------------------------------
             query = query.ApplyDynamicFilters(request.Filters);
 
-            // ↕ Multi Sorting
+            // ---------------------------------------------------------
+            // 4) Sorting
+            // ---------------------------------------------------------
             query = query.ApplySorting(request.SortBy, defaultSort: "CreatedAt desc");
 
-            // 🧯 Projection
+            // ---------------------------------------------------------
+            // 5) Projection (AutoMapper → يُحوّل الاستعلام لـ SELECT فقط)
+            // ---------------------------------------------------------
             var projected = _mapper.ProjectTo<GetComitsFilteredResponse>(query);
 
-            // 📄 Pagination
-            return await _paginationService.PaginateAsync(projected, request.PageNumber, request.PageSize);
+            // ---------------------------------------------------------
+            // 6) Pagination
+            // ---------------------------------------------------------
+            return await _paginationService.PaginateAsync(
+                projected,
+                request.PageNumber,
+                request.PageSize
+            );
         }
 
         #endregion

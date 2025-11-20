@@ -81,7 +81,7 @@ namespace Identity.API.Controllers
         // for calling ckeck permissions from another Service Endpoints
 
         [HttpGet("check")]
-        [AllowAnonymous] // for internally between Services // please check allowaAnonymous
+        // for internally between Services // please check allowaAnonymous
         public async Task<IActionResult> Check(Guid userId, string permission, Guid? resourceId = null, Guid? parentResourceId = null)
         {
             bool has = await _checker.HasPermissionAsync(userId, permission, resourceId, parentResourceId);
