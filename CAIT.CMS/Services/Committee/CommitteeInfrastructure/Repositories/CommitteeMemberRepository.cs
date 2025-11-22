@@ -46,6 +46,5 @@ namespace CommitteeInfrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-
     }
 }
