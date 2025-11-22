@@ -14,15 +14,21 @@ namespace CommitteeAPI.Controllers
     [Authorize]
     public class CommitteeController : ControllerBase
     {
+        #region Fields
         private readonly IMediator _mediator;
         private readonly ILogger<CommitteeController> _logger;
+        #endregion
 
+        #region Constructor
         public CommitteeController(IMediator mediator
                                    , ILogger<CommitteeController> logger)
         {
             _mediator = mediator;
             _logger = logger;
         }
+        #endregion
+
+        #region Actions
 
         [HttpGet("{id}", Name = "GetCommitteesById")]
         [ProducesResponseType(typeof(IEnumerable<GetCommitteeByIdResponse>), (int)HttpStatusCode.OK)]
@@ -78,6 +84,8 @@ namespace CommitteeAPI.Controllers
             var result = await _mediator.Send(query);
             return Ok(result);
         }
+
+        #endregion
 
 
     }

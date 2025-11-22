@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Folder Include="Features\StatusHistories\Commands\Results\" />
+    <Folder Include="Interfaces\Grpc\" />
   </ItemGroup>
 
 </Project>

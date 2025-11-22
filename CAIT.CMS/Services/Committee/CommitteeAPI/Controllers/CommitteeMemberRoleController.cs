@@ -14,14 +14,20 @@ namespace CommitteeAPI.Controllers
     [Authorize]
     public class CommitteeMemberRoleController : ControllerBase
     {
+        #region Fields
         private readonly IMediator _mediator;
         private readonly ILogger<CommitteeMemberRoleController> _logger;
+        #endregion
 
+        #region Constructors
         public CommitteeMemberRoleController(IMediator mediator, ILogger<CommitteeMemberRoleController> logger)
         {
             _mediator = mediator;
             _logger = logger;
         }
+        #endregion
+
+        #region Actions
 
         [HttpGet("{committeeMemberId}", Name = "GetRolesByMemberId")]
         [ProducesResponseType(typeof(IEnumerable<GetCommiMembRolesResponse>), (int)HttpStatusCode.OK)]
@@ -59,6 +65,6 @@ namespace CommitteeAPI.Controllers
             var result = await _mediator.Send(command);
             return Ok(result);
         }
-
+        #endregion
     }
 }

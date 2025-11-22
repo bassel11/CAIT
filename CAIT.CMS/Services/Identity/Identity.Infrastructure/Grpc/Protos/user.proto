@@ -1,0 +1,31 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Identity.GrpcContracts";
+
+package identity;
+
+// gRPC service name chosen to avoid conflicts (IdentityUserService)
+service IdentityUserService {
+  rpc GetUserById (UserRequest) returns (UserResponse);
+  rpc GetUsersByIds (UsersRequest) returns (UsersResponse);
+}
+
+message UserRequest {
+  string userId = 1;
+}
+
+message UsersRequest {
+  repeated string userIds = 1;
+}
+
+message UserResponse {
+  string userId = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string email = 4;
+  repeated string roles = 5;
+}
+
+message UsersResponse {
+  repeated UserResponse users = 1;
+}

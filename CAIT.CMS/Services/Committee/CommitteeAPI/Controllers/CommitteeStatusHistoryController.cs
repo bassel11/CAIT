@@ -24,7 +24,6 @@ namespace CommitteeAPI.Controllers
         }
         #endregion
 
-
         #region Actions
 
         [HttpGet("{committeeId}", Name = "GetCommitteeStatusHistories")]

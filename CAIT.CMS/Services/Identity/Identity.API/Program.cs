@@ -14,7 +14,9 @@ using Identity.Application.Interfaces.UsrRolPermRes;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
 using Identity.Infrastructure.Authorization;
+using Identity.Infrastructure.Configurations;
 using Identity.Infrastructure.Data;
+using Identity.Infrastructure.Grpc.Services;
 using Identity.Infrastructure.Services;
 using Identity.Infrastructure.Services.Authorization;
 using Identity.Infrastructure.Services.Permissions;
@@ -26,6 +28,7 @@ using Identity.Infrastructure.Services.UsrRolPermRes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -35,6 +38,16 @@ using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// ---------------- HTTP/2 for gRPC ----------------
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(9001, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+});
 
 // Database 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -284,6 +297,11 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+
+// ---------------- REGISTER gRPC SERVER (Important) ----------------
+builder.Services.AddIdentityGrpc();
+
 var app = builder.Build();
 
 
@@ -317,5 +335,8 @@ app.UseMiddleware<ResourceExtractionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ---------------- MAP gRPC SERVICE ----------------
+app.MapGrpcService<UserGrpcService>();
 
 app.Run();
