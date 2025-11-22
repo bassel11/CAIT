@@ -28,7 +28,6 @@ using Identity.Infrastructure.Services.UsrRolPermRes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -39,15 +38,11 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// ---------------- HTTP/2 for gRPC ----------------
-builder.WebHost.ConfigureKestrel(options =>
+builder.WebHost.ConfigureKestrel((context, options) =>
 {
-    options.ListenAnyIP(9001, listenOptions =>
-    {
-        listenOptions.Protocols = HttpProtocols.Http2;
-    });
+    options.Configure(context.Configuration.GetSection("Kestrel"));
 });
+
 
 // Database 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -320,7 +315,7 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity.API v1"));
 }
 
 

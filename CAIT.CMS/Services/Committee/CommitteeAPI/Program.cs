@@ -4,6 +4,7 @@ using CommitteeApplication;
 using CommitteeApplication.Authorization;
 using CommitteeInfrastructure;
 using CommitteeInfrastructure.Authorization;
+using CommitteeInfrastructure.Configurations;
 using CommitteeInfrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,7 @@ builder.Services.AddDbContext<CommitteeContext>(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddTransient<JwtDelegatingHandler>();
 
 builder.Services.AddIdentityHttpClients(builder.Configuration);
 
@@ -37,6 +39,13 @@ builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorization
 // ==========================
 builder.Services.AddApplicationServices()
                 .AddInfrastructureServices();
+
+// ==========================
+// 2️⃣ Identity gRPC Client Registration
+// ==========================
+var identityGrpcUrl = builder.Configuration.GetValue<string>("Services:GrpcUrl") ?? "http://localhost:9001";
+builder.Services.AddIdentityGrpcClient(identityGrpcUrl);
+
 
 // ==========================
 // 7️⃣ JWT Authentication

@@ -2,6 +2,7 @@
 using CommitteeApplication.Extensions;
 using CommitteeApplication.Features.CommitteeMembers.Queries.Models;
 using CommitteeApplication.Features.CommitteeMembers.Queries.Results;
+using CommitteeApplication.Interfaces.Grpc;
 using CommitteeApplication.Resources;
 using CommitteeApplication.Responses;
 using CommitteeApplication.Wrappers;
@@ -21,6 +22,7 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _stringLocalizer;
         private readonly IPaginationService _paginationService;
+        private readonly IUserGrpcService _userGrpcService;
 
         #endregion
 
@@ -28,12 +30,14 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
         public GetComitMembsFilteredQueryHandler(ICommitteeMemberRepository commitMembRepository
                                     , IMapper mapper
                                     , IStringLocalizer<SharedResources> stringLocalizer
-                                    , IPaginationService paginationService) : base(stringLocalizer)
+                                    , IPaginationService paginationService
+                                    , IUserGrpcService userGrpcService) : base(stringLocalizer)
         {
             _commitMembRepository = commitMembRepository;
             _mapper = mapper;
             _stringLocalizer = stringLocalizer;
             _paginationService = paginationService;
+            _userGrpcService = userGrpcService;
         }
         #endregion
 
@@ -41,6 +45,10 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
         public async Task<PaginatedResult<CommitMembsFilterResponse>> Handle(GetComitMembsFilteredQuery request, CancellationToken cancellationToken)
         {
             var query = _commitMembRepository.Query(); // ← هنا
+
+            Guid id = Guid.Parse("5D51A287-EFE8-49AB-C46D-08DE113C9D22");
+
+            var users = await _userGrpcService.GetUserByIdAsync(id);
 
             // 🔍 Search
             if (!string.IsNullOrWhiteSpace(request.Search))
