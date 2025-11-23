@@ -1,4 +1,15 @@
+using MeetingInfrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// ==========================
+// Database MeetingDbContext
+// ==========================
+builder.Services.AddDbContext<MeetingDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("MeetingConnectionString"))
+);
+
 
 // Add services to the container.
 
