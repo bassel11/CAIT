@@ -1,10 +1,13 @@
 ﻿using MediatR;
 using MeetingApplication.Features.Meetings.Commands.Results;
+using System.ComponentModel.DataAnnotations;
 
 namespace MeetingApplication.Features.Meetings.Commands.Models
 {
-    public class CreateMeetingCommand : IRequest<CreateMeetingResponse>
+    public class UpdateMeetingCommand : IRequest<UpdateMeetingResponse>
     {
+        [Required]
+        public Guid Id { get; set; }
         public Guid CommitteeId { get; set; }
         public string Title { get; set; } = null!;
         public string? Description { get; set; }

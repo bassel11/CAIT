@@ -1,6 +1,6 @@
 ﻿namespace MeetingApplication.Features.Meetings.Commands.Results
 {
-    public class MeetingResponse
+    public class UpdateMeetingResponse
     {
         public Guid Id { get; set; }
         public Guid CommitteeId { get; set; }
