@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MediatR;
+using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingCore.Entities;
@@ -15,6 +16,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
         private readonly IMeetingRepository _meetingRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<CreateMeetingCommandHandler> _logger;
+        private readonly ICurrentUserService _currentUserService;
 
         #endregion
 
@@ -22,11 +24,13 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
 
         public CreateMeetingCommandHandler(IMeetingRepository meetingRepository
                                          , IMapper mapper
-                                         , ILogger<CreateMeetingCommandHandler> logger)
+                                         , ILogger<CreateMeetingCommandHandler> logger
+                                         , ICurrentUserService currentUserService)
         {
             _meetingRepository = meetingRepository;
             _mapper = mapper;
             _logger = logger;
+            _currentUserService = currentUserService;
         }
 
         #endregion

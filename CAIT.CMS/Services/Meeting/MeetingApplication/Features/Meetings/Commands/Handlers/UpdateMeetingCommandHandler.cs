@@ -4,6 +4,7 @@ using MeetingApplication.Exceptions;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingCore.Entities;
+using MeetingCore.Enums;
 using MeetingCore.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -37,6 +38,11 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             {
                 throw new MeetingNotFoundException(nameof(Meeting), request.Id);
             }
+
+            // Business rule: cannot update cancelled or completed meetings (example)
+            if (meetingToUpdate.Status == MeetingStatus.Cancelled || meetingToUpdate.Status == MeetingStatus.Completed)
+                throw new DomainException("Cannot update a cancelled or completed meeting");
+
             _mapper.Map(request, meetingToUpdate, typeof(UpdateMeetingCommand), typeof(Meeting));
             await _meetingRepository.UpdateAsync(meetingToUpdate);
 

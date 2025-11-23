@@ -19,6 +19,11 @@ namespace MeetingApplication.Features.Meetings.Commands.Validators
             RuleFor(x => x.RecurrenceType)
                 .Must(x => Enum.TryParse(typeof(RecurrenceType), x, true, out _))
                 .WithMessage("Invalid RecurrenceType");
+
+            RuleFor(x => x.StartDate)
+                .GreaterThan(DateTime.UtcNow.AddYears(-1))
+                .WithMessage("StartDate seems invalid");
         }
     }
 }
+
