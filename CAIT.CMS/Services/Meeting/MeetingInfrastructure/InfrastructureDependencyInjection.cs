@@ -11,6 +11,8 @@ namespace MeetingInfrastructure
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
             services.AddScoped<IMeetingRepository, MeetingRepository>();
+            services.AddScoped<IAgendaRepository, AgendaRepository>();
+            services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 
             return services;
         }
