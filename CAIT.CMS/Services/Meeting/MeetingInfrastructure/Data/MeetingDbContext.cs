@@ -11,7 +11,7 @@ namespace MeetingInfrastructure.Data
         // DbSets
         public DbSet<Meeting> Meetings => Set<Meeting>();
         public DbSet<AgendaItem> AgendaItems => Set<AgendaItem>();
-        public DbSet<Attendance> AttendanceRecords => Set<Attendance>();
+        public DbSet<Attendance> Attendance => Set<Attendance>();
         public DbSet<MinutesOfMeeting> Minutes => Set<MinutesOfMeeting>();
         public DbSet<MinutesVersion> MinutesVersions => Set<MinutesVersion>();
         public DbSet<MeetingDecision> Decisions => Set<MeetingDecision>();

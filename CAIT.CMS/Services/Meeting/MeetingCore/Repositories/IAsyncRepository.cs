@@ -21,5 +21,6 @@ namespace MeetingCore.Repositories
         Task<T> UpdateAsync(T entity);
         Task<T> DeleteAsync(T entity);
         IQueryable<T> Query();
+        Task SaveChangesAsync(CancellationToken ct = default);
     }
 }

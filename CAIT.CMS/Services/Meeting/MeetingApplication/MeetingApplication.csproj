@@ -20,4 +20,9 @@
     <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\AgendaItems\Commands\Results\" />
+    <Folder Include="Features\Attendances\Commands\Results\" />
+  </ItemGroup>
+
 </Project>

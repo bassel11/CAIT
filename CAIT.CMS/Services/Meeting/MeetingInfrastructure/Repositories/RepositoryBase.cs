@@ -71,5 +71,10 @@ namespace MeetingInfrastructure.Repositories
         {
             return _dbContext.Set<T>().AsNoTracking();
         }
+
+        public Task SaveChangesAsync(CancellationToken ct = default)
+        {
+            return _dbContext.SaveChangesAsync(ct);
+        }
     }
 }

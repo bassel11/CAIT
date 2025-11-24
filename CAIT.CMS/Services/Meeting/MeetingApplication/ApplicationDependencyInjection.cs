@@ -11,6 +11,7 @@ namespace MeetingApplication
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+
             // FluentValidation
             services.AddValidatorsFromAssembly(typeof(CreateMeetingValidator).Assembly);
 

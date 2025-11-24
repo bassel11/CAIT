@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
 {
-    public class CancelMeetingCommandHandler : IRequestHandler<CancelMeetingCommand, Unit>
+    public class CompleteMeetingCommandHandler : IRequestHandler<CompleteMeetingCommand, Unit>
     {
         #region Fields
         private readonly IMeetingRepository _meetingRepository;
@@ -21,7 +21,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
         #endregion
 
         #region Constructor
-        public CancelMeetingCommandHandler(IMeetingRepository meetingRepository
+        public CompleteMeetingCommandHandler(IMeetingRepository meetingRepository
                                              , IMapper mapper
                                              , ILogger<CancelMeetingCommandHandler> logger
                                              , ICurrentUserService currentUserService
@@ -33,51 +33,27 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
         }
-
         #endregion
 
         #region Actions
-
-        public async Task<Unit> Handle(CancelMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(CompleteMeetingCommand request, CancellationToken cancellationToken)
         {
-            var meeting = await _meetingRepository.GetByIdAsync(request.Id);
+            var meetingCompleted = await _meetingRepository.GetByIdAsync(request.Id);
+            if (meetingCompleted == null) throw new MeetingNotFoundException(nameof(Meeting), request.Id);
 
-            if (meeting == null)
-                throw new MeetingNotFoundException(nameof(Meeting), request.Id);
+            if (meetingCompleted.Status == MeetingStatus.Completed)
+                throw new DomainException("Meeting already completed");
 
-            if (meeting.Status == MeetingStatus.Cancelled)
-                throw new DomainException("Meeting already cancelled");
+            meetingCompleted.Status = MeetingStatus.Completed;
+            meetingCompleted.UpdatedAt = DateTime.UtcNow;
+            meetingCompleted.UpdatedBy = _currentUserService.UserId;
 
-            meeting.Status = MeetingStatus.Cancelled;
-            meeting.UpdatedAt = DateTime.UtcNow;
-            meeting.UpdatedBy = _currentUserService.UserId;
-
-            var log = new MeetingIntegrationLog
-            {
-                Id = Guid.NewGuid(),
-                MeetingId = meeting.Id,
-                IntegrationType = IntegrationType.OutlookCancel,
-                Success = true,
-                ErrorMessage = $"Cancelled: {request.Reason}",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            meeting.IntegrationLogs.Add(log);
-
-            // سجل التعديل في DbContext فقط
-            await _meetingRepository.UpdateAsync(meeting);
-
-            // التعديلات على meeting + log ستحفظ معًا
+            await _meetingRepository.UpdateAsync(meetingCompleted);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Unit.Value;
-
-
-
         }
-
         #endregion
-
 
 
     }
