@@ -24,8 +24,6 @@ namespace CommitteeAPI.Controllers
         }
         #endregion
 
-
-
         #region Actions
 
         // -------------------------------------------------------
@@ -47,6 +45,21 @@ namespace CommitteeAPI.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _mediator.Send(new GetQuorumRuleByIdQuery(id));
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
+        }
+
+
+        // -------------------------------------------------------
+        // GET BY Committee ID
+        // -------------------------------------------------------
+        [HttpGet("GetByCommitteeId/{committeeId:guid}")]
+        [Authorize(Policy = "Permission:CommitteeQuorumRule.View")]
+        public async Task<IActionResult> GetByCommitteeId(Guid committeeId)
+        {
+            var result = await _mediator.Send(new QuorumRuleByCommitIdQuery(committeeId));
             if (result == null)
                 return NotFound();
 

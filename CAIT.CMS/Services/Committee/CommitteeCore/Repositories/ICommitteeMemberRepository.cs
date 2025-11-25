@@ -10,6 +10,7 @@ namespace CommitteeCore.Repositories
 
         Task<CommitteeMember?> GetByCommitteeAndUserAsync(Guid committeeId, Guid MemberId);
         Task RemoveRangeAsync(IEnumerable<CommitteeMember> members);
+        Task<int> GetActiveMemberCountAsync(Guid committeeId, CancellationToken ct = default);
 
     }
 }

@@ -116,6 +116,18 @@ namespace CommitteeAPI.Controllers
             var result = await _mediator.Send(query);
             return Ok(result);
         }
+
+
+        [HttpGet("{committeeId:guid}/members/count")]
+        [ProducesResponseType(typeof(MemberCountResponse), StatusCodes.Status200OK)]
+        [Authorize(Policy = "Permission:CommitteeMember.View")]
+        public async Task<IActionResult> GetMemberCount(Guid committeeId, CancellationToken ct)
+        {
+            var result = await _mediator.Send(new MemberCountQuery(committeeId), ct);
+            return Ok(result);
+        }
+
+
         #endregion
     }
 }

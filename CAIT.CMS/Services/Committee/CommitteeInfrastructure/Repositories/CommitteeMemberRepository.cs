@@ -46,5 +46,16 @@ namespace CommitteeInfrastructure.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task<int> GetActiveMemberCountAsync(Guid committeeId, CancellationToken ct = default)
+        {
+            // افتراض أن CommitteeMember له حقل IsActive أو Status
+            return await _dbContext.CommitteeMembers
+                .AsNoTracking()
+                .Where(cm => cm.CommitteeId == committeeId) //&& cm.IsActive
+                .Select(cm => cm.Id) // أو أي حقل يمثل user id
+                .Distinct()
+                .CountAsync(ct);
+        }
+
     }
 }
