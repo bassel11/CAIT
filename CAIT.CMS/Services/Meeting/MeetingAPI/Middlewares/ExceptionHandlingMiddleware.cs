@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Text.Json;
 
-namespace CommitteeAPI.Middlewares // ضع الـ namespace حسب طبقة العرض لديك
+namespace MeetingAPI.Middlewares
 {
     public class ExceptionHandlingMiddleware
     {
@@ -74,4 +74,5 @@ namespace CommitteeAPI.Middlewares // ضع الـ namespace حسب طبقة ال
             }
         }
     }
+
 }

@@ -1,5 +1,5 @@
 ﻿using CommitteeAPI.Extensions;
-using CommitteeAPI.Middleware;
+using CommitteeAPI.Middlewares;
 using CommitteeApplication;
 using CommitteeApplication.Authorization;
 using CommitteeInfrastructure;
