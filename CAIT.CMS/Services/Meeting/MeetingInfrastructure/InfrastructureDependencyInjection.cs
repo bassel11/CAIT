@@ -1,5 +1,7 @@
-﻿using MeetingCore.Repositories;
+﻿using MeetingApplication.Wrappers;
+using MeetingCore.Repositories;
 using MeetingInfrastructure.Repositories;
+using MeetingInfrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MeetingInfrastructure
@@ -13,6 +15,10 @@ namespace MeetingInfrastructure
             services.AddScoped<IMeetingRepository, MeetingRepository>();
             services.AddScoped<IAgendaRepository, AgendaRepository>();
             services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+
+            services.AddScoped<IPaginationService, PaginationService>();
 
             return services;
         }

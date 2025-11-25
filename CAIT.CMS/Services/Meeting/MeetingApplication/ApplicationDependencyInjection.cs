@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
 using MeetingApplication.Behaviour;
+using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Features.Meetings.Commands.Handlers;
 using MeetingApplication.Features.Meetings.Commands.Validators;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,12 @@ namespace MeetingApplication
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
 
-            //services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+
+            // Services
+
 
             return services;
         }

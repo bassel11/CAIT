@@ -1,4 +1,5 @@
 ﻿using MeetingCore.Entities;
+using MeetingCore.Enums;
 using MeetingCore.Repositories;
 using MeetingInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,17 @@ namespace MeetingInfrastructure.Repositories
                 .ToListAsync(ct);
         }
 
+        public async Task<int> CountPresentMembersAsync(Guid meetingId, CancellationToken ct)
+        {
+            return await _dbContext.Attendance
+                .Where(a =>
+                    a.MeetingId == meetingId &&
+                    (a.AttendanceStatus == AttendanceStatus.Present ||
+                     a.AttendanceStatus == AttendanceStatus.Remote))
+                .Select(a => a.MemberId)
+                .Distinct()
+                .CountAsync(ct);
+        }
 
     }
 }

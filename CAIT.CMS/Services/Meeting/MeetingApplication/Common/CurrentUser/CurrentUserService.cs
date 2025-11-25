@@ -3,7 +3,7 @@ using System.Security.Claims;
 
 namespace MeetingApplication.Common.CurrentUser
 {
-    public class CurrentUserService
+    public class CurrentUserService : ICurrentUserService
     {
         #region Fields
 
