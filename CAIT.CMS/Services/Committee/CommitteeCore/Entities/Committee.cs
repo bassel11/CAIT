@@ -37,6 +37,9 @@ namespace CommitteeCore.Entities
         public ICollection<CommitteeDecision> CommitteeDecisions { get; set; } = new HashSet<CommitteeDecision>();
         public ICollection<CommitteeStatusHistory> CommitteeStatusHistories { get; set; } = new HashSet<CommitteeStatusHistory>();
         public ICollection<CommitteeAuditLog> CommitteeAuditLogs { get; set; } = new HashSet<CommitteeAuditLog>();
+        public CommitteeQuorumRule CommitteeQuorumRule { get; set; }
+
+
     }
 
     public enum CommitteeType

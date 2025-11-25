@@ -9,6 +9,7 @@
         //public string Role { get; set; }                 // Chairman, Vice Chairman, Rapporteur, Member, Observer
         public string Affiliation { get; set; }          // CAIT department or external entity
         public string ContactDetails { get; set; }       // Optional
+        public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<CommitteeMemberRole> CommitteeMemberRoles { get; set; } = new HashSet<CommitteeMemberRole>();
     }

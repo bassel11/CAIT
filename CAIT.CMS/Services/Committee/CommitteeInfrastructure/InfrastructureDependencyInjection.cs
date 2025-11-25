@@ -16,6 +16,7 @@ namespace CommitteeInfrastructure
             services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
             services.AddScoped<ICommitteeMemberRoleRepository, CommitteeMemberRoleRepository>();
             services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
+            services.AddScoped<ICommitteeQuorumRuleRepository, CommitteeQuorumRuleRepository>();
 
             // Services
             services.AddScoped<IPaginationService, PaginationService>();

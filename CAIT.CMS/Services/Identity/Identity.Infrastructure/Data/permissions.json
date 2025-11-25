@@ -324,6 +324,39 @@
     "Description": "View Committees Status History",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "CommitteeQuorumRule.View",
+    "ResourceType": 3,
+    "Action": 0,
+    "Description": "View Committees Quorum Rule",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeQuorumRule.Create",
+    "ResourceType": 3,
+    "Action": 1,
+    "Description": "Create Committees Quorum Rule",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeQuorumRule.Update",
+    "ResourceType": 3,
+    "Action": 2,
+    "Description": "Update Committees Quorum Rule",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "CommitteeQuorumRule.Delete",
+    "ResourceType": 3,
+    "Action": 3,
+    "Description": "Delete Committees Quorum Rule",
+    "IsGlobal": false,
+    "IsActive": true
   }
 
 ]

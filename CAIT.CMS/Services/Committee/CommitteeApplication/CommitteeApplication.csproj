@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\CommitteeQuorumRules\Commands\Results\" />
     <Folder Include="Features\StatusHistories\Commands\Results\" />
   </ItemGroup>
 

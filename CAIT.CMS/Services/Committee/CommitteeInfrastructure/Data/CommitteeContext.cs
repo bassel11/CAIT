@@ -33,6 +33,7 @@ namespace CommitteeInfrastructure.Data
 
         public DbSet<CommitteeDocument> CommitteeDocuments { get; set; }
         public DbSet<CommitteeDecision> CommitteeDecisions { get; set; }
+        public DbSet<CommitteeQuorumRule> CommitteeQuorumRules { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -183,7 +184,35 @@ namespace CommitteeInfrastructure.Data
             new CommitteeStatus { Id = 4, Name = "Completed", CreatedAt = new DateTime(2025, 11, 1) },
             new CommitteeStatus { Id = 5, Name = "Dissolved", CreatedAt = new DateTime(2025, 11, 1) },
             new CommitteeStatus { Id = 6, Name = "Archived", CreatedAt = new DateTime(2025, 11, 1) }
-);
+           );
+
+            // -------------------------------
+            // CommitteeQuorumRule (Dependent)
+            // -------------------------------
+            modelBuilder.Entity<CommitteeQuorumRule>(entity =>
+            {
+                entity.ToTable("CommitteeQuorumRules");
+
+                entity.HasKey(q => q.Id);
+
+                entity.Property(q => q.Type)
+                      .IsRequired();
+
+                entity.Property(q => q.EffectiveDate)
+                      .IsRequired();
+
+                entity.Property(q => q.CreatedAt)
+                      .IsRequired();
+
+                entity.Property(q => q.Description)
+                      .HasMaxLength(500);
+
+                // 🔥 هنا التكوين الصحيح للعلاقة One-To-One
+                entity.HasOne(q => q.Committee)
+                      .WithOne(c => c.CommitteeQuorumRule)
+                      .HasForeignKey<CommitteeQuorumRule>(q => q.CommitteeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
