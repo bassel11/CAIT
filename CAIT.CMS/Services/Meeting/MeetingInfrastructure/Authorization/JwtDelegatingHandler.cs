@@ -14,14 +14,14 @@ namespace MeetingInfrastructure.Authorization
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
-
-            if (!string.IsNullOrEmpty(token))
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext != null && httpContext.Request.Headers.TryGetValue("Authorization", out var authHeader))
             {
-                // Remove "Bearer " then re-add it properly
-                token = token.Replace("Bearer ", "");
-
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var token = authHeader.FirstOrDefault()?.Replace("Bearer ", "").Trim();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
             }
 
             return await base.SendAsync(request, cancellationToken);

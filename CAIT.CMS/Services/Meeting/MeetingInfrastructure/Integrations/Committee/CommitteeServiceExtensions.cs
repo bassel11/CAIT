@@ -1,4 +1,5 @@
 ﻿using MeetingApplication.Interfaces.Committee;
+using MeetingInfrastructure.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
@@ -18,10 +19,11 @@ namespace MeetingInfrastructure.Integrations.Committee
             services.AddHttpClient<ICommitteeService, CommitteeServiceClient>(client =>
             {
                 client.BaseAddress = new Uri(baseUrl);
-                client.Timeout = TimeSpan.FromSeconds(5);
+                client.Timeout = TimeSpan.FromSeconds(500);
             })
+            .AddHttpMessageHandler<JwtDelegatingHandler>()  // ✅ أضف الـ DelegatingHandler
             .AddPolicyHandler(GetRetryPolicy())
-            .AddPolicyHandler(GetTimeoutPolicy())
+            //.AddPolicyHandler(GetTimeoutPolicy())
             .AddPolicyHandler(GetCircuitBreakerPolicy());
 
             return services;
@@ -33,8 +35,8 @@ namespace MeetingInfrastructure.Integrations.Committee
                 .OrResult(r => !r.IsSuccessStatusCode)
                 .WaitAndRetryAsync(3, retry => TimeSpan.FromMilliseconds(200));
 
-        private static IAsyncPolicy<HttpResponseMessage> GetTimeoutPolicy()
-            => Policy.TimeoutAsync<HttpResponseMessage>(2);
+        //private static IAsyncPolicy<HttpResponseMessage> GetTimeoutPolicy()
+        //    => Policy.TimeoutAsync<HttpResponseMessage>(5);
 
         private static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
             => HttpPolicyExtensions

@@ -5,6 +5,10 @@ namespace MeetingApplication.Features.Attendances.Queries.Models
 {
     public class ValidateQuorumQuery : IRequest<QuorumValidationResult>
     {
-        public Guid MeetingId { get; }
+        public Guid MeetingId { get; set; }
+        public ValidateQuorumQuery(Guid meetingId)
+        {
+            MeetingId = meetingId;
+        }
     }
 }

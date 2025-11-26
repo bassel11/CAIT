@@ -26,5 +26,7 @@
         Generate = 21,         // توليد أو إنشاء
         CheckIn = 22,         // نحقق
         Confirm = 23,         // تأكيد
+        ValidateQuorum = 24,  // تحقق النصاب
+
     }
 }

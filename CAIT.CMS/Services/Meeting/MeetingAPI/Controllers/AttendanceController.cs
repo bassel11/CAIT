@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using MeetingApplication.Features.Attendances.Commands.Models;
+using MeetingApplication.Features.Attendances.Queries.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -84,6 +85,47 @@ namespace MeetingAPI.Controllers
             await _mediator.Send(new RemoveAttendanceCommand { Id = id });
             return NoContent();
         }
+
+
+        // -------------------------------------------------------------
+        // GET: api/attendance/meeting/{meetingId}
+        // -------------------------------------------------------------
+        [HttpGet("meeting/{meetingId}")]
+        [Authorize(Policy = "Permission:Attendance.View")]
+        public async Task<IActionResult> GetAttendanceForMeeting([FromRoute] Guid meetingId)
+        {
+            var query = new GetAttendanceForMeetingQuery
+            {
+                MeetingId = meetingId
+            };
+
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
+        // -------------------------------------------------------------
+        // GET: api/attendance/member
+        // -------------------------------------------------------------
+        [HttpGet("member")]
+        [Authorize(Policy = "Permission:Attendance.View")]
+        public async Task<IActionResult> GetAttendanceForMember([FromQuery] GetAttendanceForMemberQuery query)
+        {
+            var result = await _mediator.Send(query);
+            return Ok(result); // PaginatedResult<GetAttendanceResponse>
+        }
+
+        // -------------------------------------------------------------
+        // GET: api/attendance/validate-quorum/{meetingId}
+        // -------------------------------------------------------------
+        [HttpGet("validate-quorum/{meetingId}")]
+        [Authorize(Policy = "Permission:Attendance.ValidateQuorum")]
+        public async Task<IActionResult> ValidateQuorum([FromRoute] Guid meetingId)
+        {
+            var query = new ValidateQuorumQuery(meetingId);
+            var result = await _mediator.Send(query);
+            return Ok(result); // QuorumValidationResult
+        }
+
 
         #endregion
     }

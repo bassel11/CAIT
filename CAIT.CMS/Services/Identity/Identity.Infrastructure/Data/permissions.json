@@ -462,6 +462,22 @@
     "Description": "Remove Attendance",
     "IsGlobal": false,
     "IsActive": true
+  },
+  {
+    "Name": "Attendance.View",
+    "ResourceType": 4,
+    "Action": 0,
+    "Description": "View Attendance",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Attendance.ValidateQuorum",
+    "ResourceType": 4,
+    "Action": 24,
+    "Description": "Attendance ValidateQuorum",
+    "IsGlobal": false,
+    "IsActive": true
   }
 
 

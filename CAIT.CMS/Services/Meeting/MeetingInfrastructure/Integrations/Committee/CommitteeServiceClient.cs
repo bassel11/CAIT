@@ -20,7 +20,7 @@ namespace MeetingInfrastructure.Integrations.Committee
 
         public async Task<int> GetMemberCountAsync(Guid committeeId, CancellationToken ct = default)
         {
-            var url = $"/api/committee/{committeeId}/members/count";
+            var url = $"api/CommitteeMember/{committeeId}/members/count";
 
             var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
@@ -40,7 +40,7 @@ namespace MeetingInfrastructure.Integrations.Committee
 
         public async Task<QuorumRule?> GetQuorumRuleAsync(Guid committeeId, CancellationToken ct = default)
         {
-            var url = $"/api/committee/GetByCommitteeId/{committeeId}";
+            var url = $"/api/CommitteeQuorumRule/GetByCommitteeId/{committeeId}";
 
             var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
