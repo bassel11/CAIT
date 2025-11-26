@@ -6,12 +6,12 @@ namespace MeetingApplication.Features.Attendances.Commands.Models
     public class BulkCheckInCommand : IRequest<Unit>
     {
         public Guid MeetingId { get; }
-        public List<(Guid MemberId, AttendanceStatus Status)> Entries { get; }
+        public List<BulkCheckInEntry> Entries { get; set; }
 
-        public BulkCheckInCommand(Guid meetingId, List<(Guid MemberId, AttendanceStatus Status)> entries)
+        public class BulkCheckInEntry
         {
-            MeetingId = meetingId;
-            Entries = entries;
+            public Guid MemberId { get; set; }
+            public AttendanceStatus Status { get; set; }
         }
     }
 

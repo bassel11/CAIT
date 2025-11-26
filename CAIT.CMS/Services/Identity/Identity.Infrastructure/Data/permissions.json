@@ -131,17 +131,6 @@
     "IsActive": true
   },
 
-
-  {
-    "Name": "Meeting.Create",
-    "ResourceType": 4,
-    "Action": 1,
-    "Description": "Create New Meeting",
-    "IsGlobal": false,
-    "IsActive": true
-  },
-
-
   {
     "Name": "Permission.View",
     "ResourceType": 2,
@@ -357,6 +346,123 @@
     "Description": "Delete Committees Quorum Rule",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "Meeting.Create",
+    "ResourceType": 4,
+    "Action": 1,
+    "Description": "Create New Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Meeting.Update",
+    "ResourceType": 4,
+    "Action": 2,
+    "Description": "Update Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Meeting.Cancel",
+    "ResourceType": 4,
+    "Action": 18,
+    "Description": "Cancel Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Meeting.Complete",
+    "ResourceType": 4,
+    "Action": 19,
+    "Description": "Complete Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Meeting.Reschedule",
+    "ResourceType": 4,
+    "Action": 20,
+    "Description": "Reschedule Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Meeting.View",
+    "ResourceType": 4,
+    "Action": 0,
+    "Description": "View Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
+
+  {
+    "Name": "AgendaItem.Create",
+    "ResourceType": 4,
+    "Action": 1,
+    "Description": "Create AgendaItem",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaItem.Update",
+    "ResourceType": 4,
+    "Action": 2,
+    "Description": "Update AgendaItem",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaItem.Delete",
+    "ResourceType": 4,
+    "Action": 3,
+    "Description": "Delete AgendaItem",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaItem.Generate",
+    "ResourceType": 4,
+    "Action": 21,
+    "Description": "Generate AgendaItem",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaItem.View",
+    "ResourceType": 4,
+    "Action": 0,
+    "Description": "View AgendaItem",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
+  {
+    "Name": "Attendance.CheckIn",
+    "ResourceType": 4,
+    "Action": 22,
+    "Description": "CheckIn Attendance",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Attendance.Confirm",
+    "ResourceType": 4,
+    "Action": 23,
+    "Description": "Confirm Attendance",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Attendance.Remove",
+    "ResourceType": 4,
+    "Action": 17,
+    "Description": "Remove Attendance",
+    "IsGlobal": false,
+    "IsActive": true
   }
+
 
 ]

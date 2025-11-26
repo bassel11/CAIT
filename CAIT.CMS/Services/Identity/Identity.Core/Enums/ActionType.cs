@@ -19,6 +19,12 @@
         Vote = 14,           // تصويت
         Register = 15,       // تسجيل 
         Deactivate = 16,     // إلغاء تفعيل
-        Remove = 17         // إزالة
+        Remove = 17,         // إزالة
+        Cancel = 18,         // إلغاء
+        Complete = 19,       // إتمام 
+        Reschedule = 20,      // إعادة جدولة
+        Generate = 21,         // توليد أو إنشاء
+        CheckIn = 22,         // نحقق
+        Confirm = 23,         // تأكيد
     }
 }

@@ -16,7 +16,7 @@ namespace MeetingApplication.Features.Meetings.Queries.Handlers
                                          , IRequestHandler<GetMeetingsQuery, PaginatedResult<GetMeetingResponse>>
     {
         #region Fields
-        private readonly IMeetingRepository _metingRepository;
+        private readonly IMeetingRepository _meetingRepository;
         private readonly IMapper _mapper;
         private readonly IStringLocalizer<SharedResources> _stringLocalizer;
         private readonly IPaginationService _paginationService;
@@ -29,7 +29,7 @@ namespace MeetingApplication.Features.Meetings.Queries.Handlers
                                     , IPaginationService paginationService
                                     , ICurrentUserService currentUser) : base(stringLocalizer)
         {
-            _metingRepository = meetingRepository;
+            _meetingRepository = meetingRepository;
             _mapper = mapper;
             _stringLocalizer = stringLocalizer;
             _paginationService = paginationService;
@@ -39,7 +39,7 @@ namespace MeetingApplication.Features.Meetings.Queries.Handlers
 
         public async Task<PaginatedResult<GetMeetingResponse>> Handle(GetMeetingsQuery request, CancellationToken cancellationToken)
         {
-            var query = _metingRepository.Query();
+            var query = _meetingRepository.Query();
 
 
             // 2) Search
