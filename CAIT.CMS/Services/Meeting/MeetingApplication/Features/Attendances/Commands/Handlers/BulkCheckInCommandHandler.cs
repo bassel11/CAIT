@@ -9,63 +9,63 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
 {
     public class BulkCheckInCommandHandler : IRequestHandler<BulkCheckInCommand, Unit>
     {
-        #region Fields
         private readonly IAttendanceRepository _repo;
-        private readonly IMeetingRepository _meetings;
-        #endregion
 
-        #region Constructor
-        public BulkCheckInCommandHandler(IAttendanceRepository repo, IMeetingRepository meetings)
+        public BulkCheckInCommandHandler(IAttendanceRepository repo)
         {
             _repo = repo;
-            _meetings = meetings;
         }
-        #endregion
 
-        #region Actions
         public async Task<Unit> Handle(BulkCheckInCommand req, CancellationToken ct)
         {
-            var meeting = await _meetings.GetByIdAsync(req.MeetingId);
-
-            if (meeting == null)
-            {
+            // 1️⃣ تحقق من وجود الاجتماع
+            bool meetingExists = await _repo.ExistsAsync(req.MeetingId, ct);
+            if (!meetingExists)
                 throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
-            }
 
             var memberIds = req.Entries.Select(e => e.MemberId).ToList();
-            var existing = await _repo.GetByMeetingAndMembersAsync(req.MeetingId, memberIds, ct);
 
+            // 2️⃣ جلب الحضور الحالي فقط للأعضاء المطلوبين
+            var existingAttendances = await _repo.GetByMeetingAndMembersAsync(req.MeetingId, memberIds, ct);
 
             var now = DateTime.UtcNow;
+            var toAdd = new List<Attendance>();
+            var toUpdate = new List<Attendance>();
 
-            foreach (var e in req.Entries)
+            foreach (var entry in req.Entries)
             {
-                var ex = existing.FirstOrDefault(x => x.MemberId == e.MemberId);
-                if (ex != null)
+                var exist = existingAttendances.FirstOrDefault(x => x.MemberId == entry.MemberId);
+                if (exist != null)
                 {
-                    ex.AttendanceStatus = e.Status;
-                    ex.Timestamp = now;
-                    await _repo.UpdateAsync(ex);
+                    exist.AttendanceStatus = entry.Status;
+                    exist.Timestamp = now;
+                    toUpdate.Add(exist);
                 }
                 else
                 {
-                    var rec = new Attendance
+                    toAdd.Add(new Attendance
                     {
                         Id = Guid.NewGuid(),
                         MeetingId = req.MeetingId,
-                        MemberId = e.MemberId,
+                        MemberId = entry.MemberId,
+                        AttendanceStatus = entry.Status,
                         RSVP = RSVPStatus.Yes,
-                        AttendanceStatus = e.Status,
                         Timestamp = now
-                    };
-                    await _repo.AddAsync(rec);
+                    });
                 }
             }
 
+            // 3️⃣ نفذ Bulk Update و Add
+            if (toUpdate.Any())
+                _repo.BulkUpdate(toUpdate);
+
+            if (toAdd.Any())
+                await _repo.BulkAddAsync(toAdd, ct);
+
+            // 4️⃣ حفظ التغييرات مرة واحدة
             await _repo.SaveChangesAsync(ct);
+
             return Unit.Value;
         }
-
-        #endregion
     }
 }

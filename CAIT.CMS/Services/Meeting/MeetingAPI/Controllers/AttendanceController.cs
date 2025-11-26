@@ -52,19 +52,26 @@ namespace MeetingAPI.Controllers
         // -------------------------------------------------------------
         // POST: api/attendance/bulk/check-in
         // -------------------------------------------------------------
-        //[HttpPost("bulk/check-in")]
-        //[Authorize(Policy = "Permission:Attendance.CheckIn")]
-        //public async Task<ActionResult> BulkCheckIn([FromBody] BulkCheckInDto dto)
-        //{
-        //    var entries = dto.Entries
-        //                     .Select(e => (e.MemberId, e.Status))
-        //                     .ToList();
+        [HttpPost("bulk/check-in")]
+        [Authorize(Policy = "Permission:Attendance.CheckIn")]
+        public async Task<IActionResult> BulkCheckIn([FromBody] BulkCheckInCommand dto)
+        {
+            if (dto.Entries == null || !dto.Entries.Any())
+                return BadRequest("Entries cannot be empty.");
 
-        //    var command = new BulkCheckInCommand(dto.MeetingId, entries);
+            var command = new BulkCheckInCommand
+            {
+                MeetingId = dto.MeetingId,
+                Entries = dto.Entries.Select(x => new BulkCheckInCommand.BulkCheckInEntry
+                {
+                    MemberId = x.MemberId,
+                    Status = x.Status
+                }).ToList()
+            };
 
-        //    await _mediator.Send(command);
-        //    return NoContent();
-        //}
+            await _mediator.Send(command);
+            return Ok();
+        }
 
 
         // -------------------------------------------------------------

@@ -15,5 +15,6 @@ namespace MeetingCore.Entities
         public AttendanceStatus AttendanceStatus { get; set; } // None, Present, Remote, Absent
 
         public DateTime? Timestamp { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }
