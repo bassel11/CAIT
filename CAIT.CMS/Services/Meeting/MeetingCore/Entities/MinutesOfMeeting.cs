@@ -25,5 +25,8 @@ namespace MeetingCore.Entities
         public DateTime? ApprovedAt { get; set; }
 
         public ICollection<MinutesVersion> Versions { get; set; } = new List<MinutesVersion>();
+        public ICollection<MoMAttachment> MoMAttachmentS { get; set; } = new List<MoMAttachment>();
+
+
     }
 }

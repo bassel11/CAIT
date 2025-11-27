@@ -9,5 +9,12 @@ namespace MeetingApplication.Features.MoMs.Commands.Models
         public string? AgendaSummary { get; set; }
         public string? DecisionsSummary { get; set; }
         public string? ActionItemsJson { get; set; }
+        public string? InitialContent { get; set; }
+
+        public CreateMoMCommand(Guid meetingId, string? initialContent)
+        {
+            MeetingId = meetingId;
+            InitialContent = initialContent;
+        }
     }
 }

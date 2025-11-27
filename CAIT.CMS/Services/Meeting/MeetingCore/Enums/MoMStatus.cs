@@ -5,6 +5,8 @@
         Draft,
         PendingApproval,
         Approved,
+        Published,
+        Archived,
         Rejected
     }
 }

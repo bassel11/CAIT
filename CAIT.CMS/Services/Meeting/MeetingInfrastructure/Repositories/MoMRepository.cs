@@ -27,6 +27,11 @@ namespace MeetingInfrastructure.Repositories
                 .ToListAsync(ct);
         }
 
+        public async Task AddVersionAsync(MinutesVersion version, CancellationToken ct = default)
+        {
+            await _dbContext.MinutesVersions.AddAsync(version, ct);
+        }
+
 
     }
 }

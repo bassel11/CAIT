@@ -97,5 +97,6 @@ namespace MeetingInfrastructure.Repositories
         {
             await _dbContext.SaveChangesAsync(ct);
         }
+
     }
 }

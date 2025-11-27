@@ -19,6 +19,7 @@ namespace MeetingInfrastructure.Data
         public DbSet<AIGeneratedContent> AIGeneratedContents => Set<AIGeneratedContent>();
         public DbSet<MeetingIntegrationLog> IntegrationLogs => Set<MeetingIntegrationLog>();
         public DbSet<MeetingNotification> Notifications => Set<MeetingNotification>();
+        public DbSet<MoMAttachment> MoMAttachments => Set<MoMAttachment>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -34,6 +35,7 @@ namespace MeetingInfrastructure.Data
             modelBuilder.ApplyConfiguration(new AIGeneratedContentConfiguration());
             modelBuilder.ApplyConfiguration(new MeetingIntegrationLogConfiguration());
             modelBuilder.ApplyConfiguration(new MeetingNotificationConfiguration());
+            modelBuilder.ApplyConfiguration(new MoMAttachmentConfiguration());
 
             base.OnModelCreating(modelBuilder);
 
@@ -64,7 +66,8 @@ namespace MeetingInfrastructure.Data
                     || e.Entity is MeetingVote
                     || e.Entity is AIGeneratedContent
                     || e.Entity is MeetingIntegrationLog
-                    || e.Entity is MeetingNotification);
+                    || e.Entity is MeetingNotification
+                    || e.Entity is MoMAttachment);
 
             var now = DateTime.UtcNow;
 

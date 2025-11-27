@@ -9,5 +9,6 @@ namespace MeetingApplication.Features.MoMs.Commands.Models
         public string? AgendaSummary { get; set; }
         public string? DecisionsSummary { get; set; }
         public string? ActionItemsJson { get; set; }
+        public string Content { get; set; }
     }
 }
