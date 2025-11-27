@@ -2,8 +2,10 @@
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Features.MoMs.Queries.Models;
 using MeetingApplication.Features.MoMs.Queries.Results;
+using MeetingApplication.Wrappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace MeetingAPI.Controllers
 {
@@ -104,6 +106,18 @@ namespace MeetingAPI.Controllers
             return Ok(result); // 200 مع القائمة
         }
 
+
+        // -------------------------------------------------------
+        // Get Paginated and filtered and Sorted MoMs
+        // -------------------------------------------------------
+        [HttpPost("GetMoMs", Name = "GetMoMs")]
+        [ProducesResponseType(typeof(PaginatedResult<GetMinutesResponse>), (int)HttpStatusCode.OK)]
+        [Authorize(Policy = "Permission:MoM.View")]
+        public async Task<ActionResult<PaginatedResult<GetMinutesResponse>>> GetMeetings([FromBody] GetMoMsByMeetingQuery query)
+        {
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
 
         #endregion
     }

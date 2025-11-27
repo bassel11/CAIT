@@ -97,6 +97,18 @@ namespace MeetingApplication.Extensions
             if (underlying == typeof(Guid))
                 return Guid.Parse(value);
 
+            // ✨ هنا التعديل: دعم الـ Enum
+            if (underlying.IsEnum)
+            {
+                // يسمح بتمرير النص مثل "Approved" أو الرقم مثل "2"
+                if (int.TryParse(value, out var intVal))
+                {
+                    return Enum.ToObject(underlying, intVal);
+                }
+                return Enum.Parse(underlying, value, ignoreCase: true);
+            }
+
+
             return value;
         }
 
