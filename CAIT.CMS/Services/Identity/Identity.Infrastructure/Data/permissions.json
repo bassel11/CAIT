@@ -478,6 +478,47 @@
     "Description": "Attendance ValidateQuorum",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "MoM.Create",
+    "ResourceType": 4,
+    "Action": 1,
+    "Description": "Create Minute of Meeting (MoM)",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoM.Update",
+    "ResourceType": 4,
+    "Action": 2,
+    "Description": "Update Minute of Meeting (MoM)",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoM.Reject",
+    "ResourceType": 4,
+    "Action": 4,
+    "Description": "Reject Minute of Meeting (MoM)",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoM.Approve",
+    "ResourceType": 4,
+    "Action": 4,
+    "Description": "Approve Minute of Meeting (MoM)",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoM.View",
+    "ResourceType": 4,
+    "Action": 0,
+    "Description": "View Minute of Meeting (MoM)",
+    "IsGlobal": false,
+    "IsActive": true
   }
 
 

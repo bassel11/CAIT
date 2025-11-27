@@ -24,6 +24,7 @@
   <ItemGroup>
     <Folder Include="Features\AgendaItems\Commands\Results\" />
     <Folder Include="Features\Attendances\Commands\Results\" />
+    <Folder Include="Features\MoMs\Commands\Results\" />
   </ItemGroup>
 
 </Project>
