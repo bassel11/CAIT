@@ -15,7 +15,7 @@ namespace MeetingInfrastructure.Configurations
             b.HasIndex(x => x.MoMId);
 
             b.HasOne(x => x.MoM)
-                .WithMany(m => m.MoMAttachmentS)
+                .WithMany(m => m.MoMAttachments)
                 .HasForeignKey(x => x.MoMId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

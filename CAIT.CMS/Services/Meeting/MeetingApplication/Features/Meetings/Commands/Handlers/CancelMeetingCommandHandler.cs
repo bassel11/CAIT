@@ -3,6 +3,7 @@ using MediatR;
 using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Exceptions;
 using MeetingApplication.Features.Meetings.Commands.Models;
+using MeetingApplication.Repositories;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
 using MeetingCore.Repositories;

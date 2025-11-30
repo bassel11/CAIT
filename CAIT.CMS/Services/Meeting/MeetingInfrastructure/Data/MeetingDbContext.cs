@@ -21,6 +21,8 @@ namespace MeetingInfrastructure.Data
         public DbSet<MeetingNotification> Notifications => Set<MeetingNotification>();
         public DbSet<MoMAttachment> MoMAttachments => Set<MoMAttachment>();
 
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

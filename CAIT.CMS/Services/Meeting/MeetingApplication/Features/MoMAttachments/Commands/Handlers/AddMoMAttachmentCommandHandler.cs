@@ -47,16 +47,16 @@ namespace MeetingApplication.Features.MoMAttachments.Commands.Handlers
             var path = await _storage.SaveFileAsync(req.Content, req.FileName, req.ContentType, ct);
 
             // create attachment entity (we'll reuse MeetingIntegrationLog as attachments table isn't created previously; better to create MoMAttachments table)
-            var att = new MoMAttachment
-            {
-                Id = Guid.NewGuid(),
-                MoMId = mom.Id,
-                FileName = req.FileName,
-                StoragePath = path,
-                ContentType = req.ContentType,
-                UploadedAt = _clock.UtcNow,
-                UploadedBy = _user.UserId == Guid.Empty ? Guid.Empty : _user.UserId
-            };
+            var att = new MoMAttachment(
+                 Guid.NewGuid(),
+                 mom.Id,
+                 req.FileName,
+                 path,
+                 req.ContentType,
+                 _clock.UtcNow,
+                 _user.UserId
+             );
+
 
             await _attchRepo.AddAsync(att);
             await _attchRepo.SaveChangesAsync(ct);

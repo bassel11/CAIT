@@ -12,5 +12,20 @@
         public DateTime UploadedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public Guid CreatedBy { get; set; }
+
+        public MoMAttachment(Guid id, Guid momId, string fileName, string storagePath, string contentType, DateTime uploadedAt, Guid uploadedBy)
+        {
+            Id = id;
+            MoMId = momId;
+            FileName = fileName;
+            StoragePath = storagePath;
+            ContentType = contentType;
+            UploadedAt = uploadedAt;
+            UploadedBy = uploadedBy;
+        }
+        public MoMAttachment()
+        {
+
+        }
     }
 }

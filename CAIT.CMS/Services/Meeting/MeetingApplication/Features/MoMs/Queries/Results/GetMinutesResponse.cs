@@ -1,4 +1,6 @@
-﻿namespace MeetingApplication.Features.MoMs.Queries.Results
+﻿using MeetingApplication.Features.MoMAttachments.Queries.Results;
+
+namespace MeetingApplication.Features.MoMs.Queries.Results
 {
     public class GetMinutesResponse
     {
@@ -10,6 +12,7 @@
         public string? DecisionsSummary { get; set; }
         public string? ActionItemsJson { get; set; }
         public int VersionNumber { get; set; }
+        public List<MoMAttachmentResponse> Attachments { get; set; } = new();
         public Guid CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public Guid? ApprovedBy { get; set; }

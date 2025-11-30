@@ -1,6 +1,7 @@
 ﻿using MeetingCore.Entities;
 using MeetingCore.Repositories;
 using MeetingInfrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace MeetingInfrastructure.Repositories
 {
@@ -8,6 +9,12 @@ namespace MeetingInfrastructure.Repositories
     {
         public MoMAttachmentRepository(MeetingDbContext dbContext) : base(dbContext)
         {
+        }
+        public async Task<MoMAttachment?> GetPdfByMoMIdAsync(Guid momId, CancellationToken ct)
+        {
+            return await _dbContext.MoMAttachments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.MoMId == momId && a.ContentType == "application/pdf", ct);
         }
     }
 }

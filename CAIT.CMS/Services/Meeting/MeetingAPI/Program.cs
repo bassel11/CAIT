@@ -35,6 +35,7 @@ builder.Services.AddCommitteeServiceClient(builder.Configuration);
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
 
+
 // Register Services
 builder.Services.AddApplicationServices()
                 .AddInfrastructureServices();

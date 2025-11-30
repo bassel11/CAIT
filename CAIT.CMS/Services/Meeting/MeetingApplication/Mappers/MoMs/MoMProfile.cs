@@ -9,7 +9,8 @@ namespace MeetingApplication.Mappers.MoMs
         public MoMProfile()
         {
             CreateMap<MinutesOfMeeting, GetMinutesResponse>()
-            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()))
+            .ForMember(d => d.Attachments, opt => opt.Ignore()); ;
         }
     }
 }
