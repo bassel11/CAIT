@@ -33,5 +33,33 @@ namespace MeetingInfrastructure.Repositories
         }
 
 
+        public async Task UpdateMoMAsync(MinutesOfMeeting newData)
+        {
+            var existing = await _dbContext.Minutes
+                .Include(x => x.MoMAttachments)
+                .Include(x => x.Versions)
+                .FirstOrDefaultAsync(x => x.Id == newData.Id);
+
+            if (existing == null)
+                throw new Exception("MinutesOfMeeting not found.");
+
+            // تحديث الحقول الأساسية فقط
+            existing.Status = newData.Status;
+            existing.ApprovedAt = newData.ApprovedAt;
+            existing.ApprovedBy = newData.ApprovedBy;
+            existing.UpdatedAt = newData.UpdatedAt;
+
+            // إضافة المرفقات الجديدة فقط
+            foreach (var att in newData.MoMAttachments)
+            {
+                if (!existing.MoMAttachments.Any(x => x.Id == att.Id))
+                    existing.MoMAttachments.Add(att);
+            }
+
+            // لا نستخدم Update(entity)
+            // EF Core يتتبع existing تلقائياً
+        }
+
     }
 }
+

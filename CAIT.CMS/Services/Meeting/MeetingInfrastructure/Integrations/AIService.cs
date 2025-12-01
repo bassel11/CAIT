@@ -1,4 +1,4 @@
-﻿using MeetingApplication.Interfaces.Integrations;
+﻿using MeetingApplication.Integrations;
 
 namespace MeetingInfrastructure.Integrations
 {

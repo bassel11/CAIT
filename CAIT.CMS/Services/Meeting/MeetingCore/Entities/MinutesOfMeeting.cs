@@ -27,7 +27,7 @@ namespace MeetingCore.Entities
 
         public Guid? ApprovedBy { get; set; }
         public DateTime? ApprovedAt { get; set; }
-        public DateTime UpdatedAt { get; private set; }
+        public DateTime UpdatedAt { get; set; }
 
         //public ICollection<MinutesVersion> Versions { get; set; } = new List<MinutesVersion>();
         //public ICollection<MoMAttachment> MoMAttachmentS { get; set; } = new List<MoMAttachment>();
@@ -69,7 +69,7 @@ namespace MeetingCore.Entities
         public void AddAttachment(MoMAttachment attachment)
         {
             MoMAttachments.Add(attachment);
-            UpdatedAt = DateTime.UtcNow;
+            //UpdatedAt = DateTime.UtcNow;
         }
 
 

@@ -1,4 +1,4 @@
-﻿namespace MeetingApplication.Repositories
+﻿namespace MeetingApplication.Interfaces
 {
     public interface IUnitOfWork
     {

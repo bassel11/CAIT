@@ -4,6 +4,7 @@ using MeetingInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MeetingInfrastructure.Migrations
 {
     [DbContext(typeof(MeetingDbContext))]
-    partial class MeetingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251201094420_AuditLog_For_test")]
+    partial class AuditLog_For_test
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

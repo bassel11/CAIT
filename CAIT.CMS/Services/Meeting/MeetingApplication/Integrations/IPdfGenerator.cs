@@ -1,4 +1,4 @@
-﻿namespace MeetingApplication.Interfaces.Integrations
+﻿namespace MeetingApplication.Integrations
 {
     public interface IPdfGenerator
     {

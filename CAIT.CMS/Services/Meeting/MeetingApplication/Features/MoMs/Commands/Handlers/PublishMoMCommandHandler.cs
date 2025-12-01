@@ -3,8 +3,8 @@ using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingApplication.Interfaces.Integrations;
-using MeetingApplication.Repositories;
+using MeetingApplication.Integrations;
+using MeetingApplication.Interfaces;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
 using MeetingCore.Events;
@@ -82,7 +82,8 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _unitOfWork.SaveChangesAsync(ct);
 
             // update Outlook meeting with link
-            await _outlook.UpdateMeetingWithMinutesLinkAsync(mom.MeetingId, storagePath, ct);
+
+            //await _outlook.UpdateMeetingWithMinutesLinkAsync(mom.MeetingId, storagePath, ct);
 
             // queue notifications via Outbox
             var notif = new MeetingNotification

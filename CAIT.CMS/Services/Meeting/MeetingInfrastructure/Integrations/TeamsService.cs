@@ -1,17 +1,17 @@
-﻿using MeetingApplication.Interfaces.Integrations;
+﻿using MeetingApplication.Integrations;
 
 namespace MeetingInfrastructure.Integrations
 {
     public class TeamsService : ITeamsService
     {
-        public Task<string?> CreateMeetingRecordingLinkAsync(Guid meetingId, CancellationToken ct = default)
+        public Task<string> FetchTranscriptUrlAsync(Guid meetingId)
         {
-            throw new NotImplementedException();
+            return Task.FromResult($"https://fake-teams/{meetingId}/transcript.vtt");
         }
 
-        public Task<string?> GetTranscriptAsync(Guid meetingId, CancellationToken ct = default)
+        public Task<byte[]> DownloadTranscriptAsync(string url)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(System.Text.Encoding.UTF8.GetBytes("Fake transcript content"));
         }
     }
 }

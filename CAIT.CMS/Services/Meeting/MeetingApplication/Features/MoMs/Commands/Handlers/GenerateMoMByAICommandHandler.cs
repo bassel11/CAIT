@@ -3,7 +3,7 @@ using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingApplication.Interfaces.Integrations;
+using MeetingApplication.Integrations;
 using MeetingCore.Entities;
 using MeetingCore.Repositories;
 
@@ -43,7 +43,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             string transcript;
             if (req.FromTranscript)
             {
-                transcript = await _teams.GetTranscriptAsync(req.MeetingId, ct) ?? throw new DomainException("Transcript not available");
+                transcript = ""; //await _teams.GetTranscriptAsync(req.MeetingId, ct) ?? throw new DomainException("Transcript not available");
             }
             else
             {

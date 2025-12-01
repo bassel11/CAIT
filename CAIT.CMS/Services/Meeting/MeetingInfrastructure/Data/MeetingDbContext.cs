@@ -22,6 +22,7 @@ namespace MeetingInfrastructure.Data
         public DbSet<MoMAttachment> MoMAttachments => Set<MoMAttachment>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -46,13 +47,13 @@ namespace MeetingInfrastructure.Data
         // Optional: override SaveChanges to set CreatedAt/UpdatedAt automatically
         public override int SaveChanges()
         {
-            ApplyAuditInformation();
+            //ApplyAuditInformation();
             return base.SaveChanges();
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            ApplyAuditInformation();
+            //ApplyAuditInformation();
             return base.SaveChangesAsync(cancellationToken);
         }
 
@@ -62,14 +63,15 @@ namespace MeetingInfrastructure.Data
                 .Where(e => e.Entity is Meeting
                     || e.Entity is AgendaItem
                     || e.Entity is Attendance
-                    || e.Entity is MinutesOfMeeting
+                    //|| e.Entity is MinutesOfMeeting
                     || e.Entity is MinutesVersion
                     || e.Entity is MeetingDecision
                     || e.Entity is MeetingVote
                     || e.Entity is AIGeneratedContent
                     || e.Entity is MeetingIntegrationLog
                     || e.Entity is MeetingNotification
-                    || e.Entity is MoMAttachment);
+                    //|| e.Entity is MoMAttachment
+                    );
 
             var now = DateTime.UtcNow;
 

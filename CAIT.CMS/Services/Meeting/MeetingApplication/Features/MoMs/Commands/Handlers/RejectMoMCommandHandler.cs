@@ -3,7 +3,7 @@ using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingApplication.Interfaces.Integrations;
+using MeetingApplication.Integrations;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
 using MeetingCore.Events;

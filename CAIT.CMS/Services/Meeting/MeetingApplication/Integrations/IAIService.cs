@@ -1,4 +1,4 @@
-﻿namespace MeetingApplication.Interfaces.Integrations
+﻿namespace MeetingApplication.Integrations
 {
     public interface IAIService
     {
@@ -6,3 +6,4 @@
         Task<string> GenerateMoMDraftFromNotesAsync(IEnumerable<string> notes, Guid meetingId, CancellationToken ct = default);
     }
 }
+

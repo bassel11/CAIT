@@ -3,11 +3,10 @@ using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingApplication.Interfaces.Integrations;
-using MeetingApplication.Repositories;
+using MeetingApplication.Integrations;
+using MeetingApplication.Interfaces;
 using MeetingCore.Entities;
 using MeetingCore.Repositories;
-using System.Text.Json;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
 {
@@ -110,57 +109,48 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             //return Unit.Value;
 
+            await _uow.BeginTransactionAsync(ct);
 
             var mom = await _momRepo.GetByIdAsync(req.MoMId);
             if (mom == null)
-            {
                 throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
-            }
-
 
             mom.Approve(_clock.UtcNow, _user.UserId);
 
-
             var latest = mom.Versions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
-            var html = latest?.Content ?? string.Empty;
-
+            var html = latest?.Content ?? "";
 
             var pdfBytes = _pdf.GeneratePdfFromHtml(html);
             var fileName = $"MoM_{mom.MeetingId}_{mom.VersionNumber}.pdf";
-            var storagePath = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
 
+            var path = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
 
-            var attachment = new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, storagePath, "application/pdf", _clock.UtcNow, _user.UserId);
-            mom.AddAttachment(attachment);
+            mom.AddAttachment(new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId));
 
+            await _momRepo.UpdateMoMAsync(mom);
 
-            await _momRepo.UpdateAsync(mom);
-
-
-            // Add outbox message for integration work (Outlook sync + notifications + bus publish)
-            var outboxPayload = JsonSerializer.Serialize(new
+            // OUTBOX MESSAGES
+            await _outbox.EnqueueAsync("Outlook:AttachMoM", new
             {
-                Type = "MoMApproved",
-                Data = new { MoMId = mom.Id, MeetingId = mom.MeetingId, StoragePath = storagePath }
-            });
-
-
-            await _outbox.EnqueueAsync(new OutboxMessage
-            {
-                Id = Guid.NewGuid(),
-                OccurredAt = DateTime.UtcNow,
-                Type = "MoMApproved",
-                Payload = outboxPayload,
-                Processed = false
+                MeetingId = mom.MeetingId,
+                Url = path
             }, ct);
 
+            await _outbox.EnqueueAsync("Notification:MoMPublished", new
+            {
+                to = "test@gov.com",
+                subject = "MoM Approved",
+                body = "Your MoM has been approved"
+            }, ct);
+
+            await _outbox.EnqueueAsync("Integration:MoM.Approved", new
+            {
+                momId = mom.Id,
+                meetingId = mom.MeetingId
+            }, ct);
 
             await _uow.SaveChangesAsync(ct);
-
-
-            // Clear domain events if you used them; domain events were also placed in outbox above.
             mom.ClearEvents();
-
 
             return Unit.Value;
 

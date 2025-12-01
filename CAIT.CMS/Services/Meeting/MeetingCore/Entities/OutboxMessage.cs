@@ -9,5 +9,6 @@
         public bool Processed { get; set; }
         public DateTime? ProcessedAt { get; set; }
         public int Attempts { get; set; }
+        public string? LastError { get; set; }
     }
 }

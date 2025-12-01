@@ -1,11 +1,13 @@
 ﻿using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Interfaces.Integrations;
-using MeetingApplication.Repositories;
+using MeetingApplication.Integrations;
+using MeetingApplication.Interfaces;
 using MeetingApplication.Wrappers;
 using MeetingCore.Repositories;
+using MeetingInfrastructure.Audit;
 using MeetingInfrastructure.Integrations;
 using MeetingInfrastructure.Outbox;
 using MeetingInfrastructure.Pdf;
+using MeetingInfrastructure.RabbitMQ;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
 using MeetingInfrastructure.Services.DateTimeProvider;
@@ -27,23 +29,42 @@ namespace MeetingInfrastructure
             services.AddScoped<IMeetingNotificationRepository, MeetingNotificationRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-
-            services.AddScoped<ITeamsService, TeamsService>(); // implement in infra
-            services.AddScoped<IOutlookService, OutlookService>();
+            // Services
             services.AddScoped<IAIService, AIService>();
-            services.AddScoped<IStorageService, StorageService>();
-            services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEventBus, EventBus>(); // e.g., MassTransit or custom
+            services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+            services.AddScoped<IPaginationService, PaginationService>();
 
-            services.AddScoped<IOutboxService, OutboxServiceImpl>();
+            // PDF & Storage
             services.AddSingleton<IPdfGenerator, SimpleHtmlPdfGenerator>();
-            //services.AddSingleton<IStorageService>(_ => new LocalFileStorageService("./storage"));
+            // services.AddSingleton<IStorageService>(_ => new LocalFileStorageService("./storage"));
+            services.AddScoped<IStorageService, StorageService>();
+
+            // Stubs
             services.AddSingleton<OutlookClientStub>();
             services.AddSingleton<BusPublisherStub>();
 
-            services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+            // Outbox
+            services.AddScoped<IOutboxService, OutboxService>();
+            services.AddScoped<IOutboxRouter, OutboxRouter>();
+            services.AddScoped<IOutboxHandler, IntegrationOutboxHandler>();
+            services.AddScoped<IntegrationOutboxHandler>();
+            services.AddScoped<OutlookOutboxHandler>();
+            services.AddScoped<NotificationOutboxHandler>();
+            services.AddScoped<TeamsOutboxHandler>();
+            services.AddScoped<AuditOutboxHandler>();
 
-            services.AddScoped<IPaginationService, PaginationService>();
+            // RabbitMQ
+            services.AddSingleton<IMessageBus, RabbitMqBus>();
+
+            // Other integrations
+            services.AddScoped<IOutlookService, OutlookService>();
+            services.AddScoped<ITeamsService, TeamsService>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IAuditService, AuditService>();
+
+            // Hosted service
+            services.AddHostedService<OutboxProcessor>();
 
             return services;
         }

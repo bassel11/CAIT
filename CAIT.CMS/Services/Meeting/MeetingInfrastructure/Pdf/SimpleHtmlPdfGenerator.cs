@@ -1,4 +1,4 @@
-﻿using MeetingApplication.Interfaces.Integrations;
+﻿using MeetingApplication.Integrations;
 using System.Text;
 
 namespace MeetingInfrastructure.Pdf

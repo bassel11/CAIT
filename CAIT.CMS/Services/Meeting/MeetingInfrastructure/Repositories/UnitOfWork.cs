@@ -1,5 +1,6 @@
-﻿using MeetingApplication.Repositories;
+﻿using MeetingApplication.Interfaces;
 using MeetingInfrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace MeetingInfrastructure.Repositories
@@ -30,6 +31,13 @@ namespace MeetingInfrastructure.Repositories
                     _currentTransaction = null;
                 }
             }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                // إذا حصل تضارب في التزامن
+                await RollbackAsync(ct);
+                throw new InvalidOperationException("تم تعديل محضر الاجتماع من قبل مستخدم آخر، الرجاء إعادة المحاولة.", ex);
+            }
+
             catch
             {
                 await RollbackAsync(ct);
