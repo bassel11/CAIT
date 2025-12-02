@@ -11,13 +11,14 @@ using MeetingInfrastructure.RabbitMQ;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
 using MeetingInfrastructure.Services.DateTimeProvider;
+using Microsoft.Extensions.Configuration; // مهم لإضافة IConfiguration
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MeetingInfrastructure
 {
     public static class InfrastructureDependencyInjection
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
+        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
@@ -65,6 +66,10 @@ namespace MeetingInfrastructure
 
             // Hosted service
             services.AddHostedService<OutboxProcessor>();
+            //services.AddHostedService<RabbitMqConsumer>(); for test consuming
+
+            // ✅ إضافة إعدادات SMTP عبر Options Pattern
+            services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
 
             return services;
         }

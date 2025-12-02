@@ -52,66 +52,10 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
         public async Task<Unit> Handle(ApproveMoMCommand req, CancellationToken ct)
         {
-            //var mom = await _repo.GetByIdAsync(req.MoMId);
-            //if (mom == null)
-            //{
-            //    throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
-            //}
 
-            //if (mom.Status == MoMStatus.Approved)
-            //    throw new DomainException("MoM already approved");
-            //if (mom.Status != MoMStatus.PendingApproval)
-            //    throw new DomainException("Only pending MoMs can be approved.");
+            // await _uow.BeginTransactionAsync(ct);
 
-            //mom.Status = MoMStatus.Approved;
-            //mom.ApprovedAt = _clock.UtcNow;
-            //mom.ApprovedBy = _user.UserId;
-
-            //// create official PDF (placeholder): aggregate latest version content
-            //var latest = mom.Versions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
-            //var pdfBytes = GeneratePdfFromHtmlOrText(latest?.Content ?? ""); // you must implement PDF generator in infra
-            //var fileName = $"MoM_{mom.MeetingId}_{mom.VersionNumber}.pdf";
-            //var storagePath = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
-
-            //// store reference in Attachment table
-            //var attachment = new MoMAttachment
-            //{
-            //    Id = Guid.NewGuid(),
-            //    MoMId = mom.Id,
-            //    FileName = fileName,
-            //    StoragePath = storagePath,
-            //    ContentType = "application/pdf",
-            //    UploadedAt = _clock.UtcNow,
-            //    UploadedBy = _user.UserId,
-            //};
-            //await _momatachmentRepository.AddAsync(attachment);
-
-            //await _repo.UpdateAsync(mom);
-            //await _uow.SaveChangesAsync(ct);
-
-            //// optionally sync with Outlook meeting item to attach the PDF
-            //await _outlook.SyncMeetingAttachmentAsync(mom.MeetingId, storagePath, ct);
-
-            //await _eventBus.PublishAsync(new MoMApprovedEvent(mom.Id, mom.MeetingId, mom.ApprovedBy.Value, mom.ApprovedAt.Value, DateTime.Now), ct);
-
-            //// Queue notification to all members (Outbox pattern via MeetingNotification table)
-            //var notif = new MeetingNotification
-            //{
-            //    Id = Guid.NewGuid(),
-            //    MeetingId = mom.MeetingId,
-            //    NotificationType = NotificationType.MoMApproved,
-            //    PayloadJson = JsonSerializer.Serialize(new { MoMId = mom.Id, Version = mom.VersionNumber, StoragePath = storagePath }),
-            //    CreatedAt = _clock.UtcNow,
-            //    Processed = false
-            //};
-            //await _meetNotification.AddAsync(notif);
-            //await _uow.SaveChangesAsync(ct);
-
-            //return Unit.Value;
-
-            await _uow.BeginTransactionAsync(ct);
-
-            var mom = await _momRepo.GetByIdAsync(req.MoMId);
+            var mom = await _momRepo.GetMoMByIdAsync(req.MoMId);
             if (mom == null)
                 throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
 
@@ -125,7 +69,15 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             var path = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
 
-            mom.AddAttachment(new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId));
+            //mom.AddAttachment(new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId));
+
+            var attachment = new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId);
+
+            // 1) أضف إلى DbSet مباشرة (إذا لديك repo method)
+            await _momatachmentRepository.AddMoMAttachmentAsync(attachment); // هذه تضيف إلى DbContext (Scoped)
+
+            // 2) ثم عدّل mom.Versions أو mom.MoMAttachments إن أردت، لكن لا تفعل UpdateMoMAsync الذي يعيد تحميل الكيان
+            mom.MoMAttachments.Add(attachment);
 
             await _momRepo.UpdateMoMAsync(mom);
 
@@ -138,7 +90,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             await _outbox.EnqueueAsync("Notification:MoMPublished", new
             {
-                to = "test@gov.com",
+                to = "bassel.as19@gmail.com",
                 subject = "MoM Approved",
                 body = "Your MoM has been approved"
             }, ct);
@@ -149,7 +101,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
                 meetingId = mom.MeetingId
             }, ct);
 
-            await _uow.SaveChangesAsync(ct);
+            // await _uow.SaveChangesAsync(ct);
             mom.ClearEvents();
 
             return Unit.Value;
@@ -158,3 +110,62 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
         }
     }
 }
+
+
+
+//var mom = await _repo.GetByIdAsync(req.MoMId);
+//if (mom == null)
+//{
+//    throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+//}
+
+//if (mom.Status == MoMStatus.Approved)
+//    throw new DomainException("MoM already approved");
+//if (mom.Status != MoMStatus.PendingApproval)
+//    throw new DomainException("Only pending MoMs can be approved.");
+
+//mom.Status = MoMStatus.Approved;
+//mom.ApprovedAt = _clock.UtcNow;
+//mom.ApprovedBy = _user.UserId;
+
+//// create official PDF (placeholder): aggregate latest version content
+//var latest = mom.Versions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+//var pdfBytes = GeneratePdfFromHtmlOrText(latest?.Content ?? ""); // you must implement PDF generator in infra
+//var fileName = $"MoM_{mom.MeetingId}_{mom.VersionNumber}.pdf";
+//var storagePath = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
+
+//// store reference in Attachment table
+//var attachment = new MoMAttachment
+//{
+//    Id = Guid.NewGuid(),
+//    MoMId = mom.Id,
+//    FileName = fileName,
+//    StoragePath = storagePath,
+//    ContentType = "application/pdf",
+//    UploadedAt = _clock.UtcNow,
+//    UploadedBy = _user.UserId,
+//};
+//await _momatachmentRepository.AddAsync(attachment);
+
+//await _repo.UpdateAsync(mom);
+//await _uow.SaveChangesAsync(ct);
+
+//// optionally sync with Outlook meeting item to attach the PDF
+//await _outlook.SyncMeetingAttachmentAsync(mom.MeetingId, storagePath, ct);
+
+//await _eventBus.PublishAsync(new MoMApprovedEvent(mom.Id, mom.MeetingId, mom.ApprovedBy.Value, mom.ApprovedAt.Value, DateTime.Now), ct);
+
+//// Queue notification to all members (Outbox pattern via MeetingNotification table)
+//var notif = new MeetingNotification
+//{
+//    Id = Guid.NewGuid(),
+//    MeetingId = mom.MeetingId,
+//    NotificationType = NotificationType.MoMApproved,
+//    PayloadJson = JsonSerializer.Serialize(new { MoMId = mom.Id, Version = mom.VersionNumber, StoragePath = storagePath }),
+//    CreatedAt = _clock.UtcNow,
+//    Processed = false
+//};
+//await _meetNotification.AddAsync(notif);
+//await _uow.SaveChangesAsync(ct);
+
+//return Unit.Value;

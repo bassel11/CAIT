@@ -38,7 +38,7 @@ builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorization
 
 // Register Services
 builder.Services.AddApplicationServices()
-                .AddInfrastructureServices();
+                .AddInfrastructureServices(builder.Configuration);
 
 
 // Add services to the container.

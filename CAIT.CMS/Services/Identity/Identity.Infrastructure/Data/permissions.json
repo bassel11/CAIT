@@ -513,6 +513,14 @@
     "IsActive": true
   },
   {
+    "Name": "MoM.Submit",
+    "ResourceType": 4,
+    "Action": 26,
+    "Description": "Submit Minute of Meeting (MoM)",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
     "Name": "MoM.View",
     "ResourceType": 4,
     "Action": 0,

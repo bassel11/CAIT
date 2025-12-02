@@ -52,6 +52,19 @@ namespace MeetingAPI.Controllers
             return Ok(id);
         }
 
+
+        // -------------------------------------------------------------
+        // PUT: api/MoM/Submit
+        // -------------------------------------------------------------
+        [HttpPut("submit")]
+        [Authorize(Policy = "Permission:MoM.Submit")]
+        public async Task<ActionResult<Guid>> Approve([FromBody] SubmitMoMForApprovalCommand command)
+        {
+            var id = await _mediator.Send(command);
+            return Ok();
+        }
+
+
         // -------------------------------------------------------------
         // PUT: api/MoM/Approve
         // -------------------------------------------------------------

@@ -16,5 +16,12 @@ namespace MeetingInfrastructure.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.MoMId == momId && a.ContentType == "application/pdf", ct);
         }
+
+        public Task<MoMAttachment> AddMoMAttachmentAsync(MoMAttachment entity)
+        {
+            _dbContext.MoMAttachments.Add(entity);
+            //await _dbContext.SaveChangesAsync();
+            return Task.FromResult(entity);
+        }
     }
 }

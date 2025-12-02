@@ -8,6 +8,7 @@ namespace MeetingCore.Repositories
         Task<List<MinutesOfMeeting>> GetByMeetingsIdAsync(Guid meetingId, CancellationToken ct);
         Task AddVersionAsync(MinutesVersion version, CancellationToken ct = default);
         Task UpdateMoMAsync(MinutesOfMeeting entity);
+        Task<MinutesOfMeeting?> GetMoMByIdAsync(Guid id);
 
     }
 }

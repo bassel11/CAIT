@@ -59,7 +59,13 @@ namespace MeetingInfrastructure.Repositories
             // لا نستخدم Update(entity)
             // EF Core يتتبع existing تلقائياً
         }
-
+        public async Task<MinutesOfMeeting?> GetMoMByIdAsync(Guid id)
+        {
+            return await _dbContext.Minutes
+                .Include(m => m.Versions)
+                .Include(m => m.MoMAttachments)
+                .FirstOrDefaultAsync(m => m.Id == id);
+        }
     }
 }
 

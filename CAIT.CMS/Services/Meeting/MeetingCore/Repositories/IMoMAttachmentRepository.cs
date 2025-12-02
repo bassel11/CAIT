@@ -5,6 +5,7 @@ namespace MeetingCore.Repositories
     public interface IMoMAttachmentRepository : IAsyncRepository<MoMAttachment>
     {
         Task<MoMAttachment?> GetPdfByMoMIdAsync(Guid momId, CancellationToken ct);
+        Task<MoMAttachment> AddMoMAttachmentAsync(MoMAttachment entity);
 
     }
 }

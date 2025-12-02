@@ -29,6 +29,9 @@ namespace MeetingInfrastructure.Configurations
 
             b.HasIndex(x => x.MeetingId);
             b.HasIndex(x => new { x.MeetingId, x.VersionNumber });
+
+            b.Property(x => x.RowVersion).IsRowVersion();
+
         }
     }
 }

@@ -27,6 +27,7 @@
         CheckIn = 22,         // نحقق
         Confirm = 23,         // تأكيد
         ValidateQuorum = 24,  // تحقق النصاب
-        Reject = 25           // رفض أو إلغاء
+        Reject = 25,           // رفض أو إلغاء
+        Submit = 26           // تأكيد
     }
 }

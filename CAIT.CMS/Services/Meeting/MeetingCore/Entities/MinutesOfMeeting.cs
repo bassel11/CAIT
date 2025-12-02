@@ -1,5 +1,6 @@
 ﻿using MeetingCore.Enums;
 using MeetingCore.Events;
+using System.ComponentModel.DataAnnotations;
 
 namespace MeetingCore.Entities
 {
@@ -18,6 +19,9 @@ namespace MeetingCore.Entities
         public string ActionItemsJson { get; set; } = default!; // Linked to Task service
 
         public int VersionNumber { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!;
 
         public List<MinutesVersion> Versions { get; private set; } = new();
         public List<MoMAttachment> MoMAttachments { get; private set; } = new();
