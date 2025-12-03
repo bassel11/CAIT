@@ -9,10 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 // -------------------------------
 // Ocelot Configuration
 // -------------------------------
-builder.Host.ConfigureAppConfiguration((env, config) =>
-{
-    config.AddJsonFile($"ocelot.{env.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
-});
+builder.Configuration.AddJsonFile(
+    $"ocelot.{builder.Environment.EnvironmentName}.json",
+    optional: true,
+    reloadOnChange: true
+);
+
+//builder.Host.ConfigureAppConfiguration((env, config) =>
+//{
+//    config.AddJsonFile($"ocelot.{env.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+//});
 
 // -------------------------------
 // JWT Authentication Configuration
@@ -73,13 +79,16 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapGet("/", async context =>
-    {
-        await context.Response.WriteAsync("Hello Ocelot Gateway");
-    });
-});
+//app.UseEndpoints(endpoints =>
+//{
+//    endpoints.MapGet("/", async context =>
+//    {
+//        await context.Response.WriteAsync("Hello Ocelot Gateway");
+//    });
+//});
+
+// لا تحتاج UseRouting أو UseEndpoints
+app.MapGet("/", () => "Hello Ocelot Gateway");
 
 // Ocelot Middleware
 await app.UseOcelot();

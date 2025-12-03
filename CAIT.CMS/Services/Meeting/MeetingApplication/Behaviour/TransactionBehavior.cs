@@ -5,6 +5,8 @@ namespace MeetingApplication.Behaviour
 {
 
     public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+        where TRequest : notnull
+
     {
         private readonly IUnitOfWork _uow;
 
