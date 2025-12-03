@@ -81,6 +81,11 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             await _momRepo.UpdateMoMAsync(mom);
 
+            foreach (var evt in mom.Events)
+            {
+                await _outbox.EnqueueAsync(evt.GetType().Name, evt, ct);
+            }
+
             // OUTBOX MESSAGES
             await _outbox.EnqueueAsync("Outlook:AttachMoM", new
             {

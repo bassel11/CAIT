@@ -10,5 +10,13 @@
         public DateTime? ProcessedAt { get; set; }
         public int Attempts { get; set; }
         public string? LastError { get; set; }
+
+        // حقول القفل
+        public string? LockedBy { get; set; }
+        public DateTime? LockedAt { get; set; }
+
+        // Concurrency Token
+        public byte[] RowVersion { get; set; } = default!;
+
     }
 }

@@ -39,6 +39,7 @@ namespace MeetingInfrastructure.Data
             modelBuilder.ApplyConfiguration(new MeetingIntegrationLogConfiguration());
             modelBuilder.ApplyConfiguration(new MeetingNotificationConfiguration());
             modelBuilder.ApplyConfiguration(new MoMAttachmentConfiguration());
+            modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
 
             base.OnModelCreating(modelBuilder);
 
