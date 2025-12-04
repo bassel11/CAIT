@@ -1,4 +1,4 @@
-﻿using MeetingCore.Entities;
+﻿using MassTransit.EntityFrameworkCoreIntegration;
 
 namespace MeetingInfrastructure.Outbox
 {

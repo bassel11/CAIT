@@ -1,4 +1,6 @@
-﻿using MeetingCore.Entities;
+﻿using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
+using MeetingCore.Entities;
 using MeetingInfrastructure.Configurations;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,8 +23,11 @@ namespace MeetingInfrastructure.Data
         public DbSet<MeetingNotification> Notifications => Set<MeetingNotification>();
         public DbSet<MoMAttachment> MoMAttachments => Set<MoMAttachment>();
 
-        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+        //public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+        public DbSet<OutboxMessage> OutboxMessages { get; set; }
+        public DbSet<OutboxState> OutboxStates { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,9 +44,16 @@ namespace MeetingInfrastructure.Data
             modelBuilder.ApplyConfiguration(new MeetingIntegrationLogConfiguration());
             modelBuilder.ApplyConfiguration(new MeetingNotificationConfiguration());
             modelBuilder.ApplyConfiguration(new MoMAttachmentConfiguration());
-            modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+            //modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+
+
+            // MassTransit Transactional Outbox
+            modelBuilder.AddTransactionalOutboxEntities();
+
 
             base.OnModelCreating(modelBuilder);
+
+
 
         }
 

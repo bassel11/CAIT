@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using MassTransit;
+using MediatR;
 using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Exceptions;
@@ -6,6 +7,7 @@ using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
 using MeetingCore.Entities;
+using MeetingCore.Events;
 using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
@@ -16,45 +18,39 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
         private readonly ICurrentUserService _user;
         private readonly IDateTimeProvider _clock;
         private readonly IStorageService _storage;
-        private readonly IMoMAttachmentRepository _momatachmentRepository;
+        private readonly IMoMAttachmentRepository _momAttachmentRepository;
         private readonly IUnitOfWork _uow;
         private readonly IOutlookService _outlook;
-        private readonly IEventBus _eventBus;
         private readonly IMeetingNotificationRepository _meetNotification;
         private readonly IPdfGenerator _pdf;
-        private readonly IOutboxService _outbox;
+        private readonly IPublishEndpoint _publishEndpoint; // MassTransit Publish
 
-
-        public ApproveMoMCommandHandler(IMoMRepository monRepo
-                                      , ICurrentUserService user
-                                      , IDateTimeProvider clock
-                                      , IStorageService storageService
-                                      , IMoMAttachmentRepository momatachmentRepository
-                                      , IUnitOfWork uow
-                                      , IOutlookService outlook
-                                      , IEventBus eventBus
-                                      , IMeetingNotificationRepository meetNotification
-                                      , IPdfGenerator pdf
-                                      , IOutboxService outbox)
+        public ApproveMoMCommandHandler(
+            IMoMRepository momRepo,
+            ICurrentUserService user,
+            IDateTimeProvider clock,
+            IStorageService storageService,
+            IMoMAttachmentRepository momAttachmentRepository,
+            IUnitOfWork uow,
+            IOutlookService outlook,
+            IMeetingNotificationRepository meetNotification,
+            IPdfGenerator pdf,
+            IPublishEndpoint publishEndpoint)
         {
-            _momRepo = monRepo;
+            _momRepo = momRepo;
             _user = user;
             _clock = clock;
             _storage = storageService;
-            _momatachmentRepository = momatachmentRepository;
+            _momAttachmentRepository = momAttachmentRepository;
             _uow = uow;
             _outlook = outlook;
-            _eventBus = eventBus;
             _meetNotification = meetNotification;
             _pdf = pdf;
-            _outbox = outbox;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<Unit> Handle(ApproveMoMCommand req, CancellationToken ct)
         {
-
-            // await _uow.BeginTransactionAsync(ct);
-
             var mom = await _momRepo.GetMoMByIdAsync(req.MoMId);
             if (mom == null)
                 throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
@@ -66,57 +62,159 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             var pdfBytes = _pdf.GeneratePdfFromHtml(html);
             var fileName = $"MoM_{mom.MeetingId}_{mom.VersionNumber}.pdf";
-
             var path = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
-
-            //mom.AddAttachment(new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId));
 
             var attachment = new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId);
 
-            // 1) أضف إلى DbSet مباشرة (إذا لديك repo method)
-            await _momatachmentRepository.AddMoMAttachmentAsync(attachment); // هذه تضيف إلى DbContext (Scoped)
-
-            // 2) ثم عدّل mom.Versions أو mom.MoMAttachments إن أردت، لكن لا تفعل UpdateMoMAsync الذي يعيد تحميل الكيان
+            await _momAttachmentRepository.AddMoMAttachmentAsync(attachment);
             mom.MoMAttachments.Add(attachment);
 
             await _momRepo.UpdateMoMAsync(mom);
 
+            // نشر الأحداث باستخدام MassTransit
             foreach (var evt in mom.Events)
             {
-                await _outbox.EnqueueAsync(evt.GetType().Name, evt, ct);
+                await _publishEndpoint.Publish(evt, ct);
             }
 
-            // OUTBOX MESSAGES
-            await _outbox.EnqueueAsync("Outlook:AttachMoM", new
-            {
-                MeetingId = mom.MeetingId,
-                Url = path
-            }, ct);
+            // نشر رسائل Integration / Notifications
+            await _publishEndpoint.Publish(new OutlookAttachMoMEvent(mom.MeetingId, path), ct);
 
-            await _outbox.EnqueueAsync("Notification:MoMPublished", new
-            {
-                to = "bassel.as19@gmail.com",
-                subject = "MoM Approved",
-                body = "Your MoM has been approved"
-            }, ct);
+            await _publishEndpoint.Publish(new NotificationMoMApprovedEvent(
+                "bassel.as19@gmail.com", "MoM Approved", "Your MoM has been approved DDDDD"), ct);
 
-            await _outbox.EnqueueAsync("Integration:MoM.Approved", new
-            {
-                momId = mom.Id,
-                meetingId = mom.MeetingId
-            }, ct);
+            await _publishEndpoint.Publish(new MoMApprovedIntegrationEvent(mom.Id, mom.MeetingId), ct);
 
-            // await _uow.SaveChangesAsync(ct);
+
             mom.ClearEvents();
 
             return Unit.Value;
-
-
         }
     }
 }
 
 
+
+//using MediatR;
+//using MeetingApplication.Common.CurrentUser;
+//using MeetingApplication.Common.DateTimeProvider;
+//using MeetingApplication.Exceptions;
+//using MeetingApplication.Features.MoMs.Commands.Models;
+//using MeetingApplication.Integrations;
+//using MeetingApplication.Interfaces;
+//using MeetingCore.Entities;
+//using MeetingCore.Repositories;
+
+//namespace MeetingApplication.Features.MoMs.Commands.Handlers
+//{
+//    public class ApproveMoMCommandHandler : IRequestHandler<ApproveMoMCommand, Unit>
+//    {
+//        private readonly IMoMRepository _momRepo;
+//        private readonly ICurrentUserService _user;
+//        private readonly IDateTimeProvider _clock;
+//        private readonly IStorageService _storage;
+//        private readonly IMoMAttachmentRepository _momatachmentRepository;
+//        private readonly IUnitOfWork _uow;
+//        private readonly IOutlookService _outlook;
+//        private readonly IEventBus _eventBus;
+//        private readonly IMeetingNotificationRepository _meetNotification;
+//        private readonly IPdfGenerator _pdf;
+//        private readonly IOutboxService _outbox;
+
+
+//        public ApproveMoMCommandHandler(IMoMRepository monRepo
+//                                      , ICurrentUserService user
+//                                      , IDateTimeProvider clock
+//                                      , IStorageService storageService
+//                                      , IMoMAttachmentRepository momatachmentRepository
+//                                      , IUnitOfWork uow
+//                                      , IOutlookService outlook
+//                                      , IEventBus eventBus
+//                                      , IMeetingNotificationRepository meetNotification
+//                                      , IPdfGenerator pdf
+//                                      , IOutboxService outbox)
+//        {
+//            _momRepo = monRepo;
+//            _user = user;
+//            _clock = clock;
+//            _storage = storageService;
+//            _momatachmentRepository = momatachmentRepository;
+//            _uow = uow;
+//            _outlook = outlook;
+//            _eventBus = eventBus;
+//            _meetNotification = meetNotification;
+//            _pdf = pdf;
+//            _outbox = outbox;
+//        }
+
+//        public async Task<Unit> Handle(ApproveMoMCommand req, CancellationToken ct)
+//        {
+
+//            // await _uow.BeginTransactionAsync(ct);
+
+//            var mom = await _momRepo.GetMoMByIdAsync(req.MoMId);
+//            if (mom == null)
+//                throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+
+//            mom.Approve(_clock.UtcNow, _user.UserId);
+
+//            var latest = mom.Versions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+//            var html = latest?.Content ?? "";
+
+//            var pdfBytes = _pdf.GeneratePdfFromHtml(html);
+//            var fileName = $"MoM_{mom.MeetingId}_{mom.VersionNumber}.pdf";
+
+//            var path = await _storage.SaveFileAsync(pdfBytes, fileName, "application/pdf", ct);
+
+//            //mom.AddAttachment(new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId));
+
+//            var attachment = new MoMAttachment(Guid.NewGuid(), mom.Id, fileName, path, "application/pdf", _clock.UtcNow, _user.UserId);
+
+//            // 1) أضف إلى DbSet مباشرة (إذا لديك repo method)
+//            await _momatachmentRepository.AddMoMAttachmentAsync(attachment); // هذه تضيف إلى DbContext (Scoped)
+
+//            // 2) ثم عدّل mom.Versions أو mom.MoMAttachments إن أردت، لكن لا تفعل UpdateMoMAsync الذي يعيد تحميل الكيان
+//            mom.MoMAttachments.Add(attachment);
+
+//            await _momRepo.UpdateMoMAsync(mom);
+
+//            foreach (var evt in mom.Events)
+//            {
+//                await _outbox.EnqueueAsync(evt.GetType().Name, evt, ct);
+//            }
+
+//            // OUTBOX MESSAGES
+//            await _outbox.EnqueueAsync("Outlook:AttachMoM", new
+//            {
+//                MeetingId = mom.MeetingId,
+//                Url = path
+//            }, ct);
+
+//            await _outbox.EnqueueAsync("Notification:MoMPublished", new
+//            {
+//                to = "bassel.as19@gmail.com",
+//                subject = "MoM Approved",
+//                body = "Your MoM has been approved"
+//            }, ct);
+
+//            await _outbox.EnqueueAsync("Integration:MoM.Approved", new
+//            {
+//                momId = mom.Id,
+//                meetingId = mom.MeetingId
+//            }, ct);
+
+//            // await _uow.SaveChangesAsync(ct);
+//            mom.ClearEvents();
+
+//            return Unit.Value;
+
+
+//        }
+//    }
+//}
+
+
+////// old version 
 
 //var mom = await _repo.GetByIdAsync(req.MoMId);
 //if (mom == null)

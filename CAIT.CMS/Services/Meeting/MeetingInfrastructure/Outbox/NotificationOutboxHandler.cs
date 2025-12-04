@@ -1,5 +1,5 @@
-﻿using MeetingApplication.Integrations;
-using MeetingCore.Entities;
+﻿using MassTransit.EntityFrameworkCoreIntegration;
+using MeetingApplication.Integrations;
 using System.Text.Json;
 
 namespace MeetingInfrastructure.Outbox
@@ -13,8 +13,8 @@ namespace MeetingInfrastructure.Outbox
 
         public async Task HandleAsync(OutboxMessage message, CancellationToken ct)
         {
-            var payload = JsonSerializer.Deserialize<JsonElement>(message.Payload);
-            var type = message.Type;
+            var payload = JsonSerializer.Deserialize<JsonElement>(message.Body);
+            var type = message.MessageType;
             if (type == "Notification:MoMPublished" || type == "Notification:Email")
             {
                 var to = payload.GetProperty("to").GetString();

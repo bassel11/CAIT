@@ -1,4 +1,5 @@
-﻿using MeetingApplication.Integrations;
+﻿using MassTransit.EntityFrameworkCoreIntegration;
+using MeetingApplication.Integrations;
 using MeetingCore.Entities;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ namespace MeetingInfrastructure.Outbox
 
         public async Task HandleAsync(OutboxMessage message, CancellationToken ct)
         {
-            var payload = JsonSerializer.Deserialize<AuditLog>(message.Payload);
+            var payload = JsonSerializer.Deserialize<AuditLog>(message.Body);
             await _audit.RecordAsync(payload);
         }
     }

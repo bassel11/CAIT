@@ -1,5 +1,5 @@
-﻿using MeetingApplication.Integrations;
-using MeetingCore.Entities;
+﻿using MassTransit.EntityFrameworkCoreIntegration;
+using MeetingApplication.Integrations;
 using System.Text.Json;
 
 namespace MeetingInfrastructure.Outbox
@@ -14,8 +14,8 @@ namespace MeetingInfrastructure.Outbox
 
         public async Task HandleAsync(OutboxMessage message, CancellationToken ct)
         {
-            var payload = JsonSerializer.Deserialize<JsonElement>(message.Payload);
-            if (message.Type == "Teams:FetchTranscript")
+            var payload = JsonSerializer.Deserialize<JsonElement>(message.Body);
+            if (message.MessageType == "Teams:FetchTranscript")
             {
                 var meetingId = payload.GetProperty("meetingId").GetGuid();
                 var url = await _teams.FetchTranscriptUrlAsync(meetingId);

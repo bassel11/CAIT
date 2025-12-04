@@ -1,5 +1,5 @@
-﻿using MeetingApplication.Integrations;
-using MeetingCore.Entities;
+﻿using MassTransit.EntityFrameworkCoreIntegration;
+using MeetingApplication.Integrations;
 using System.Text.Json;
 
 namespace MeetingInfrastructure.Outbox
@@ -13,14 +13,14 @@ namespace MeetingInfrastructure.Outbox
 
         public async Task HandleAsync(OutboxMessage message, CancellationToken ct)
         {
-            var doc = JsonSerializer.Deserialize<JsonElement>(message.Payload);
-            if (message.Type == "Outlook:AttachMoM")
+            var doc = JsonSerializer.Deserialize<JsonElement>(message.Body);
+            if (message.MessageType == "Outlook:AttachMoM")
             {
                 var meetingId = doc.GetProperty("meetingId").GetGuid();
                 var url = doc.GetProperty("url").GetString()!;
                 await _outlook.AttachMoMAsync(meetingId, url, ct);
             }
-            else if (message.Type == "Outlook:UpdateBody")
+            else if (message.MessageType == "Outlook:UpdateBody")
             {
                 var meetingId = doc.GetProperty("meetingId").GetGuid();
                 var body = doc.GetProperty("bodyHtml").GetString()!;

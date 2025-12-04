@@ -1,5 +1,5 @@
-﻿using MeetingApplication.Integrations;
-using MeetingCore.Entities;
+﻿using MassTransit.EntityFrameworkCoreIntegration;
+using MeetingApplication.Integrations;
 using System.Text.Json;
 
 namespace MeetingInfrastructure.Outbox
@@ -13,8 +13,8 @@ namespace MeetingInfrastructure.Outbox
         public async Task HandleAsync(OutboxMessage message, CancellationToken ct)
         {
             // type example: "Integration:MoM.Published"
-            var routingKey = message.Type.Replace("Integration:", "").ToLower(); // e.g. "mom.published"
-            var payload = JsonSerializer.Deserialize<JsonElement>(message.Payload);
+            var routingKey = message.MessageType.Replace("Integration:", "").ToLower(); // e.g. "mom.published"
+            var payload = JsonSerializer.Deserialize<JsonElement>(message.Body);
             // publish to message bus
             await _bus.PublishAsync(routingKey, payload, ct);
         }
