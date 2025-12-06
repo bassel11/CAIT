@@ -25,7 +25,7 @@ namespace Identity.Infrastructure.Services.Authorization
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
-            if (user == null)
+            if (user == null || !user.IsActive)
                 return false;
 
             switch (user.PrivilageType)

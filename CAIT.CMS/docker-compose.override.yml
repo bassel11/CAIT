@@ -38,13 +38,12 @@ services:
     container_name: committeeapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - "ConnectionStrings__CommitteeConnectionString=Server=committeedb;Database=CommitteeDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True" 
+      - ConnectionStrings__CommitteeConnectionString=Server=committeedb;Database=CommitteeDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True
     depends_on:
       - committeedb
     ports:
       - "8003:8080"
 
-# Add this section to define the named volume
   ocelotapigateway:
     container_name: ocelotapigateway
     environment:
@@ -53,15 +52,19 @@ services:
       - "8010:8080"
 
   identityapi:
+    container_name: identityapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - "ConnectionStrings__IdentityConnectionString=Server=identitydb;Database=IdentityDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True" 
+      - ConnectionStrings__IdentityConnectionString=Server=identitydb;Database=IdentityDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True
+      # gRPC / Kestrel
+      - Kestrel__Endpoints__HttpApi__Url=http://0.0.0.0:8080
+      - Kestrel__Endpoints__Grpc__Url=http://0.0.0.0:9001
     depends_on:
       - identitydb
     ports:
-      - "8004:8080"
+      - "8004:8080"   # HTTP
+      - "9001:9001"   # gRPC
+
 volumes:
   committee-data:
   identity-data:
-
-

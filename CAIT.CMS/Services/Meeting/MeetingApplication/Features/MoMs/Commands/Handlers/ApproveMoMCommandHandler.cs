@@ -81,7 +81,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _publishEndpoint.Publish(new OutlookAttachMoMEvent(mom.MeetingId, path), ct);
 
             await _publishEndpoint.Publish(new NotificationMoMApprovedEvent(
-                "bassel.as19@gmail.com", "MoM Approved", "Your MoM has been approved DDDDD"), ct);
+                "bassel.as19@gmail.com", "MoM Approved", "Your MoM has been approved"), ct);
 
             await _publishEndpoint.Publish(new MoMApprovedIntegrationEvent(mom.Id, mom.MeetingId), ct);
 
