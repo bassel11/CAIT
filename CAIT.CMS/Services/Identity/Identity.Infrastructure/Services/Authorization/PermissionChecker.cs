@@ -20,7 +20,7 @@ namespace Identity.Infrastructure.Services.Authorization
 
         public async Task<bool> HasPermissionAsync(Guid userId, string permissionName, Guid? resourceId = null, Guid? parentResourceId = null)
         {
-            // 1️⃣ جلب المستخدم لمعرفة PrivilageType
+            //  جلب المستخدم لمعرفة PrivilageType
             var user = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == userId);
@@ -30,15 +30,15 @@ namespace Identity.Infrastructure.Services.Authorization
 
             switch (user.PrivilageType)
             {
-                // 2️⃣ المستخدم لا يملك أي صلاحيات
+                //  المستخدم لا يملك أي صلاحيات
                 case PrivilageType.None:
                     return false;
 
-                // 3️⃣ صلاحيات قائمة على الأدوار القياسية (PredifinedRoles)
+                //  صلاحيات قائمة على الأدوار القياسية (PredifinedRoles)
                 case PrivilageType.PredifinedRoles:
                     return await CheckPredefinedRolePermissions(userId, permissionName);
 
-                // 4️⃣ صلاحيات مخصصة (CustomRolesAndPermission)
+                //  صلاحيات مخصصة (CustomRolesAndPermission)
                 case PrivilageType.CustomRolesAndPermission:
                     return await CheckCustomPermissions(userId, permissionName, resourceId, parentResourceId);
 
