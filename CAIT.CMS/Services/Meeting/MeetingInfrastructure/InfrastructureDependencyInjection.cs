@@ -60,7 +60,6 @@ namespace MeetingInfrastructure
             // Other integrations
             services.AddScoped<IOutlookService, OutlookService>();
             services.AddScoped<ITeamsService, TeamsService>();
-            services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IAuditService, AuditService>();
 
             // Hosted service
@@ -107,11 +106,6 @@ namespace MeetingInfrastructure
 
             // Hosted Service لتشغيل الـ Bus تلقائياً
             //services.AddMassTransitHostedService();
-
-
-
-            // ✅ إضافة إعدادات SMTP عبر Options Pattern
-            services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
 
             return services;
         }

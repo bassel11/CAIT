@@ -1,4 +1,7 @@
-﻿using MassTransit;
+﻿using BuildingBlocks.Contracts.Integration;
+using BuildingBlocks.Contracts.Notifications;
+using BuildingBlocks.Contracts.Outlook;
+using MassTransit;
 using MediatR;
 using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Common.DateTimeProvider;
@@ -7,7 +10,6 @@ using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
 using MeetingCore.Entities;
-using MeetingCore.Events;
 using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
@@ -71,17 +73,17 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             await _momRepo.UpdateMoMAsync(mom);
 
-            // نشر الأحداث باستخدام MassTransit
+            // نشر الأحداث باستخدام MassTransit domain events
             foreach (var evt in mom.Events)
             {
                 await _publishEndpoint.Publish(evt, ct);
             }
 
-            // نشر رسائل Integration / Notifications
-            await _publishEndpoint.Publish(new OutlookAttachMoMEvent(mom.MeetingId, path), ct);
+            // نشر رسائل Integration / Notifications  events
+            await _publishEndpoint.Publish(new AttachMoMToOutlookEvent(mom.MeetingId, path), ct);
 
-            await _publishEndpoint.Publish(new NotificationMoMApprovedEvent(
-                "bassel.as19@gmail.com", "MoM Approved", "Your MoM has been approved"), ct);
+            await _publishEndpoint.Publish(new MoMApprovedNotification(
+                mom.Id, mom.MeetingId, "bassel.as19@gmail.com", "MoM Approved", "Your MoM has been approved"), ct);
 
             await _publishEndpoint.Publish(new MoMApprovedIntegrationEvent(mom.Id, mom.MeetingId), ct);
 

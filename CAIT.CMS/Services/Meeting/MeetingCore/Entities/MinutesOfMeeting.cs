@@ -1,4 +1,5 @@
-﻿using MeetingCore.Enums;
+﻿using BuildingBlocks.Contracts.Common;
+using MeetingCore.Enums;
 using MeetingCore.Events;
 using System.ComponentModel.DataAnnotations;
 
@@ -66,7 +67,7 @@ namespace MeetingCore.Entities
 
 
             // Add domain event
-            _events.Add(new MoMApprovedEvent(Id, MeetingId, userId, utcNow, utcNow));
+            _events.Add(new MoMApprovedEvent(Id, MeetingId, userId, utcNow));
         }
 
 

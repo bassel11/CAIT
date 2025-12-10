@@ -1,12 +1,9 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using MeetingApplication.Integrations;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
-
-namespace MeetingInfrastructure.Integrations
+namespace NotificationService.Services
 {
     public class SmtpSettings
     {
@@ -17,13 +14,12 @@ namespace MeetingInfrastructure.Integrations
         public string FromEmail { get; set; } = string.Empty;
         public bool EnableSsl { get; set; }
     }
-
-    public class NotificationService : INotificationService
+    public class EmailService : IEmailService
     {
         private readonly SmtpSettings _settings;
-        private readonly ILogger<NotificationService> _logger;
+        private readonly ILogger<EmailService> _logger;
 
-        public NotificationService(IOptions<SmtpSettings> options, ILogger<NotificationService> logger)
+        public EmailService(IOptions<SmtpSettings> options, ILogger<EmailService> logger)
         {
             _settings = options.Value;
             _logger = logger;
@@ -34,17 +30,12 @@ namespace MeetingInfrastructure.Integrations
             try
             {
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Meeting App", _settings.FromEmail));
+                message.From.Add(new MailboxAddress("CMS", _settings.FromEmail));
                 message.To.Add(new MailboxAddress("", to));
                 message.Subject = subject;
-
-                message.Body = new TextPart("html")
-                {
-                    Text = body
-                };
+                message.Body = new TextPart("html") { Text = body };
 
                 using var client = new SmtpClient();
-                //await client.ConnectAsync(_settings.Host, _settings.Port, _settings.EnableSsl);
                 await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTls);
                 await client.AuthenticateAsync(_settings.Username, _settings.Password);
                 await client.SendAsync(message);
@@ -57,12 +48,6 @@ namespace MeetingInfrastructure.Integrations
                 _logger.LogError(ex, "[Email ERROR]");
                 throw;
             }
-        }
-
-        public Task SendPushAsync(Guid userId, string title, string body)
-        {
-            _logger.LogInformation("[Push] User {UserId} | {Title}", userId, title);
-            return Task.CompletedTask;
         }
     }
 }

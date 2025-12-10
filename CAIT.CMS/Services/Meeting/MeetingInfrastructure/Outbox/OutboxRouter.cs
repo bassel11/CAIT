@@ -12,7 +12,6 @@ namespace MeetingInfrastructure.Outbox
         {
             if (messageType.StartsWith("Integration:")) return _sp.GetRequiredService<IntegrationOutboxHandler>();
             if (messageType.StartsWith("Outlook:")) return _sp.GetRequiredService<OutlookOutboxHandler>();
-            if (messageType.StartsWith("Notification:")) return _sp.GetRequiredService<NotificationOutboxHandler>();
             if (messageType.StartsWith("Teams:")) return _sp.GetRequiredService<TeamsOutboxHandler>();
             if (messageType.StartsWith("Audit:")) return _sp.GetRequiredService<AuditOutboxHandler>();
 
