@@ -1,12 +1,7 @@
-﻿using Audit.Application.Contracts;
-using Audit.Application.Repositories;
-using Audit.Application.Services;
+﻿using Audit.Application;
+using Audit.Infrastructure;
 using Audit.Infrastructure.Config;
-using Audit.Infrastructure.Consumers;
 using Audit.Infrastructure.Data;
-using Audit.Infrastructure.Repositories;
-using Audit.Infrastructure.Services;
-using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -19,34 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AuditDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("AuditConnectionString")));
 
-// Application Services
-builder.Services.AddScoped<IAuditStore, AuditStore>();
-builder.Services.AddScoped<IAuditReadRepository, AuditReadRepository>();
-builder.Services.AddScoped<IAuditQueryService, AuditQueryService>();
 
-// MassTransit
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<AuditEventConsumer>();
-
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
-        {
-            h.Username(builder.Configuration["RabbitMQ:User"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMQ:Pass"] ?? "guest");
-        });
-
-        cfg.ReceiveEndpoint("audit-service-queue", e =>
-        {
-            e.ConfigureConsumer<AuditEventConsumer>(context);
-        });
-    });
-});
-
-
-
-// Add services to the container.
+// Register Services
+builder.Services.AddApplicationServices()
+                .AddInfrastructureServices(builder.Configuration);
 
 
 // Add JWT Authentication
@@ -77,11 +48,9 @@ builder.Services.AddAuthentication(options =>
 });
 
 
-// ==========================
-// 8️⃣ Authorization
-// ==========================
-builder.Services.AddAuthorization();
 
+// Add Authorization
+builder.Services.AddAuthorization();
 
 
 builder.Services.AddControllers();
