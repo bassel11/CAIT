@@ -527,6 +527,15 @@
     "Description": "View Minute of Meeting (MoM)",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "Audit.View",
+    "ResourceType": 8,
+    "Action": 0,
+    "Description": "View Audit Logs",
+    "IsGlobal": false,
+    "IsActive": true
   }
 
 

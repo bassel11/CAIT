@@ -7,7 +7,7 @@ namespace Audit.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Policy = "AuditViewer")]
+    [Authorize(Policy = "Audit.View")]
     public class AuditQueryController : ControllerBase
     {
         private readonly IAuditQueryService _service;
