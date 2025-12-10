@@ -18,7 +18,6 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
         private readonly IMoMRepository _momRepo;
         private readonly IMoMAttachmentRepository _moMAttachmentRepository;
         private readonly IOutlookService _outlook;
-        private readonly INotificationService _notification;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _clock;
         private readonly ICurrentUserService _user;
@@ -28,7 +27,6 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
         public PublishMoMCommandHandler(IMoMRepository momRepo
                                       , IOutlookService outlook
-                                      , INotificationService notification
                                       , IEventBus bus
                                       , IDateTimeProvider clock
                                       , ICurrentUserService user
@@ -39,7 +37,6 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
         {
             _momRepo = momRepo;
             _outlook = outlook;
-            _notification = notification;
             _bus = bus;
             _clock = clock;
             _user = user;
