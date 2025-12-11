@@ -67,6 +67,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Audit.Domain", "Services\Au
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Audit.Infrastructure", "Services\Audit\Audit.Infrastructure\Audit.Infrastructure.csproj", "{E5B50D52-FAF6-4C1C-8DE8-93DEC3232DE3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildingBlocks.Infrastructure", "BuildingBlocks\BuildingBlocks.Infrastructure\BuildingBlocks.Infrastructure.csproj", "{99AD4CB2-43A2-497A-8F47-E0764EDF2F7A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -157,6 +159,10 @@ Global
 		{E5B50D52-FAF6-4C1C-8DE8-93DEC3232DE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5B50D52-FAF6-4C1C-8DE8-93DEC3232DE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5B50D52-FAF6-4C1C-8DE8-93DEC3232DE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99AD4CB2-43A2-497A-8F47-E0764EDF2F7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99AD4CB2-43A2-497A-8F47-E0764EDF2F7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99AD4CB2-43A2-497A-8F47-E0764EDF2F7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99AD4CB2-43A2-497A-8F47-E0764EDF2F7A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -190,6 +196,7 @@ Global
 		{2763D8FC-15CB-4E27-9CC2-3C374D3BC9F2} = {1C46066D-11AB-47E9-8A97-C6AF23109C5C}
 		{21A6D8BA-F8AD-4609-8E89-C9FF756C39DF} = {1C46066D-11AB-47E9-8A97-C6AF23109C5C}
 		{E5B50D52-FAF6-4C1C-8DE8-93DEC3232DE3} = {1C46066D-11AB-47E9-8A97-C6AF23109C5C}
+		{99AD4CB2-43A2-497A-8F47-E0764EDF2F7A} = {3EA2317E-ADFA-4152-97D0-84FE6E691F9C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7E123947-6567-4F1D-A6D7-83A427CADDA2}

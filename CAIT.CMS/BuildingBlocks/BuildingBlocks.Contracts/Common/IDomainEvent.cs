@@ -1,6 +1,9 @@
-﻿namespace BuildingBlocks.Contracts.Common
+﻿using MediatR;
+
+namespace BuildingBlocks.Contracts.Common
 {
-    public interface IDomainEvent
+    // الوراثة من INotification ضرورية لكي يراها MediatR
+    public interface IDomainEvent : INotification
     {
         Guid EventId { get; }
         DateTime OccurredAt { get; }

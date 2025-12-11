@@ -1,4 +1,6 @@
-﻿using MassTransit;
+﻿using BuildingBlocks.Infrastructure.EventHandlers;
+using MassTransit;
+using MediatR;
 using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
@@ -7,11 +9,13 @@ using MeetingCore.Repositories;
 using MeetingInfrastructure.Audit;
 using MeetingInfrastructure.Data;
 using MeetingInfrastructure.Integrations;
+using MeetingInfrastructure.Interceptors;
 using MeetingInfrastructure.Messaging.Consumers;
 using MeetingInfrastructure.Pdf;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
 using MeetingInfrastructure.Services.DateTimeProvider;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration; // مهم لإضافة IConfiguration
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,6 +25,31 @@ namespace MeetingInfrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            // 1. تسجيل Generic Audit Handler (لأن MediatR لا يراه تلقائياً في Assembly آخر)
+            services.AddTransient(typeof(INotificationHandler<>), typeof(AuditDomainEventHandler<>));
+
+            // 2. تسجيل Interceptor
+            services.AddScoped<DispatchDomainEventsInterceptor>();
+
+            // 3. إعداد DB Context (مع التحقق الصارم من نص الاتصال)
+            services.AddDbContext<MeetingDbContext>((sp, options) =>
+            {
+                var interceptor = sp.GetRequiredService<DispatchDomainEventsInterceptor>();
+
+                // البحث عن نص الاتصال
+                var connectionString = configuration.GetConnectionString("MeetingConnectionString")
+                                       ?? configuration.GetConnectionString("DefaultConnection");
+
+                // 🛑 Fail Fast: إيقاف التطبيق إذا كان النص مفقوداً
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("CRITICAL: Connection string 'MeetingConnectionString' is missing in appsettings.json.");
+                }
+
+                options.UseSqlServer(connectionString)
+                       .AddInterceptors(interceptor);
+            });
+
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
             services.AddScoped<IMeetingRepository, MeetingRepository>();
@@ -46,24 +75,12 @@ namespace MeetingInfrastructure
             services.AddSingleton<OutlookClientStub>();
             services.AddSingleton<BusPublisherStub>();
 
-            // Outbox
-            //services.AddScoped<IOutboxRouter, OutboxRouter>();
-            //services.AddScoped<IOutboxHandler, IntegrationOutboxHandler>();
-            //services.AddScoped<IntegrationOutboxHandler>();
-            //services.AddScoped<OutlookOutboxHandler>();
-            //services.AddScoped<NotificationOutboxHandler>();
-            //services.AddScoped<TeamsOutboxHandler>();
-            //services.AddScoped<AuditOutboxHandler>();
 
-            // RabbitMQ
 
             // Other integrations
             services.AddScoped<IOutlookService, OutlookService>();
             services.AddScoped<ITeamsService, TeamsService>();
             services.AddScoped<IAuditService, AuditService>();
-
-            // Hosted service
-            //services.AddHostedService<RabbitMqConsumer>(); for test consuming
 
 
             // --------------------

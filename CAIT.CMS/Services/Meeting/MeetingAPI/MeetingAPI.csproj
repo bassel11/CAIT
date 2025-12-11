@@ -20,4 +20,8 @@
     <ProjectReference Include="..\MeetingInfrastructure\MeetingInfrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="storage\" />
+  </ItemGroup>
+
 </Project>

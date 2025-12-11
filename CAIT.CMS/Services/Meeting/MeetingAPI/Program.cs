@@ -20,9 +20,9 @@ var builder = WebApplication.CreateBuilder(args);
 // ==========================
 // Database MeetingDbContext
 // ==========================
-builder.Services.AddDbContext<MeetingDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("MeetingConnectionString"))
-);
+//builder.Services.AddDbContext<MeetingDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("MeetingConnectionString"))
+//);
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
@@ -41,12 +41,9 @@ builder.Services.AddApplicationServices()
                 .AddInfrastructureServices(builder.Configuration);
 
 
-// Add services to the container.
 
+//  JWT Authentication
 
-// ==========================
-// 7️⃣ JWT Authentication
-// ==========================
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(options =>
@@ -70,9 +67,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// ==========================
-// 8️⃣ Authorization
-// ==========================
+//  Authorization
+
 builder.Services.AddAuthorization();
 
 

@@ -74,10 +74,32 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _momRepo.UpdateMoMAsync(mom);
 
             // نشر الأحداث باستخدام MassTransit domain events
-            foreach (var evt in mom.Events)
-            {
-                await _publishEndpoint.Publish(evt, ct);
-            }
+            // داخل ApproveMoMCommandHandler.Handle بعد mom.Events موجودة و قبل ClearEvents()
+
+            //foreach (var domainEvt in mom.Events)
+            //{
+            //    // publish the domain event itself (so other services listening for domain events get it)
+            //    await _publishEndpoint.Publish(domainEvt, ct);
+
+            //    // map to strongly-typed audit contract when possible
+            //    if (domainEvt is MeetingCore.Events.MoMApprovedEvent approved)
+            //    {
+            //        await _publishEndpoint.Publish<IAuditLogCreated>(new
+            //        {
+            //            EventId = approved.EventId,
+            //            UserId = approved.ApprovedBy.ToString(),
+            //            ServiceName = "MeetingService",
+            //            EntityName = "MinutesOfMeeting",
+            //            ActionType = "Approve",
+            //            PrimaryKey = approved.MoMId.ToString(),
+            //            OldValues = (string?)null,
+            //            NewValues = (string?)null,
+            //            Timestamp = approved.OccurredAt
+            //        }, ct);
+            //    }
+            //    // else-if for other concrete domain events...
+            //}
+
 
             // نشر رسائل Integration / Notifications  events
             await _publishEndpoint.Publish(new AttachMoMToOutlookEvent(mom.MeetingId, path), ct);
@@ -88,7 +110,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _publishEndpoint.Publish(new MoMApprovedIntegrationEvent(mom.Id, mom.MeetingId), ct);
 
 
-            mom.ClearEvents();
+            //mom.ClearEvents();
 
             return Unit.Value;
         }
