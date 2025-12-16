@@ -1,5 +1,4 @@
 ﻿using MassTransit;
-using MassTransit.DependencyInjection;
 using Microsoft.FeatureManagement;
 
 namespace DecisionApplication.Decisions.EventHandlers.Domain
@@ -13,14 +12,11 @@ namespace DecisionApplication.Decisions.EventHandlers.Domain
 
         // 👇 التغيير هنا في الـ Constructor 👇
         public DecisionCreatedEventHandler(
-            // بدلاً من طلب IPublishEndpoint، نطلب Bind<TContext, IPublishEndpoint>
-            Bind<ApplicationDbContext, IPublishEndpoint> publishEndpointBinder,
+            IPublishEndpoint publishEndpoint,
             IFeatureManager featureManager,
             ILogger<DecisionCreatedEventHandler> logger)
         {
-            // نستخرج الناشر الصحيح من الـ Binder
-            _publishEndpoint = publishEndpointBinder.Value;
-
+            _publishEndpoint = publishEndpoint;
             _featureManager = featureManager;
             _logger = logger;
         }
@@ -31,6 +27,9 @@ namespace DecisionApplication.Decisions.EventHandlers.Domain
         {
             _logger.LogInformation("Domain event handled: {DomainEvent}", domainEvent.GetType().Name);
 
+            //if (await _featureManager.IsEnabledAsync("DecisionIntegration"))
+            //{
+
             var integrationEvent = domainEvent.ToDecisionCreatedIntegrationEvent();
 
             // الآن _publishEndpoint هو (ScopedEntityPublishEndpoint)
@@ -38,6 +37,8 @@ namespace DecisionApplication.Decisions.EventHandlers.Domain
             await _publishEndpoint.Publish(integrationEvent, cancellationToken);
 
             _logger.LogInformation("✅ Message added to Outbox Context.");
+
+            //}
         }
     }
 }

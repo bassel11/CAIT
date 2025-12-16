@@ -1,7 +1,6 @@
 ﻿using DecisionApplication.Data;
 using DecisionInfrastructure.Data.Interceptors;
 using MassTransit;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,19 +12,36 @@ namespace DecisionInfrastructure
         {
             var connectionString = configuration.GetConnectionString("DecisionConnectionString");
 
-            services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
-            services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
+            // 1. تسجيل Interceptors كـ كلاسات محددة (Concrete Classes) وليس واجهات عامة
+            // هذا يضمن أننا نستطيع طلبهم بالاسم لاحقاً
+            services.AddScoped<AuditableEntityInterceptor>();
+            services.AddScoped<DispatchDomainEventsInterceptor>();
 
+            // 2. إعداد DbContext بدقة
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
-                //options.AddInterceptors(sp.GetService<ISaveChangesInterceptor>());
-                var interceptors = sp.GetServices<ISaveChangesInterceptor>();
-                options.AddInterceptors(interceptors);
+                // أ) استدعاء الـ Interceptors المحددة بالاسم
+                // هذا يضمن الترتيب ويمنع حقن interceptors غريبة من مكتبات أخرى
+                var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+                var dispatchInterceptor = sp.GetRequiredService<DispatchDomainEventsInterceptor>();
 
-                options.UseSqlServer(connectionString);
+                // ب) جلب والتحقق من نص الاتصال (Fail Fast)
+                var connectionString = configuration.GetConnectionString("DecisionConnectionString");
+
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("CRITICAL: Connection string 'DecisionConnectionString' is missing.");
+                }
+
+                // ج) إضافة الإعدادات والـ Interceptors
+                options.UseSqlServer(connectionString)
+                       .AddInterceptors(auditableInterceptor, dispatchInterceptor);
+                // ملاحظة: الترتيب هنا مهم، Auditable يملأ البيانات، ثم Dispatch ينشر الأحداث
             });
 
-            services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+            // 3. ربط الواجهة بالكلاس (للاستخدام داخل الـ Handlers)
+            // يفضل استخدام هذا النمط لضمان استخدام نفس الـ Instance الذي أنشأه AddDbContext
+            services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
             //services.AddMessageBroker<ApplicationDbContext>(
             //    configuration,
