@@ -85,6 +85,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DecisionCore", "Services\De
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DecisionInfrastructure", "Services\Decision\DecisionInfrastructure\DecisionInfrastructure.csproj", "{8B4F01A6-E231-46AA-966D-88268A9E2751}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildingBlocks.Shared", "BuildingBlocks\BuildingBlocks.Shared\BuildingBlocks.Shared.csproj", "{518BAB8B-A6EA-4881-ACA8-DF521C56B63F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -211,6 +213,10 @@ Global
 		{8B4F01A6-E231-46AA-966D-88268A9E2751}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B4F01A6-E231-46AA-966D-88268A9E2751}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B4F01A6-E231-46AA-966D-88268A9E2751}.Release|Any CPU.Build.0 = Release|Any CPU
+		{518BAB8B-A6EA-4881-ACA8-DF521C56B63F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{518BAB8B-A6EA-4881-ACA8-DF521C56B63F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{518BAB8B-A6EA-4881-ACA8-DF521C56B63F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{518BAB8B-A6EA-4881-ACA8-DF521C56B63F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -253,6 +259,7 @@ Global
 		{557C81D5-D5FA-46D7-AA12-2FDC7D6D3DA6} = {435F7A0C-971E-44B2-9B68-26929096C295}
 		{A93D83B3-ACF0-4548-8ACE-3DF06069E755} = {435F7A0C-971E-44B2-9B68-26929096C295}
 		{8B4F01A6-E231-46AA-966D-88268A9E2751} = {435F7A0C-971E-44B2-9B68-26929096C295}
+		{518BAB8B-A6EA-4881-ACA8-DF521C56B63F} = {3EA2317E-ADFA-4152-97D0-84FE6E691F9C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7E123947-6567-4F1D-A6D7-83A427CADDA2}
