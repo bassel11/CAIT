@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Messaging.MassTransit;
+﻿using BuildingBlocks.Infrastructure;
+using BuildingBlocks.Messaging.MassTransit;
 using DecisionApplication.Data;
 using DecisionInfrastructure.Data.Interceptors;
 using Microsoft.Extensions.Configuration;
@@ -10,14 +11,18 @@ namespace DecisionInfrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddSharedInfrastructure();
+
             // 1. تسجيل Interceptors (ممتاز)
             services.AddScoped<AuditableEntityInterceptor>();
+            services.AddScoped<AuditPublishingInterceptor>();
             services.AddScoped<DispatchDomainEventsInterceptor>();
 
             // 2. إعداد DbContext (ممتاز - هذا هو الإعداد الآمن)
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
                 var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+                var auditInterceptor = sp.GetRequiredService<AuditPublishingInterceptor>();
                 var dispatchInterceptor = sp.GetRequiredService<DispatchDomainEventsInterceptor>();
 
                 var connectionString = configuration.GetConnectionString("DecisionConnectionString");
@@ -28,7 +33,11 @@ namespace DecisionInfrastructure
                 }
 
                 options.UseSqlServer(connectionString)
-                       .AddInterceptors(auditableInterceptor, dispatchInterceptor);
+                       .AddInterceptors(
+                           auditableInterceptor, // أولاً: يملأ التواريخ (CreatedBy, etc)
+                           auditInterceptor,     // ثانياً: يلتقط القيم بعد التعديل ويرسلها للـ Audit
+                           dispatchInterceptor   // ثالثاً: يطلق أحداث البزنس (Events)
+                       );
             });
 
             // 3. ربط الواجهة بالكلاس (ممتاز - يمنع ازدواجية الاتصال)

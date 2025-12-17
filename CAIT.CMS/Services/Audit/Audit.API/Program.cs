@@ -3,35 +3,25 @@ using Audit.Application.Authorization;
 using Audit.Infrastructure;
 using Audit.Infrastructure.Authorization;
 using Audit.Infrastructure.Config;
-using Audit.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-// DbContext
-builder.Services.AddDbContext<AuditDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("AuditConnectionString")));
+// 1. تسجيل الخدمات (Layers)
+// لاحظ أننا أزلنا تسجيل DbContext من هنا لأنه انتقل إلى Infrastructure
+builder.Services.AddApplicationServices()
+                .AddInfrastructureServices(builder.Configuration);
 
 
 // Authorization Provider
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
-
-builder.Services.AddTransient<JwtDelegatingHandler>();
-
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
-
-
-// Register Services
-builder.Services.AddApplicationServices()
-                .AddInfrastructureServices(builder.Configuration);
-
 
 // Add JWT Authentication
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
