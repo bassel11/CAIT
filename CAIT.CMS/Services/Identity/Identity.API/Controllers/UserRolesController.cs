@@ -42,7 +42,7 @@ namespace Identity.API.Controllers
             return Ok(new UserRolesDto
             {
                 UserId = userId,
-                Email = User.Identity?.Name ?? "",
+                Email = "", //User.Identity?.Name ?? ""
                 Roles = roles
             });
         }
