@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Net.Http.Headers;
 
-namespace Audit.Infrastructure.Authorization
+namespace BuildingBlocks.Infrastructure.Security
 {
     public class JwtDelegatingHandler : DelegatingHandler
     {
@@ -14,8 +14,8 @@ namespace Audit.Infrastructure.Authorization
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var httpContext = _httpContextAccessor.HttpContext;
-            if (httpContext != null && httpContext.Request.Headers.TryGetValue("Authorization", out var authHeader))
+            var context = _httpContextAccessor.HttpContext;
+            if (context != null && context.Request.Headers.TryGetValue("Authorization", out var authHeader))
             {
                 var token = authHeader.FirstOrDefault()?.Replace("Bearer ", "").Trim();
                 if (!string.IsNullOrEmpty(token))
@@ -27,5 +27,4 @@ namespace Audit.Infrastructure.Authorization
             return await base.SendAsync(request, cancellationToken);
         }
     }
-
 }

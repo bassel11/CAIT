@@ -1,4 +1,4 @@
-﻿namespace Audit.Application.Authorization
+﻿namespace BuildingBlocks.Shared.Authorization
 {
     public interface IPermissionService
     {

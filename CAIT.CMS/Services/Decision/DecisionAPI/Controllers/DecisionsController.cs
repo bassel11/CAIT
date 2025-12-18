@@ -7,6 +7,7 @@ using DecisionApplication.Decisions.Queries.GetDecisions;
 using DecisionApplication.Decisions.Queries.GetDecisionsByMeeting;
 using DecisionApplication.Dtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -14,6 +15,7 @@ namespace DecisionAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DecisionsController : ControllerBase
     {
         private readonly ISender _mediator;
@@ -25,6 +27,7 @@ namespace DecisionAPI.Controllers
 
         // Create Decision
         [HttpPost]
+        [Authorize(Policy = "Permission:Decision.Create")]
         public async Task<IActionResult> Create([FromBody] CreateDecisionDto createdecisionDto)
         {
             var command = new CreateDecisionCommand(createdecisionDto);
@@ -34,6 +37,7 @@ namespace DecisionAPI.Controllers
 
         // Update Decision
         [HttpPut("{id:guid}")]
+        [Authorize(Policy = "Permission:Decision.Update")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDecisionDto updatedecisionDto)
         {
             var command = new UpdateDecisionCommand(id, updatedecisionDto);
@@ -43,6 +47,7 @@ namespace DecisionAPI.Controllers
 
         // Delete Decision
         [HttpDelete("{id:guid}")]
+        [Authorize(Policy = "Permission:Decision.Delete")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var command = new DeleteDecisionCommand(id);
@@ -52,6 +57,7 @@ namespace DecisionAPI.Controllers
 
         // Get paginated decisions
         [HttpGet]
+        [Authorize(Policy = "Permission:Decision.View")]
         public async Task<IActionResult> GetAll([FromQuery] int pageIndex = 0, [FromQuery] int pageSize = 10)
         {
             var query = new GetDecisionsQuery(new PaginationRequest(pageIndex, pageSize));
@@ -61,6 +67,7 @@ namespace DecisionAPI.Controllers
 
         // Get decisions by meeting
         [HttpGet("meeting/{meetingId:guid}")]
+        [Authorize(Policy = "Permission:Decision.View")]
         public async Task<IActionResult> GetByMeeting(Guid meetingId)
         {
             var query = new GetDecisionsByMeetingQuery(meetingId);
@@ -70,6 +77,7 @@ namespace DecisionAPI.Controllers
 
         // Get single decision by Id
         [HttpGet("{id:guid}")]
+        [Authorize(Policy = "Permission:Decision.View")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var decision = await _mediator.Send(new GetDecisionByIdQuery(id));
@@ -79,6 +87,7 @@ namespace DecisionAPI.Controllers
 
         // Optional: Add Vote to Decision
         [HttpPost("{id:guid}/votes")]
+        [Authorize(Policy = "Permission:Vote.Create")]
         public async Task<IActionResult> AddVote(Guid id, [FromBody] VoteDto voteDto)
         {
             // هنا يمكن إرسال أمر AddVoteCommand

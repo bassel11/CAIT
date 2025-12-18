@@ -1,4 +1,4 @@
-﻿using BuildingBlocks.Infrastructure;
+﻿using BuildingBlocks.Infrastructure; // ✅ هام جداً لاستدعاء الامتدادات
 using BuildingBlocks.Messaging.MassTransit;
 using DecisionApplication.Data;
 using DecisionInfrastructure.Data.Interceptors;
@@ -11,14 +11,26 @@ namespace DecisionInfrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            // 1. تسجيل البنية التحتية الأساسية (User, HttpContext)
             services.AddSharedInfrastructure();
 
-            // 1. تسجيل Interceptors (ممتاز)
+            // 2. ✅ تسجيل نظام التصاريح (الجديد)
+            services.AddDynamicPermissions();
+
+            // 3. ✅ تسجيل خدمة الاتصال بالهوية (للتحقق من الصلاحيات)
+            // يجب أن تتأكد من وجود هذا الرابط في appsettings.json
+            var identityUrl = configuration["Services:IdentityBaseUrl"];
+            if (!string.IsNullOrEmpty(identityUrl))
+            {
+                services.AddRemotePermissionService(identityUrl);
+            }
+
+            // 4. تسجيل Interceptors
             services.AddScoped<AuditableEntityInterceptor>();
             services.AddScoped<AuditPublishingInterceptor>();
             services.AddScoped<DispatchDomainEventsInterceptor>();
 
-            // 2. إعداد DbContext (ممتاز - هذا هو الإعداد الآمن)
+            // 5. إعداد DbContext
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
                 var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
@@ -33,21 +45,20 @@ namespace DecisionInfrastructure
                 }
 
                 options.UseSqlServer(connectionString)
-                       .AddInterceptors(
-                           auditableInterceptor, // أولاً: يملأ التواريخ (CreatedBy, etc)
-                           auditInterceptor,     // ثانياً: يلتقط القيم بعد التعديل ويرسلها للـ Audit
-                           dispatchInterceptor   // ثالثاً: يطلق أحداث البزنس (Events)
-                       );
+                        .AddInterceptors(
+                            auditableInterceptor,
+                            auditInterceptor,
+                            dispatchInterceptor
+                        );
             });
 
-            // 3. ربط الواجهة بالكلاس (ممتاز - يمنع ازدواجية الاتصال)
+            // 6. ربط الواجهة
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-            // 4. إعداد MassTransit (التعديل هنا: نستخدم الـ Extension الموحد)
-            // هذا السطر يغنيك عن كتابة 30 سطر كود يدوياً
+            // 7. إعداد MassTransit
             services.AddMessageBroker<ApplicationDbContext>(
                 configuration,
-                typeof(DecisionApplication.ApplicationDependencyInjection).Assembly // نمرر اسم الأسمبلي ليتعرف على Consumers
+                typeof(DecisionApplication.ApplicationDependencyInjection).Assembly
             );
 
             return services;

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace Audit.Application.Authorization
+namespace BuildingBlocks.Shared.Authorization
 {
     public class PermissionRequirement : IAuthorizationRequirement
     {

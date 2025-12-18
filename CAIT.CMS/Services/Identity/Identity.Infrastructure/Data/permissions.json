@@ -536,7 +536,50 @@
     "Description": "View Audit Logs",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+
+  {
+    "Name": "Decision.Create",
+    "ResourceType": 5,
+    "Action": 1,
+    "Description": "Create New Decision",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Decision.Update",
+    "ResourceType": 5,
+    "Action": 2,
+    "Description": "Update Decision",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Decision.Delete",
+    "ResourceType": 5,
+    "Action": 3,
+    "Description": "Delete Decision",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Decision.View",
+    "ResourceType": 5,
+    "Action": 0,
+    "Description": "View Decision",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Vote.Create",
+    "ResourceType": 5,
+    "Action": 1,
+    "Description": "Create Vote for Decision",
+    "IsGlobal": false,
+    "IsActive": true
   }
+
 
 
 ]

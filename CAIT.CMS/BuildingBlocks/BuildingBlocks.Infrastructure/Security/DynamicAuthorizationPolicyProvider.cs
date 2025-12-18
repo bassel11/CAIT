@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using BuildingBlocks.Shared.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
-namespace Audit.Application.Authorization
+namespace BuildingBlocks.Infrastructure.Security
 {
     public class DynamicAuthorizationPolicyProvider : IAuthorizationPolicyProvider
     {
@@ -15,11 +16,9 @@ namespace Audit.Application.Authorization
 
         public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
         {
-            // ✅ تحقق من الـ Prefix أولاً
             if (policyName.StartsWith(POLICY_PREFIX, StringComparison.OrdinalIgnoreCase))
             {
                 var permissionName = policyName.Substring(POLICY_PREFIX.Length);
-
                 var policy = new AuthorizationPolicyBuilder()
                     .AddRequirements(new PermissionRequirement(permissionName))
                     .Build();
@@ -27,14 +26,10 @@ namespace Audit.Application.Authorization
                 return Task.FromResult<AuthorizationPolicy?>(policy);
             }
 
-            // إذا لم يكن Policy من نوع Permission، استخدم fallback provider
             return _fallbackPolicyProvider.GetPolicyAsync(policyName);
         }
 
-        public Task<AuthorizationPolicy> GetDefaultPolicyAsync()
-            => _fallbackPolicyProvider.GetDefaultPolicyAsync();
-
-        public Task<AuthorizationPolicy?> GetFallbackPolicyAsync()
-            => _fallbackPolicyProvider.GetFallbackPolicyAsync();
+        public Task<AuthorizationPolicy> GetDefaultPolicyAsync() => _fallbackPolicyProvider.GetDefaultPolicyAsync();
+        public Task<AuthorizationPolicy?> GetFallbackPolicyAsync() => _fallbackPolicyProvider.GetFallbackPolicyAsync();
     }
 }

@@ -1,13 +1,12 @@
-﻿using Audit.Application.Authorization;
-using Audit.Application.Contracts;
+﻿using Audit.Application.Contracts;
 using Audit.Application.Repositories;
-using Audit.Infrastructure.Authorization;
+using Audit.Application.Services;
 using Audit.Infrastructure.Consumers;
 using Audit.Infrastructure.Data;
 using Audit.Infrastructure.Repositories;
 using Audit.Infrastructure.Services;
+using BuildingBlocks.Infrastructure;
 using BuildingBlocks.Messaging.MassTransit;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,56 +19,53 @@ namespace Audit.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            // =========================================================
+            // 1. تسجيل الخدمات المشتركة (Shared BuildingBlocks)
+            // =========================================================
 
-            // 1. Database Configuration
-            // نقلنا الإعداد هنا ليكون ملف Infrastructure مسؤولاً عن كل ما يخص البنية التحتية
+            // تسجيل المستخدم والـ HttpContext
+            services.AddSharedInfrastructure();
+
+            // تسجيل نظام التصاريح (Policy Provider + Handler)
+            services.AddDynamicPermissions();
+
+            // تسجيل خدمة الاتصال بالهوية (Identity Service Client)
+            // بدلاً من كتابة كود HttpClient و DelegatingHandler يدوياً
+            var identityUrl = configuration["Services:IdentityBaseUrl"];
+            if (!string.IsNullOrEmpty(identityUrl))
+            {
+                services.AddRemotePermissionService(identityUrl);
+            }
+            else
+            {
+                // تحذير أو استثناء إذا كان الرابط مفقوداً
+                throw new InvalidOperationException("IdentityBaseUrl is not configured in appsettings.");
+            }
+
+            // =========================================================
+            // 2. إعدادات Audit الخاصة (Database & Repos)
+            // =========================================================
+
             var connectionString = configuration.GetConnectionString("AuditConnectionString");
             services.AddDbContext<AuditDbContext>(options =>
             {
                 options.UseSqlServer(connectionString);
             });
 
-            // Repositories
+            // Repositories & Services الخاصة بالتدقيق فقط
             services.AddScoped<IAuditStore, AuditStore>();
             services.AddScoped<IAuditReadRepository, AuditReadRepository>();
+            services.AddScoped<IAuditQueryNewService, AuditQueryNewService>();
 
-            // DelegatingHandler
-            services.AddTransient<JwtDelegatingHandler>();
+            // (تم حذف JwtDelegatingHandler من هنا لأنه أصبح ضمن الامتداد المشترك)
 
-            // HttpClient for Permission Service
-            var identityUrl = configuration["Services:IdentityBaseUrl"]
-                ?? throw new InvalidOperationException("IdentityBaseUrl is not configured");
-
-            services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
-            {
-                client.BaseAddress = new Uri(identityUrl);
-            })
-            .AddHttpMessageHandler<JwtDelegatingHandler>();
-
-            // 4. MassTransit (Best Practice) 🚀
-            // نستخدم الامتداد المشترك، ونمرر AuditDbContext لتفعيل Inbox/Outbox
+            // =========================================================
+            // 3. MassTransit
+            // =========================================================
             services.AddMessageBroker<AuditDbContext>(
                 configuration,
-                typeof(AuditLogCreatedConsumer).Assembly // 👈 هذا سيكتشف المستهلك والـ Definition تلقائياً
+                typeof(AuditLogCreatedConsumer).Assembly
             );
-
-            // MassTransit
-            //services.AddMassTransit(x =>
-            //{
-            //    x.AddConsumer<AuditEventConsumer>();
-
-            //    x.UsingRabbitMq((context, cfg) =>
-            //    {
-            //        cfg.Host(configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
-            //        {
-            //            h.Username(configuration["RabbitMQ:User"] ?? "guest");
-            //            h.Password(configuration["RabbitMQ:Pass"] ?? "guest");
-            //        });
-
-            //        // Auto-create endpoints based on consumers
-            //        cfg.ConfigureEndpoints(context);
-            //    });
-            //});
 
             return services;
         }

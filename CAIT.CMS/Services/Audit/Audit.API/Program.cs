@@ -1,10 +1,8 @@
 ﻿using Audit.Application;
-using Audit.Application.Authorization;
 using Audit.Infrastructure;
-using Audit.Infrastructure.Authorization;
 using Audit.Infrastructure.Config;
+using BuildingBlocks.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -19,9 +17,7 @@ builder.Services.AddApplicationServices()
 
 // Authorization Provider
 builder.Services.AddMemoryCache();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
+
 
 // Add JWT Authentication
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -104,7 +100,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-app.UseMiddleware<ResourceExtractionMiddleware>();
+app.UsePermissionMiddleware();
 app.UseAuthorization();
 
 app.MapControllers();
