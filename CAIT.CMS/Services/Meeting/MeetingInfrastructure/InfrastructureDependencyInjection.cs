@@ -1,4 +1,6 @@
-﻿using BuildingBlocks.Infrastructure.EventHandlers;
+﻿using BuildingBlocks.Infrastructure;
+using BuildingBlocks.Infrastructure.EventHandlers;
+using BuildingBlocks.Messaging.MassTransit;
 using MassTransit;
 using MediatR;
 using MeetingApplication.Common.DateTimeProvider;
@@ -25,6 +27,20 @@ namespace MeetingInfrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+
+            // تسجيل المستخدم والـ HttpContext
+            services.AddSharedInfrastructure();
+
+            // تسجيل نظام التصاريح (Policy Provider + Handler)
+            services.AddDynamicPermissions();
+
+            // تسجيل خدمة الاتصال بالهوية (للتحقق من الصلاحيات)
+            var identityUrl = configuration["Services:IdentityBaseUrl"];
+            if (!string.IsNullOrEmpty(identityUrl))
+            {
+                services.AddRemotePermissionService(identityUrl);
+            }
+
             // 1. تسجيل Generic Audit Handler (لأن MediatR لا يراه تلقائياً في Assembly آخر)
             services.AddTransient(typeof(INotificationHandler<>), typeof(AuditDomainEventHandler<>));
 
@@ -89,38 +105,44 @@ namespace MeetingInfrastructure
             // ========================
             // MassTransit + RabbitMQ
             // ========================
-            services.AddMassTransit(x =>
-            {
-                // تسجيل جميع الـConsumers من Assembly
-                //x.AddConsumers(typeof(ApproveMoMCommandHandler).Assembly);
-                x.AddConsumers(typeof(OutlookAttachMoMConsumer).Assembly);
+            //services.AddMassTransit(x =>
+            //{
+            //    // تسجيل جميع الـConsumers من Assembly
+            //    //x.AddConsumers(typeof(ApproveMoMCommandHandler).Assembly);
+            //    x.AddConsumers(typeof(OutlookAttachMoMConsumer).Assembly);
 
-                // EF Core Outbox (Transactional Outbox)
-                x.AddEntityFrameworkOutbox<MeetingDbContext>(o =>
-                {
-                    o.UseSqlServer();     // أو UsePostgres
-                    o.UseBusOutbox();     // يضمن إرسال الرسائل بعد نجاح SaveChanges
+            //    // EF Core Outbox (Transactional Outbox)
+            //    x.AddEntityFrameworkOutbox<MeetingDbContext>(o =>
+            //    {
+            //        o.UseSqlServer();     // أو UsePostgres
+            //        o.UseBusOutbox();     // يضمن إرسال الرسائل بعد نجاح SaveChanges
 
-                    // 👇 هذا الخيار يمنع الحذف ويجعل الرسائل تبقى معلمة كـProcessed
-                    o.DisableInboxCleanupService(); // إذا أردت التحكم في التنظيف بنفسك
-                    o.QueryDelay = TimeSpan.FromSeconds(10);
+            //        // 👇 هذا الخيار يمنع الحذف ويجعل الرسائل تبقى معلمة كـProcessed
+            //        o.DisableInboxCleanupService(); // إذا أردت التحكم في التنظيف بنفسك
+            //        o.QueryDelay = TimeSpan.FromSeconds(10);
 
-                });
+            //    });
 
-                // إعداد RabbitMQ
-                x.UsingRabbitMq((context, cfg) =>
-                {
-                    cfg.Host(configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
-                    {
-                        h.Username(configuration["RabbitMQ:User"] ?? "guest");
-                        h.Password(configuration["RabbitMQ:Pass"] ?? "guest");
-                    });
+            //    // إعداد RabbitMQ
+            //    x.UsingRabbitMq((context, cfg) =>
+            //    {
+            //        cfg.Host(configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
+            //        {
+            //            h.Username(configuration["RabbitMQ:User"] ?? "guest");
+            //            h.Password(configuration["RabbitMQ:Pass"] ?? "guest");
+            //        });
 
-                    // Configure all endpoints تلقائيًا لكل Consumer
-                    cfg.ConfigureEndpoints(context);
-                });
-            });
+            //        // Configure all endpoints تلقائيًا لكل Consumer
+            //        cfg.ConfigureEndpoints(context);
+            //    });
+            //});
 
+
+
+            services.AddMessageBroker<MeetingDbContext>(
+                configuration,
+                typeof(OutlookAttachMoMConsumer).Assembly // تحديد الأسمبلي لاكتشاف الـ Consumers
+            );
             // Hosted Service لتشغيل الـ Bus تلقائياً
             //services.AddMassTransitHostedService();
 

@@ -1,13 +1,10 @@
-﻿using MeetingAPI.Middlewares;
+﻿using BuildingBlocks.Infrastructure;
+using MeetingAPI.Middlewares;
 using MeetingApplication;
-using MeetingApplication.Authorization;
 using MeetingInfrastructure;
-using MeetingInfrastructure.Authorization;
 using MeetingInfrastructure.Data;
 using MeetingInfrastructure.Integrations.Committee;
-using MeetingInfrastructure.Integrations.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -24,22 +21,15 @@ var builder = WebApplication.CreateBuilder(args);
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("MeetingConnectionString"))
 //);
 
-builder.Services.AddMemoryCache();
-builder.Services.AddHttpContextAccessor();
-
-builder.Services.AddTransient<JwtDelegatingHandler>();
-
-builder.Services.AddIdentityServiceClient(builder.Configuration);
-builder.Services.AddCommitteeServiceClient(builder.Configuration);
-
-builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
-
-
 // Register Services
 builder.Services.AddApplicationServices()
                 .AddInfrastructureServices(builder.Configuration);
 
+builder.Services.AddMemoryCache();
+
+
+//builder.Services.AddIdentityServiceClient(builder.Configuration);
+builder.Services.AddCommitteeServiceClient(builder.Configuration);
 
 
 //  JWT Authentication
@@ -177,7 +167,7 @@ app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
-app.UseMiddleware<ResourceExtractionMiddleware>();
+app.UsePermissionMiddleware();  //app.UseMiddleware<ResourceExtractionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

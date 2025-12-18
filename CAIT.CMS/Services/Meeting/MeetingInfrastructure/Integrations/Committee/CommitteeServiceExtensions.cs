@@ -1,5 +1,5 @@
-﻿using MeetingApplication.Interfaces.Committee;
-using MeetingInfrastructure.Authorization;
+﻿using BuildingBlocks.Infrastructure.Security;
+using MeetingApplication.Interfaces.Committee;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;

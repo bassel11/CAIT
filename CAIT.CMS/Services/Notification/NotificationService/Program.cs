@@ -1,34 +1,11 @@
-using MassTransit;
-using NotificationService.Consumers.SendEmail;
-using NotificationService.Services;
+using NotificationService;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+builder.Services.AddNotificationInfrastructure(builder.Configuration);
 // Add services to the container.
 // Add configuration
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
-
-// Add Email service
-builder.Services.AddScoped<IEmailService, EmailService>();
-
-// Add MassTransit
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumers(typeof(MoMApprovedNotificationConsumer).Assembly);
-
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
-        {
-            h.Username(builder.Configuration["RabbitMQ:User"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMQ:Pass"] ?? "guest");
-        });
-
-        cfg.ConfigureEndpoints(context);
-    });
-});
-
-
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
