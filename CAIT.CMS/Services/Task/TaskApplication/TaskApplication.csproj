@@ -11,7 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\" />
+    <Folder Include="Features\Tasks\EventHandlers\Domain\" />
+    <Folder Include="Features\Tasks\EventHandlers\Integration\" />
+    <Folder Include="Features\Tasks\Queries\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
   </ItemGroup>
 
 </Project>

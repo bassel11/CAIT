@@ -2,7 +2,10 @@
 using BuildingBlocks.Messaging.MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TaskApplication.Common.Interfaces;
+using TaskApplication.Data;
 using TaskInfrastructure.Data.Interceptors;
+using TaskInfrastructure.Persistence.Repositories;
 
 namespace TaskInfrastructure
 {
@@ -53,7 +56,8 @@ namespace TaskInfrastructure
             });
 
             // 6. ربط الواجهة
-            //services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+            services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+            services.AddScoped<ITaskRepository, TaskRepository>();
 
             // 7. إعداد MassTransit
             services.AddMessageBroker<ApplicationDbContext>(

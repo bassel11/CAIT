@@ -87,6 +87,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DecisionInfrastructure", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildingBlocks.Shared", "BuildingBlocks\BuildingBlocks.Shared\BuildingBlocks.Shared.csproj", "{518BAB8B-A6EA-4881-ACA8-DF521C56B63F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Monitoring", "Monitoring", "{D4493084-7762-4502-B35D-340DBDE97E9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -260,6 +262,7 @@ Global
 		{A93D83B3-ACF0-4548-8ACE-3DF06069E755} = {435F7A0C-971E-44B2-9B68-26929096C295}
 		{8B4F01A6-E231-46AA-966D-88268A9E2751} = {435F7A0C-971E-44B2-9B68-26929096C295}
 		{518BAB8B-A6EA-4881-ACA8-DF521C56B63F} = {3EA2317E-ADFA-4152-97D0-84FE6E691F9C}
+		{D4493084-7762-4502-B35D-340DBDE97E9F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7E123947-6567-4F1D-A6D7-83A427CADDA2}
