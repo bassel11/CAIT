@@ -9,17 +9,17 @@ namespace TaskCore.Entities
     public class TaskItem : Aggregate<TaskItemId>
     {
         // Collections
-        private readonly List<TaskAssignee> _taskassignees = new();
-        public IReadOnlyList<TaskAssignee> TaskAssignees => _taskassignees.AsReadOnly();
+        private readonly List<TaskAssignee> _taskAssignees = new();
+        public IReadOnlyList<TaskAssignee> TaskAssignees => _taskAssignees.AsReadOnly();
 
-        private readonly List<TaskNote> _tasknotes = new();
-        public IReadOnlyList<TaskNote> TaskNotes => _tasknotes.AsReadOnly();
+        private readonly List<TaskNote> _taskNotes = new();
+        public IReadOnlyList<TaskNote> TaskNotes => _taskNotes.AsReadOnly();
 
-        private readonly List<TaskAttachment> _taskattachments = new();
-        public IReadOnlyList<TaskAttachment> TaskAttachments => _taskattachments.AsReadOnly();
+        private readonly List<TaskAttachment> _taskAttachments = new();
+        public IReadOnlyList<TaskAttachment> TaskAttachments => _taskAttachments.AsReadOnly();
 
-        private readonly List<TaskHistory> _taskhistories = new();
-        public IReadOnlyList<TaskHistory> TaskHistories => _taskhistories.AsReadOnly();
+        private readonly List<TaskHistory> _taskHistories = new();
+        public IReadOnlyList<TaskHistory> TaskHistories => _taskHistories.AsReadOnly();
 
         // Fields
         public TaskTitle Title { get; private set; } = default!;
@@ -81,11 +81,11 @@ namespace TaskCore.Entities
                 throw new DomainException("Email cannot be empty");
 
             // التحقق من التكرار أصبح مباشراً
-            if (!_taskassignees.Any(a => a.UserId == userId))
+            if (!_taskAssignees.Any(a => a.UserId == userId))
             {
                 // نمرر الـ Value Object مباشرة
                 var taskassignee = new TaskAssignee(Id, userId, email, name);
-                _taskassignees.Add(taskassignee);
+                _taskAssignees.Add(taskassignee);
 
                 AddDomainEvent(new TaskAssignUserEvent(Id, taskassignee));
             }
@@ -93,12 +93,12 @@ namespace TaskCore.Entities
 
         public void UnassignUser(UserId userId)
         {
-            var assignee = _taskassignees.FirstOrDefault(a => a.UserId == userId);
+            var assignee = _taskAssignees.FirstOrDefault(a => a.UserId == userId);
 
             // Idempotency: إذا لم يكن موجوداً أصلاً، لا نفعل شيئاً (أو يمكن رمي خطأ حسب البزنس)
             if (assignee == null) return;
 
-            _taskassignees.Remove(assignee);
+            _taskAssignees.Remove(assignee);
 
             // إطلاق حدث الإزالة (مهم لإرسال إشعار للمستخدم بأنه لم يعد مسؤولاً)
             AddDomainEvent(new TaskUnassignUserEvent(Id, assignee));
@@ -106,19 +106,19 @@ namespace TaskCore.Entities
 
         public bool IsUserAssigned(UserId userId)
         {
-            return _taskassignees.Any(a => a.UserId == userId);
+            return _taskAssignees.Any(a => a.UserId == userId);
         }
 
         public IEnumerable<UserId> GetAssignedUserIds()
         {
-            return _taskassignees.Select(a => a.UserId);
+            return _taskAssignees.Select(a => a.UserId);
         }
 
         // 5. GetAssigneesDictionary: للبحث السريع (مفيد عند التعامل مع مهام جماعية كبيرة)
         public IReadOnlyDictionary<UserId, TaskAssignee> GetAssigneesDictionary()
         {
             // بما أن UserId هو Record، يمكن استخدامه كـ Key في القاموس بأمان
-            return _taskassignees.ToDictionary(a => a.UserId);
+            return _taskAssignees.ToDictionary(a => a.UserId);
         }
 
 
@@ -131,7 +131,7 @@ namespace TaskCore.Entities
 
             // 2. إنشاء الملاحظة
             var note = new TaskNote(Id, userId, content);
-            _tasknotes.Add(note);
+            _taskNotes.Add(note);
 
             // 3. إطلاق حدث (مهم جداً لإشعار المقرر أو الرئيس حسب المتطلبات)
             AddDomainEvent(new TaskNoteAddedEvent(Id, userId, content));
@@ -139,7 +139,7 @@ namespace TaskCore.Entities
 
         public void EditNote(UserId userId, TaskNoteId noteId, string newContent)
         {
-            var note = _tasknotes.FirstOrDefault(n => n.Id == noteId);
+            var note = _taskNotes.FirstOrDefault(n => n.Id == noteId);
 
             if (note == null) throw new DomainException("Note not found.");
 
@@ -161,7 +161,7 @@ namespace TaskCore.Entities
         // 2. حذف ملاحظة (Soft Delete)
         public void RemoveNote(UserId userId, TaskNoteId noteId)
         {
-            var note = _tasknotes.FirstOrDefault(n => n.Id == noteId);
+            var note = _taskNotes.FirstOrDefault(n => n.Id == noteId);
 
             if (note == null) throw new DomainException("Note not found.");
 
@@ -189,7 +189,7 @@ namespace TaskCore.Entities
                 throw new DomainException("Only assigned members can upload documents.");
 
             // 2. Versioning Logic: Find max version for the same filename
-            var currentVersion = _taskattachments
+            var currentVersion = _taskAttachments
                 .Where(a => a.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
                 .Max(a => (int?)a.Version) ?? 0;
 
@@ -206,7 +206,7 @@ namespace TaskCore.Entities
                 newVersion
             );
 
-            _taskattachments.Add(attachment);
+            _taskAttachments.Add(attachment);
 
             // 4. Raise Event for Audit
             AddDomainEvent(new TaskAttachmentUploadedEvent(
@@ -223,7 +223,7 @@ namespace TaskCore.Entities
         private void LogHistory(UserId userId, TaskHistoryAction action, string details, string? oldValue = null, string? newValue = null)
         {
             var history = new TaskHistory(Id, userId, action, details, oldValue, newValue);
-            _taskhistories.Add(history);
+            _taskHistories.Add(history);
 
             // ملاحظة: لا نطلق DomainEvent من هنا، لأن الحدث الأصلي (مثل TaskStatusChanged) هو المهم.
             // التاريخ هنا هو مجرد "سجل داخلي" للعرض في الـ UI.
