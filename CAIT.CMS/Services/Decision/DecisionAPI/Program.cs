@@ -2,7 +2,6 @@
 using DecisionAPI;
 using DecisionApplication;
 using DecisionInfrastructure;
-using DecisionInfrastructure.Data.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -91,7 +90,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 
     // تهيئة قاعدة البيانات مع Seed إذا لزم
-    await app.Services.InitializeDatabaseAsync();
+    //await app.Services.InitializeDatabaseAsync();
 }
 
 app.UseHttpsRedirection();
