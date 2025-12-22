@@ -10,4 +10,8 @@
     <ProjectReference Include="..\TaskCore\TaskCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\" />
+  </ItemGroup>
+
 </Project>
