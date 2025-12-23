@@ -15,4 +15,6 @@ namespace TaskApplication.Features.Notes.Commands.AddTaskNote
             RuleFor(x => x.Content).NotEmpty().MaximumLength(2000).WithMessage("Note content cannot be empty or exceed 2000 chars.");
         }
     }
+
+    public record AddNoteRequest(string Content);
 }

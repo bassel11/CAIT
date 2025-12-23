@@ -16,4 +16,6 @@ namespace TaskApplication.Features.Notes.Commands.EditTaskNote
             RuleFor(x => x.NewContent).NotEmpty().MaximumLength(2000);
         }
     }
+
+    public record EditNoteRequest(string Content);
 }

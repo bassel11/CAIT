@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BuildingBlocks.Shared.CQRS;
+using TaskApplication.Dtos;
 
 namespace TaskApplication.Features.Notes.Queries.GetNotes
 {
-    internal class GetTaskNotesQuery
-    {
-    }
+    public record GetTaskNotesQuery(Guid TaskId) : IQuery<List<TaskNoteDto>>;
 }
