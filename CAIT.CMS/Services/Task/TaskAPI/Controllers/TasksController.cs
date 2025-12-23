@@ -1,12 +1,15 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.Pagination;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TaskApplication.Dtos;
 using TaskApplication.Features.Tasks.Commands.AssignUser;
 using TaskApplication.Features.Tasks.Commands.CreateTask;
 using TaskApplication.Features.Tasks.Commands.UnassignUser;
 using TaskApplication.Features.Tasks.Commands.UpdateTaskStatus;
 using TaskApplication.Features.Tasks.Commands.UploadAttachment;
 using TaskApplication.Features.Tasks.Queries.GetTaskDetails;
+using TaskApplication.Features.Tasks.Queries.GetTasks;
 
 namespace TaskAPI.Controllers
 {
@@ -88,6 +91,16 @@ namespace TaskAPI.Controllers
         {
             await _mediator.Send(new UnassignUserCommand(id, userId));
             return NoContent();
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(PaginatedResult<TaskListItemDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTasks(
+            [FromQuery] GetTasksQuery query,
+            CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(query, cancellationToken);
+            return Ok(result);
         }
 
     }

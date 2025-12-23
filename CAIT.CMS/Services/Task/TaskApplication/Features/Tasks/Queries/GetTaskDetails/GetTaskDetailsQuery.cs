@@ -3,5 +3,5 @@ using TaskApplication.Dtos;
 
 namespace TaskApplication.Features.Tasks.Queries.GetTaskDetails
 {
-    public record GetTaskDetailsQuery(Guid TaskId) : IQuery<TaskDto>;
+    public record GetTaskDetailsQuery(Guid TaskId) : IQuery<TaskDetailsDto>;
 }
