@@ -1,7 +1,9 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Features.Tasks.Commands.AssignUser;
 using TaskApplication.Features.Tasks.Commands.CreateTask;
+using TaskApplication.Features.Tasks.Commands.UnassignUser;
 using TaskApplication.Features.Tasks.Commands.UpdateTaskStatus;
 using TaskApplication.Features.Tasks.Commands.UploadAttachment;
 using TaskApplication.Features.Tasks.Queries.GetTaskDetails;
@@ -10,6 +12,7 @@ namespace TaskAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TasksController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -20,6 +23,7 @@ namespace TaskAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "Permission:Task.View")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _mediator.Send(new GetTaskDetailsQuery(id));
@@ -27,6 +31,7 @@ namespace TaskAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "Permission:Task.Create")]
         public async Task<IActionResult> Create(CreateTaskCommand command)
         {
             var id = await _mediator.Send(command);
@@ -34,6 +39,7 @@ namespace TaskAPI.Controllers
         }
 
         [HttpPost("assignUser")]
+        [Authorize(Policy = "Permission:TaskAssignee.Assign")]
         public async Task<IActionResult> AssignUser([FromBody] AssignUserCommand request)
         {
             // نفصل الـ Request Body عن الـ Command لأن الـ ID يأتي من الـ URL
@@ -43,6 +49,7 @@ namespace TaskAPI.Controllers
         }
 
         [HttpPost("{id}/attachments")]
+        [Authorize(Policy = "Permission:TaskAttachment.Upload")]
         public async Task<IActionResult> UploadAttachment(Guid id, IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -64,6 +71,7 @@ namespace TaskAPI.Controllers
 
 
         [HttpPut("{id}/UpdateStatus")]
+        [Authorize(Policy = "Permission:TaskStatus.Update")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateTaskStatusRequest request)
         {
             // نستخدم الـ ID من المسار لضمان الأمان
@@ -74,6 +82,13 @@ namespace TaskAPI.Controllers
             return NoContent();
         }
 
+        [HttpDelete("{id}/assignees/{userId}")]
+        [Authorize(Policy = "Permission:TaskAssignee.Unassign")]
+        public async Task<IActionResult> UnassignUser(Guid id, Guid userId)
+        {
+            await _mediator.Send(new UnassignUserCommand(id, userId));
+            return NoContent();
+        }
 
     }
 }

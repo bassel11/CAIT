@@ -28,6 +28,7 @@
         Confirm = 23,         // تأكيد
         ValidateQuorum = 24,  // تحقق النصاب
         Reject = 25,           // رفض أو إلغاء
-        Submit = 26           // تأكيد
+        Submit = 26,           // تأكيد
+        Unassign = 27,
     }
 }

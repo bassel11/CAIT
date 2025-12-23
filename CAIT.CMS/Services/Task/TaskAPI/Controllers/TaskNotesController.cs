@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Features.Notes.Commands.AddTaskNote;
 using TaskApplication.Features.Notes.Commands.EditTaskNote;
@@ -18,6 +19,7 @@ namespace TaskAPI.Controllers
             _mediator = mediator;
         }
         [HttpGet("{id}/notes")]
+        [Authorize(Policy = "Permission:TaskNote.View")]
         public async Task<IActionResult> GetNotes(Guid id)
         {
             var result = await _mediator.Send(new GetTaskNotesQuery(id));
@@ -26,6 +28,7 @@ namespace TaskAPI.Controllers
 
         // 2. Add Note
         [HttpPost("{id}/notes")]
+        [Authorize(Policy = "Permission:TaskNote.Create")]
         public async Task<IActionResult> AddNote(Guid id, [FromBody] AddNoteRequest request)
         {
             var command = new AddTaskNoteCommand(id, request.Content);
@@ -35,6 +38,7 @@ namespace TaskAPI.Controllers
 
         // 3. Edit Note
         [HttpPut("{id}/notes/{noteId}")]
+        [Authorize(Policy = "Permission:TaskNote.Update")]
         public async Task<IActionResult> EditNote(Guid id, Guid noteId, [FromBody] EditNoteRequest request)
         {
             var command = new EditTaskNoteCommand(id, noteId, request.Content);
@@ -44,6 +48,7 @@ namespace TaskAPI.Controllers
 
         // 4. Delete Note
         [HttpDelete("{id}/notes/{noteId}")]
+        [Authorize(Policy = "Permission:TaskNote.Delete")]
         public async Task<IActionResult> DeleteNote(Guid id, Guid noteId)
         {
             var command = new RemoveTaskNoteCommand(id, noteId);

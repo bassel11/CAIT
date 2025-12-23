@@ -578,8 +578,88 @@
     "Description": "Create Vote for Decision",
     "IsGlobal": false,
     "IsActive": true
-  }
+  },
 
+  {
+    "Name": "Task.View",
+    "ResourceType": 6,
+    "Action": 0,
+    "Description": "View Task",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Task.Create",
+    "ResourceType": 6,
+    "Action": 1,
+    "Description": "Create New Task",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskAssignee.Assign",
+    "ResourceType": 6,
+    "Action": 5,
+    "Description": "Assign Member to task",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskAttachment.Upload",
+    "ResourceType": 6,
+    "Action": 6,
+    "Description": "Upload Task Attachement",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskStatus.Update",
+    "ResourceType": 6,
+    "Action": 2,
+    "Description": "Update Task Status",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskAssignee.Unassign",
+    "ResourceType": 6,
+    "Action": 27,
+    "Description": "Unassign Task Member",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskNote.View",
+    "ResourceType": 6,
+    "Action": 0,
+    "Description": "View Task Notes",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskNote.Create",
+    "ResourceType": 6,
+    "Action": 1,
+    "Description": "Create Task Note",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskNote.Update",
+    "ResourceType": 6,
+    "Action": 2,
+    "Description": "Update Task Note",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskNote.Delete",
+    "ResourceType": 6,
+    "Action": 3,
+    "Description": "Delete Task Note",
+    "IsGlobal": false,
+    "IsActive": true
+  }
 
 
 ]
