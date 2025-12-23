@@ -95,6 +95,7 @@ if (app.Environment.IsDevelopment())
     // تهيئة قاعدة البيانات مع Seed إذا لزم
     //await app.Services.InitializeDatabaseAsync();
 }
+app.UseStaticFiles(); // Added for Locally Files on wwwroot
 
 app.UseHttpsRedirection();
 

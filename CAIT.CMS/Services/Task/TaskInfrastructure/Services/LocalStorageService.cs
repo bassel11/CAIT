@@ -1,0 +1,61 @@
+﻿using Microsoft.AspNetCore.Hosting;
+using TaskApplication.Common.Interfaces;
+
+namespace TaskInfrastructure.Services
+{
+    public class LocalStorageService : IFileStorageService
+    {
+        private readonly IWebHostEnvironment _environment;
+        private const string UploadsFolder = "uploads";
+
+        public LocalStorageService(IWebHostEnvironment environment)
+        {
+            _environment = environment;
+        }
+
+        public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType, CancellationToken cancellationToken)
+        {
+            // 1. تحديد المسار الجذري (يفضل wwwroot لسهولة الوصول عبر الروابط لاحقاً)
+            var webRootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var targetDirectory = Path.Combine(webRootPath, UploadsFolder);
+
+            // 2. إنشاء المجلد إذا لم يكن موجوداً
+            if (!Directory.Exists(targetDirectory))
+            {
+                Directory.CreateDirectory(targetDirectory);
+            }
+
+            // 3. تأمين اسم الملف (تجنب التكرار والاختراق)
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+            var filePath = Path.Combine(targetDirectory, uniqueFileName);
+
+            // 4. الحفظ الفعلي
+            using (var targetStream = new FileStream(filePath, FileMode.Create))
+            {
+                await fileStream.CopyToAsync(targetStream, cancellationToken);
+            }
+
+            // 5. إرجاع المسار النسبي (URL) الذي يمكن للفرونت إند استخدامه
+            // النتيجة ستكون مثل: /uploads/gu-id-gu-id.pdf
+            return $"/{UploadsFolder}/{uniqueFileName}";
+        }
+
+        public async Task DeleteAsync(string blobPath, CancellationToken cancellationToken)
+        {
+            // تحويل المسار النسبي (URL) إلى مسار فعلي على القرص
+            // blobPath example: /uploads/guid-file.pdf
+            var webRootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+            // إزالة السلاش من البداية وتغيير الفواصل لتناسب نظام التشغيل
+            var relativePath = blobPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var fullPath = Path.Combine(webRootPath, relativePath);
+
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+            await Task.CompletedTask;
+        }
+
+    }
+}

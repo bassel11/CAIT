@@ -6,6 +6,7 @@ using TaskApplication.Common.Interfaces;
 using TaskApplication.Data;
 using TaskInfrastructure.Data.Interceptors;
 using TaskInfrastructure.Persistence.Repositories;
+using TaskInfrastructure.Services;
 
 namespace TaskInfrastructure
 {
@@ -58,6 +59,19 @@ namespace TaskInfrastructure
             // 6. ربط الواجهة
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
             services.AddScoped<ITaskRepository, TaskRepository>();
+
+            var useAzure = configuration.GetValue<bool>("Storage:UseAzure");
+
+            if (useAzure)
+            {
+                // الخيار السحابي
+                //services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+            }
+            else
+            {
+                // الخيار المحلي
+                services.AddScoped<IFileStorageService, LocalStorageService>();
+            }
 
             // 7. إعداد MassTransit
             services.AddMessageBroker<ApplicationDbContext>(

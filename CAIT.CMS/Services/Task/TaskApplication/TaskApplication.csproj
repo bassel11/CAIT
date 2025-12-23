@@ -13,7 +13,6 @@
   <ItemGroup>
     <Folder Include="Features\Tasks\EventHandlers\Domain\" />
     <Folder Include="Features\Tasks\EventHandlers\Integration\" />
-    <Folder Include="Features\Tasks\Queries\" />
   </ItemGroup>
 
   <ItemGroup>
