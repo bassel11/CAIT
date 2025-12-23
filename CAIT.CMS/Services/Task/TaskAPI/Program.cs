@@ -15,6 +15,7 @@ builder.Services
     .AddInfrastructureServices(builder.Configuration)
     .AddApiServices(builder.Configuration);
 
+builder.Services.AddMemoryCache();
 
 //  JWT Authentication
 
