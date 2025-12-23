@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Features.Tasks.Commands.AssignUser;
 using TaskApplication.Features.Tasks.Commands.CreateTask;
+using TaskApplication.Features.Tasks.Commands.UpdateTaskStatus;
 using TaskApplication.Features.Tasks.Commands.UploadAttachment;
 using TaskApplication.Features.Tasks.Queries.GetTaskDetails;
 
@@ -9,11 +10,11 @@ namespace TaskAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TaskController : ControllerBase
+    public class TasksController : ControllerBase
     {
         private readonly IMediator _mediator;
 
-        public TaskController(IMediator mediator)
+        public TasksController(IMediator mediator)
         {
             _mediator = mediator;
         }
@@ -60,5 +61,19 @@ namespace TaskAPI.Controllers
             var attachmentId = await _mediator.Send(command);
             return Ok(new { AttachmentId = attachmentId });
         }
+
+
+        [HttpPut("{id}/UpdateStatus")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateTaskStatusRequest request)
+        {
+            // نستخدم الـ ID من المسار لضمان الأمان
+            var command = new UpdateTaskStatusCommand(id, request.NewStatus);
+
+            await _mediator.Send(command);
+
+            return NoContent();
+        }
+
+
     }
 }

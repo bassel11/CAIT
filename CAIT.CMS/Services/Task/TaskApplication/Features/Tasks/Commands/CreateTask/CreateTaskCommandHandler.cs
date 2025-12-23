@@ -25,8 +25,13 @@ namespace TaskApplication.Features.Tasks.Commands.CreateTask
                 request.Priority,
                 request.Category,
                 CommitteeId.Of(request.CommitteeId),
-                meetingId: request.MeetingId.HasValue ? MeetingId.Of(request.MeetingId.Value) : null
+                meetingId: request.MeetingId.HasValue ? MeetingId.Of(request.MeetingId.Value) : null,
+                request.DecisionId is null ? null : DecisionId.Of(request.DecisionId.Value),
+                request.MoMId is null ? null : MoMId.Of(request.MoMId.Value)
             );
+
+            foreach (var a in request.Assignees)
+                task.AssignUser(UserId.Of(a.UserId), a.Email, a.Name);
 
             await _repository.AddAsync(task, cancellationToken);
             await _repository.SaveChangesAsync(cancellationToken);

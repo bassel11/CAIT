@@ -1,5 +1,6 @@
 ﻿using BuildingBlocks.Shared.CQRS;
 using FluentValidation;
+using TaskApplication.Dtos;
 using TaskCore.Enums;
 
 namespace TaskApplication.Features.Tasks.Commands.CreateTask
@@ -11,7 +12,10 @@ namespace TaskApplication.Features.Tasks.Commands.CreateTask
         TaskPriority Priority,
         TaskCategory Category,
         Guid CommitteeId,
-        Guid? MeetingId
+        Guid? MeetingId,
+        Guid? DecisionId,
+        Guid? MoMId,
+        List<AssigneeDto> Assignees
     ) : ICommand<CreateTaskResult>;
 
     public record CreateTaskResult(Guid Id);
