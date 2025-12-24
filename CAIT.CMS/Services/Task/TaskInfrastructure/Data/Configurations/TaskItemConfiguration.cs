@@ -21,7 +21,9 @@
                 .HasMaxLength(2000);
 
             builder.Property(t => t.Deadline)
-                .HasConversion(d => d != null ? d.Value : (DateTime?)null, v => v.HasValue ? TaskDeadline.Of(v.Value) : null);
+                .HasConversion(
+                d => d != null ? d.Value : (DateTime?)null,
+                v => v.HasValue ? TaskDeadline.FromDatabase(v.Value) : null);
 
             // 3. Enums (Store as String for readability or Int for performance)
             // Enterprise Preference: String prevents issues if Enum order changes

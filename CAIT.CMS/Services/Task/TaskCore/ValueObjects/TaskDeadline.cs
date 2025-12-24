@@ -14,6 +14,11 @@
             return new TaskDeadline(value);
         }
 
+        public static TaskDeadline FromDatabase(DateTime value)
+        {
+            // هنا لا نتحقق من الزمن، لأننا نقرأ حقيقة تاريخية قد تكون قديمة
+            return new TaskDeadline(value);
+        }
         public bool IsPassed() => DateTime.UtcNow > Value;
 
         public override string ToString() => Value.ToString("O");
