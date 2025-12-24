@@ -613,6 +613,22 @@
     "IsActive": true
   },
   {
+    "Name": "TaskAttachment.Download",
+    "ResourceType": 6,
+    "Action": 7,
+    "Description": "Download Task Attachement",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskAttachment.View",
+    "ResourceType": 6,
+    "Action": 0,
+    "Description": "View Task Attachement",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
     "Name": "TaskStatus.Update",
     "ResourceType": 6,
     "Action": 2,
@@ -657,6 +673,22 @@
     "ResourceType": 6,
     "Action": 3,
     "Description": "Delete Task Note",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Task.Update",
+    "ResourceType": 6,
+    "Action": 2,
+    "Description": "Update Task",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "TaskHsitory.View",
+    "ResourceType": 6,
+    "Action": 0,
+    "Description": "View Task History",
     "IsGlobal": false,
     "IsActive": true
   }

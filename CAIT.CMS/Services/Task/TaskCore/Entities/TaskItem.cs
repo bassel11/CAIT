@@ -70,6 +70,42 @@ namespace TaskCore.Entities
             return taskItem;
         }
 
+        public void UpdateDetails(
+    UserId modifierId,
+    TaskTitle newTitle,
+    TaskDescription newDescription,
+    TaskPriority newPriority,
+    TaskCategory newCategory,
+    TaskDeadline? newDeadline)
+        {
+            // التحقق من أن المهمة ليست مغلقة أو مؤرشفة (حسب قواعد العمل)
+            if (Status == Enums.TaskStatus.Completed || Status == Enums.TaskStatus.Cancelled)
+            {
+                // في بعض الأنظمة يمنع التعديل على المهام المنتهية
+                // throw new DomainException("Cannot update details of a completed task.");
+            }
+
+            // نحتفظ بالقيم القديمة للمقارنة (اختياري للتدقيق الدقيق)
+            var oldTitle = Title;
+            // ... يمكن تكرار ذلك لبقية الحقول
+
+            // تحديث القيم
+            Title = newTitle;
+            Description = newDescription;
+            Priority = newPriority;
+            Category = newCategory;
+            Deadline = newDeadline;
+
+            // تسجيل التاريخ (Audit)
+            LogHistory(
+                modifierId,
+                TaskHistoryAction.Updated,
+                "Task details updated (Title, Desc, Priority, etc.)"
+            );
+
+            // إطلاق حدث (اختياري، لو أردت إشعار أحد بتغيير التفاصيل)
+            AddDomainEvent(new TaskDetailsUpdatedEvent(Id, modifierId));
+        }
         public void AssignUser(UserId userId, string email, string name) // 👈 نستخدم Value Object
         {
             // لا داعي للتحقق من userId == empty هنا، لأن UserId.Of قام بذلك مسبقاً

@@ -11,14 +11,31 @@
 
             // 2. Complex Value Objects (Titles, Descriptions, etc.)
             // نفترض أن لديك Value Objects لهذه الحقول، أو سيتم معاملتها كـ Primitive
-            builder.Property(t => t.Title)
-                .HasConversion(t => t.Value, v => TaskTitle.Of(v)) // افتراض وجود ValueObject
-                .HasMaxLength(200)
-                .IsRequired();
+            //builder.Property(t => t.Title)
+            //    .HasConversion(t => t.Value, v => TaskTitle.Of(v)) // افتراض وجود ValueObject
+            //    .HasMaxLength(200)
+            //    .IsRequired();
 
-            builder.Property(t => t.Description)
-                .HasConversion(d => d.Value, v => TaskDescription.Of(v))
-                .HasMaxLength(2000);
+            //builder.Property(t => t.Description)
+            //    .HasConversion(d => d.Value, v => TaskDescription.Of(v))
+            //    .HasMaxLength(2000);
+
+            // 2. Complex Value Objects (Title & Description) ✅
+            // تم التغيير إلى ComplexProperty لدعم البحث (LINQ Translation)
+            builder.ComplexProperty(t => t.Title, propBuilder =>
+            {
+                propBuilder.Property(p => p.Value)
+                    .HasColumnName("Title") // اسم العمود في قاعدة البيانات
+                    .HasMaxLength(200)
+                    .IsRequired();
+            });
+
+            builder.ComplexProperty(t => t.Description, propBuilder =>
+            {
+                propBuilder.Property(p => p.Value)
+                    .HasColumnName("Description")
+                    .HasMaxLength(2000);
+            });
 
             builder.Property(t => t.Deadline)
                 .HasConversion(

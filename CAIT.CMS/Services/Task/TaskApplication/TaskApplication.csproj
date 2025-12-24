@@ -11,6 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\Attachments\Commands\" />
+    <Folder Include="Features\Attachments\EventHandlers\" />
     <Folder Include="Features\Notes\EventHandlers\Domain\" />
     <Folder Include="Features\Notes\EventHandlers\Integration\" />
     <Folder Include="Features\Tasks\EventHandlers\Domain\" />

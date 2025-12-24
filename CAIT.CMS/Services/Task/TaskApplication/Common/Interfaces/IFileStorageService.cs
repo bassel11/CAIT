@@ -1,4 +1,6 @@
-﻿namespace TaskApplication.Common.Interfaces
+﻿using TaskApplication.Dtos;
+
+namespace TaskApplication.Common.Interfaces
 {
     public interface IFileStorageService
     {
@@ -7,5 +9,7 @@
 
         // إضافة دالة الحذف للتراجع
         Task DeleteAsync(string blobPath, CancellationToken cancellationToken);
+
+        Task<FileDownloadDto> DownloadAsync(string blobPath, CancellationToken cancellationToken);
     }
 }

@@ -6,6 +6,7 @@ using TaskApplication.Dtos;
 using TaskApplication.Features.Tasks.Commands.AssignUser;
 using TaskApplication.Features.Tasks.Commands.CreateTask;
 using TaskApplication.Features.Tasks.Commands.UnassignUser;
+using TaskApplication.Features.Tasks.Commands.UpdateTask;
 using TaskApplication.Features.Tasks.Commands.UpdateTaskStatus;
 using TaskApplication.Features.Tasks.Commands.UploadAttachment;
 using TaskApplication.Features.Tasks.Queries.GetTaskDetails;
@@ -41,7 +42,7 @@ namespace TaskAPI.Controllers
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
-        [HttpPost("assignUser")]
+        [HttpPost("AssignUser")]
         [Authorize(Policy = "Permission:TaskAssignee.Assign")]
         public async Task<IActionResult> AssignUser([FromBody] AssignUserCommand request)
         {
@@ -85,7 +86,7 @@ namespace TaskAPI.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}/assignees/{userId}")]
+        [HttpDelete("{id}/Unassignees/{userId}")]
         [Authorize(Policy = "Permission:TaskAssignee.Unassign")]
         public async Task<IActionResult> UnassignUser(Guid id, Guid userId)
         {
@@ -103,6 +104,25 @@ namespace TaskAPI.Controllers
             var result = await _mediator.Send(query, cancellationToken);
             return Ok(result);
         }
+
+        [HttpPut("UpdateTask{id}")]
+        [Authorize(Policy = "Permission:Task.Update")]
+        public async Task<IActionResult> UpdateTaskDetails(Guid id, [FromBody] UpdateTaskRequest request)
+        {
+            // نأخذ الـ ID من الرابط لضمان الأمان، والباقي من الجسم
+            var command = new UpdateTaskCommand(
+                id,
+                request.Title,
+                request.Description,
+                request.Priority,
+                request.Category,
+                request.Deadline
+            );
+
+            await _mediator.Send(command);
+            return NoContent();
+        }
+
 
     }
 }

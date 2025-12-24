@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using TaskApplication.Common.Interfaces;
+using TaskApplication.Dtos;
 
 namespace TaskInfrastructure.Services
 {
@@ -55,6 +56,29 @@ namespace TaskInfrastructure.Services
                 File.Delete(fullPath);
             }
             await Task.CompletedTask;
+        }
+
+        public async Task<FileDownloadDto> DownloadAsync(string blobPath, CancellationToken cancellationToken)
+        {
+            // تحويل المسار النسبي (URL) إلى مسار فعلي
+            // مثال: /uploads/GUID_file.pdf -> C:\...\wwwroot\uploads\GUID_file.pdf
+            var fileName = Path.GetFileName(blobPath);
+            var fullPath = Path.Combine(_environment.WebRootPath ?? "wwwroot", "uploads", fileName);
+
+            if (!File.Exists(fullPath))
+                throw new FileNotFoundException("File not found on server.");
+
+            var memoryStream = new MemoryStream();
+            using (var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read))
+            {
+                await fileStream.CopyToAsync(memoryStream, cancellationToken);
+            }
+            memoryStream.Position = 0; // إعادة المؤشر للبداية
+
+            // تخمين نوع الملف (أو يمكن تخزينه في قاعدة البيانات وتمريره هنا، وهو الأفضل)
+            var contentType = "application/octet-stream"; // Default
+
+            return new FileDownloadDto(memoryStream, contentType, fileName);
         }
 
     }

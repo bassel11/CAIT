@@ -27,8 +27,7 @@ namespace TaskApplication.Features.Tasks.Commands.UpdateTaskStatus
                 throw new KeyNotFoundException($"Task with ID {request.TaskId} was not found.");
 
             // ✅ تصحيح 2: تحويل Guid إلى UserId Value Object
-            //var currentUserId = UserId.Of(_currentUser.UserId);
-            var currentUserId = UserId.Of(Guid.Parse("D1288717-9701-4E27-890C-8D6281D831D6"));
+            var currentUserId = UserId.Of(_currentUser.UserId);
 
             // التحقق من الصلاحية
             if (!task.IsUserAssigned(currentUserId))

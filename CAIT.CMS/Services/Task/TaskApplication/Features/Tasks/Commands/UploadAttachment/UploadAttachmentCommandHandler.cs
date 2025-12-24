@@ -40,8 +40,7 @@ namespace TaskApplication.Features.Tasks.Commands.UploadAttachment
             {
                 // 2. Add to Domain (قد يفشل هنا بسبب قواعد العمل Validation)
                 task.AddAttachment(
-                    //UserId.Of(_currentUser.UserId),
-                    UserId.Of(Guid.Parse("D1288717-9701-4E27-890C-8D6281D831D6")),
+                    UserId.Of(_currentUser.UserId),
                     request.FileName,
                     blobPath,
                     request.ContentType,
