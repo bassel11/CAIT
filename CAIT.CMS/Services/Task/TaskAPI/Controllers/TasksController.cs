@@ -15,7 +15,7 @@ namespace TaskAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class TasksController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -94,6 +94,7 @@ namespace TaskAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:Task.View")]
         [ProducesResponseType(typeof(PaginatedResult<TaskListItemDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTasks(
             [FromQuery] GetTasksQuery query,
