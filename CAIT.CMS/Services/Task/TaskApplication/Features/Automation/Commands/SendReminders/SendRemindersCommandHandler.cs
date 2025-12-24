@@ -18,7 +18,7 @@ namespace TaskApplication.Features.Automation.Commands.SendReminders
         public async Task Handle(SendRemindersCommand request, CancellationToken cancellationToken)
         {
             // الأيام المطلوبة للتذكير: 7، 3، 1
-            int[] reminderDays = { 3 };
+            int[] reminderDays = { 1, 3, 7 };
 
             foreach (var days in reminderDays)
             {
