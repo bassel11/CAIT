@@ -10,7 +10,10 @@ namespace NotificationService.Consumers.SendEmail
             EndpointName = "notification-send-email";
         }
 
-        protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator, IConsumerConfigurator<MoMApprovedNotificationConsumer> consumerConfigurator)
+        protected override void ConfigureConsumer(
+            IReceiveEndpointConfigurator endpointConfigurator,
+            IConsumerConfigurator<MoMApprovedNotificationConsumer> consumerConfigurator,
+            IRegistrationContext context)
         {
             // ✅ سياسة إعادة المحاولة (Retry Policy)
             // في حال فشل الإرسال (مثلاً سيرفر الإيميل مشغول)، سيحاول 3 مرات بفاصل 5 ثوانٍ

@@ -1,0 +1,408 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard Simulator (Offline Support)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        /* --- General Styles (Dark Mode) --- */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: #1f1f1f;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+            .logo span {
+                color: #3498db;
+            }
+
+        /* Notification Icon Area */
+        .notification-container {
+            position: relative;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .bell-icon {
+            font-size: 24px;
+            color: #ccc;
+            transition: color 0.3s;
+        }
+
+            .bell-icon:hover {
+                color: #fff;
+            }
+
+        /* Red Badge */
+        .badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #e74c3c;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 50%;
+            border: 2px solid #1f1f1f;
+            display: none;
+        }
+
+        /* --- Notification Dropdown Menu (New!) --- */
+        .dropdown-menu {
+            position: absolute;
+            top: 60px;
+            right: 30px;
+            width: 350px;
+            background-color: #252526;
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
+            z-index: 10000;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .dropdown-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid #333;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1e1e1e;
+        }
+
+        .mark-all-btn {
+            font-size: 11px;
+            color: #3498db;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .dropdown-item {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+            .dropdown-item:hover {
+                background-color: #2d2d2d;
+            }
+
+            /* Unread Style */
+            .dropdown-item.unread {
+                background-color: #2c2c2e;
+                border-left: 3px solid #3498db;
+            }
+
+            .dropdown-item.read {
+                opacity: 0.6;
+            }
+
+        .item-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .item-msg {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .item-time {
+            font-size: 10px;
+            color: #666;
+            text-align: right;
+        }
+
+        /* --- Toast Popups --- */
+        #toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            width: 350px;
+        }
+
+        .toast {
+            background-color: #252526;
+            border-left: 5px solid;
+            color: #fff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: translateX(100%);
+            animation: slideIn 0.5s forwards;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+            .toast.Info {
+                border-color: #3498db;
+            }
+
+            .toast.Warning {
+                border-color: #f39c12;
+            }
+
+            .toast.Error {
+                border-color: #e74c3c;
+            }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* API Status */
+        #api-status {
+            margin-left: 10px;
+            font-size: 11px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">CMS <span>System</span> <span id="api-status"></span></div>
+
+        <div class="notification-container" onclick="toggleDropdown()">
+            <span class="bell-icon">🔔</span>
+            <span id="notification-badge" class="badge">0</span>
+        </div>
+    </nav>
+
+    <div id="notification-dropdown" class="dropdown-menu">
+        <div class="dropdown-header">
+            Notifications
+            <span class="mark-all-btn" onclick="markAllRead(event)">Mark all read</span>
+        </div>
+        <div id="dropdown-list">
+            <div style="padding:20px; text-align:center; color:#666;">Loading...</div>
+        </div>
+    </div>
+
+    <div style="padding: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div style="background:#1e1e1e; padding:20px; border-radius:8px; border:1px solid #333;">
+            <h3>Simulation Status</h3>
+            <p id="connection-status" style="color: #666;">Initializing...</p>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <audio id="notifySound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"></audio>
+
+    <script>
+        // ---------------- Configuration ----------------
+        // Must match what you use in Backend
+        const myUserId = "e383feea-bc94-48fb-2b85-08de18039041";
+        const API_URL = "http://192.168.1.104:5248/api/notifications";
+        const HUB_URL = `http://192.168.1.104:5248/hubs/notifications?userId=${myUserId}`;
+
+        let unreadCount = 0;
+
+        // ---------------- 1. SignalR Setup (Real-time) ----------------
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(HUB_URL)
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.None)
+            .build();
+
+        connection.on("ReceiveNotification", (data) => {
+            playSound();
+            showToast(data.title, data.message, data.type);
+            incrementBadge();
+            // If dropdown is open, refresh the list live
+            const dropdown = document.getElementById("notification-dropdown");
+            if (dropdown.style.display === "block") {
+                fetchNotifications();
+            }
+        });
+
+        // ---------------- 2. API Logic (History & State) ----------------
+
+        // Scenario: App Opened (Offline catch-up)
+        async function loadInitialState() {
+            try {
+                // Get accurate badge count from DB
+                const response = await fetch(`${API_URL}/${myUserId}/unread-count`);
+                if(response.ok) {
+                    const count = await response.json();
+                    updateBadgeDisplay(count);
+                }
+            } catch (error) {
+                console.error("Failed to load initial state:", error);
+            }
+        }
+
+        // Scenario: User clicks Bell
+        async function fetchNotifications() {
+            const listContainer = document.getElementById("dropdown-list");
+
+            try {
+                const response = await fetch(`${API_URL}/${myUserId}`);
+                const data = await response.json(); // Expecting List of AppNotification
+
+                listContainer.innerHTML = ""; // Clear list
+
+                if (data.length === 0) {
+                    listContainer.innerHTML = "<div style='padding:20px; text-align:center; color:#555;'>No notifications</div>";
+                    return;
+                }
+
+                data.forEach(item => {
+                    const itemDiv = document.createElement("div");
+                    // Apply visual style based on IsRead status
+                    itemDiv.className = `dropdown-item ${item.isRead ? 'read' : 'unread'}`;
+                    itemDiv.onclick = () => markAsRead(item.id, itemDiv, item.link);
+
+                    itemDiv.innerHTML = `
+                        <div class="item-title" style="${item.type === 'Error' ? 'color:#e74c3c' : ''}">${item.title}</div>
+                        <div class="item-msg">${item.message}</div>
+                        <div class="item-time">${new Date(item.createdAt).toLocaleTimeString()}</div>
+                    `;
+                    listContainer.appendChild(itemDiv);
+                });
+
+            } catch (error) {
+                listContainer.innerHTML = "<div style='color:red; padding:10px;'>API Error</div>";
+            }
+        }
+
+        // Scenario: User reads a notification
+        async function markAsRead(notificationId, element, link) {
+            // 1. Visually update immediately (Optimistic UI)
+            if (element.classList.contains("unread")) {
+                element.classList.remove("unread");
+                element.classList.add("read");
+                decrementBadge();
+
+                // 2. Send request to backend
+                try {
+                    await fetch(`${API_URL}/${notificationId}/read`, { method: 'PUT' });
+                } catch(e) { console.error("Sync failed"); }
+            }
+
+            // 3. Navigate if link exists
+            if (link && link !== "") {
+                console.log("Navigating to:", link);
+                // window.location.href = link;
+            }
+        }
+
+        async function markAllRead(event) {
+            event.stopPropagation(); // Prevent closing dropdown
+            try {
+                await fetch(`${API_URL}/${myUserId}/read-all`, { method: 'PUT' });
+                updateBadgeDisplay(0);
+                fetchNotifications(); // Refresh list
+            } catch(e) { console.error("Failed to mark all read"); }
+        }
+
+        // ---------------- UI Helpers ----------------
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById("notification-dropdown");
+            const isClosed = dropdown.style.display === "none" || dropdown.style.display === "";
+
+            if (isClosed) {
+                dropdown.style.display = "block";
+                fetchNotifications(); // Fetch history from DB
+            } else {
+                dropdown.style.display = "none";
+            }
+        }
+
+        function updateBadgeDisplay(count) {
+            unreadCount = count;
+            const badge = document.getElementById("notification-badge");
+            badge.innerText = unreadCount > 99 ? "99+" : unreadCount;
+            badge.style.display = unreadCount > 0 ? "block" : "none";
+        }
+
+        function incrementBadge() { updateBadgeDisplay(unreadCount + 1); }
+        function decrementBadge() { updateBadgeDisplay(Math.max(0, unreadCount - 1)); }
+
+        function showToast(title, message, type) {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="close-btn" onclick="this.parentElement.remove()">×</span>
+                <div class="toast-header">${title}</div>
+                <div class="toast-body">${message}</div>
+                <div class="toast-time">Just now</div>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = "fadeOut 0.5s forwards";
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        function playSound() {
+            const audio = document.getElementById("notifySound");
+            audio.play().catch(e => console.log("Audio requires interaction"));
+        }
+
+        // ---------------- Initialization ----------------
+        async function start() {
+            try {
+                // 1. Start SignalR
+                await connection.start();
+                document.getElementById("connection-status").innerText = "🟢 Connected (SignalR Active)";
+                document.getElementById("connection-status").style.color = "#2ecc71";
+
+                // 2. Load History (API)
+                await loadInitialState();
+
+            } catch (err) {
+                document.getElementById("connection-status").innerText = "🔴 Disconnected";
+                document.getElementById("connection-status").style.color = "#e74c3c";
+                setTimeout(start, 5000);
+            }
+        }
+
+        start();
+    </script>
+</body>
+</html>

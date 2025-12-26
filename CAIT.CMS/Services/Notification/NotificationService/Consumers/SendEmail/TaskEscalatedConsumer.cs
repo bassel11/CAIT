@@ -7,13 +7,16 @@ namespace NotificationService.Consumers.SendEmail
     public class TaskEscalatedConsumer : IConsumer<TaskEscalatedIntegrationEvent>
     {
         private readonly IEmailService _emailService;
+        private readonly IAppNotificationService _appNotificationService;
         //private readonly IUserService _userService; // لجلب إيميلات المستخدمين
 
         public TaskEscalatedConsumer(IEmailService emailService
+            , IAppNotificationService appNotificationService
             //,IUserService userService
             )
         {
             _emailService = emailService;
+            _appNotificationService = appNotificationService;
             // _userService = userService;
         }
 
@@ -46,6 +49,15 @@ namespace NotificationService.Consumers.SendEmail
             );
 
             // يمكن أيضاً إرسال Push Notification هنا
+            // 2. ✅ إرسال إشعار للنظام (Dashboard & Real-time)
+            var chairmanId = Guid.Parse("E383FEEA-BC94-48FB-2B85-08DE18039041");
+            await _appNotificationService.SendNotificationAsync(
+                userId: chairmanId,
+                title: "Task Escalated 🚨",
+                message: $"Task '{message.TaskTitle}' is overdue by {message.DaysOverdue} days.",
+                link: $"/tasks/{message.TaskId}",
+                type: "Error" // لون أحمر
+            );
         }
     }
 }

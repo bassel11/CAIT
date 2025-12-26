@@ -7,16 +7,20 @@ namespace NotificationService.Consumers.SendEmail
     public class TaskReminderConsumer : IConsumer<TaskReminderIntegrationEvent>
     {
         private readonly IEmailService _emailService;
+        private readonly IAppNotificationService _appNotificationService;
         // private readonly IUserService _userService; 
 
-        public TaskReminderConsumer(IEmailService emailService)
+        public TaskReminderConsumer(IEmailService emailService, IAppNotificationService appNotificationService)
         {
             _emailService = emailService;
+            _appNotificationService = appNotificationService;
         }
 
         public async Task Consume(ConsumeContext<TaskReminderIntegrationEvent> context)
         {
             var message = context.Message;
+
+            string type = message.DaysRemaining <= 1 ? "Warning" : "Info";
 
             // 1. تحديد المستلمين (الموظفين المسؤولين عن المهمة)
             // في الواقع: نقوم بجلب قائمة الإيميلات بناءً على message.AssigneeIds
@@ -48,12 +52,27 @@ namespace NotificationService.Consumers.SendEmail
                 </div>";
 
             // 4. الإرسال لكل المعينين
-            foreach (var email in targetEmails)
+            //foreach (var email in targetEmails)
+            //{
+            //    await _emailService.SendEmailAsync(
+            //        to: email,
+            //        subject: $"[{urgencyText}] Upcoming Deadline: {message.TaskTitle}",
+            //        body: emailBody
+            //    );
+
+            //}
+
+            foreach (var assigneeId in message.AssigneeIds)
             {
-                await _emailService.SendEmailAsync(
-                    to: email,
-                    subject: $"[{urgencyText}] Upcoming Deadline: {message.TaskTitle}",
-                    body: emailBody
+                // 1. إرسال الإيميل (اختياري هنا)
+
+                // 2. ✅ إرسال إشعار للنظام
+                await _appNotificationService.SendNotificationAsync(
+                    userId: assigneeId,
+                    title: "Task Reminder ⏰",
+                    message: $"Upcoming deadline for '{message.TaskTitle}' in {message.DaysRemaining} days.",
+                    link: $"/tasks/{message.TaskId}",
+                    type: type
                 );
             }
         }
