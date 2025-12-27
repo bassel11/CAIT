@@ -1,51 +1,36 @@
-﻿//using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Monitoring.Application.Features.Monitoring.Queries.GetComplianceReport;
+using Monitoring.Application.Features.Monitoring.Queries.GetSuperAdminDashboard;
 
-//namespace Monitoring.API.Controllers
-//{
-//    [Route("api/[controller]")]
-//    [ApiController]
-//    public class MonitoringController : ControllerBase
-//    {
-//        private readonly AnalyticsDbContext _context;
+namespace Monitoring.API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class MonitoringController : ControllerBase
+    {
+        private readonly IMediator _mediator;
 
-//        public AnalyticsController(AnalyticsDbContext context)
-//        {
-//            _context = context;
-//        }
+        public MonitoringController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
 
-//        // لوحة قيادة المدير العام (Super Admin Dashboard)
-//        [HttpGet("dashboard/super-admin")]
-//        public async Task<IActionResult> GetSuperAdminDashboard()
-//        {
-//            var stats = await _context.CommitteeSummaries
-//                .GroupBy(c => 1)
-//                .Select(g => new
-//                {
-//                    TotalCommittees = g.Count(),
-//                    ActiveCount = g.Count(c => c.Status == "Active"),
-//                    NonCompliantCount = g.Count(c => !c.IsCompliant),
-//                    AvgAttendance = g.Average(c => c.AttendanceRate)
-//                })
-//                .FirstOrDefaultAsync();
+        // لوحة قيادة المدير العام (Super Admin Dashboard)
+        [HttpGet("dashboard/super-admin")]
+        public async Task<IActionResult> GetSuperAdminDashboard()
+        {
+            // إرسال الطلب (Query) واستلام النتيجة
+            var result = await _mediator.Send(new GetSuperAdminDashboardQuery());
+            return Ok(result);
+        }
 
-//            var overloadedMembers = await _context.MemberWorkloads
-//                .Where(m => m.TotalCommittees > 5 || m.PendingTasks > 10)
-//                .Take(10)
-//                .ToListAsync();
-
-//            return Ok(new { Stats = stats, RiskList = overloadedMembers });
-//        }
-
-//        // تقرير الامتثال
-//        [HttpGet("reports/compliance")]
-//        public async Task<IActionResult> GetComplianceReport()
-//        {
-//            var risks = await _context.CommitteeSummaries
-//                .Where(c => !c.IsCompliant)
-//                .Select(c => new { c.Name, c.NonComplianceReason, c.LastActivityDate })
-//                .ToListAsync();
-
-//            return Ok(risks);
-//        }
-//    }
-//}
+        // تقرير الامتثال
+        [HttpGet("reports/compliance")]
+        public async Task<IActionResult> GetComplianceReport()
+        {
+            var result = await _mediator.Send(new GetComplianceReportQuery());
+            return Ok(result);
+        }
+    }
+}

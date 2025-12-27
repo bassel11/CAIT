@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Monitoring.Application.Data;
+using Monitoring.Application.Interfaces;
 using Monitoring.Infrastructure.Data;
 using Monitoring.Infrastructure.Jobs;
+using Monitoring.Infrastructure.Persistence;
 using Quartz;
 
 namespace Monitoring.Infrastructure
@@ -47,6 +49,7 @@ namespace Monitoring.Infrastructure
 
             services.AddScoped<IMonitoringDbContext>(provider
                 => provider.GetRequiredService<MonitoringDbContext>());
+            services.AddScoped<IMonitoringRepository, MonitoringRepository>();
 
             services.AddMessageBroker<MonitoringDbContext>(
                configuration,

@@ -16,7 +16,6 @@
     <Folder Include="Features\Attachments\EventHandlers\" />
     <Folder Include="Features\Notes\EventHandlers\Domain\" />
     <Folder Include="Features\Notes\EventHandlers\Integration\" />
-    <Folder Include="Features\Tasks\EventHandlers\Domain\" />
     <Folder Include="Features\Tasks\Queries\GetTaskById\" />
     <Folder Include="Features\Tasks\Queries\GetTasksDashboard\" />
   </ItemGroup>

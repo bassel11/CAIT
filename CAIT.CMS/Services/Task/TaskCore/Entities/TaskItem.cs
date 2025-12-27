@@ -71,12 +71,12 @@ namespace TaskCore.Entities
         }
 
         public void UpdateDetails(
-    UserId modifierId,
-    TaskTitle newTitle,
-    TaskDescription newDescription,
-    TaskPriority newPriority,
-    TaskCategory newCategory,
-    TaskDeadline? newDeadline)
+                    UserId modifierId,
+                    TaskTitle newTitle,
+                    TaskDescription newDescription,
+                    TaskPriority newPriority,
+                    TaskCategory newCategory,
+                    TaskDeadline? newDeadline)
         {
             // التحقق من أن المهمة ليست مغلقة أو مؤرشفة (حسب قواعد العمل)
             if (Status == Enums.TaskStatus.Completed || Status == Enums.TaskStatus.Cancelled)
