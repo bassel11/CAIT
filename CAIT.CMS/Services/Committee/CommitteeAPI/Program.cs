@@ -1,13 +1,10 @@
-﻿using CommitteeAPI.Extensions;
+﻿using BuildingBlocks.Infrastructure;
 using CommitteeAPI.Middlewares;
 using CommitteeApplication;
-using CommitteeApplication.Authorization;
 using CommitteeInfrastructure;
-using CommitteeInfrastructure.Authorization;
 using CommitteeInfrastructure.Configurations;
 using CommitteeInfrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -20,25 +17,27 @@ var builder = WebApplication.CreateBuilder(args);
 // ==========================
 // 1️⃣ Database Context
 // ==========================
-builder.Services.AddDbContext<CommitteeContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("CommitteeConnectionString"))
-);
-
-builder.Services.AddMemoryCache();
-builder.Services.AddHttpContextAccessor();
-
-builder.Services.AddTransient<JwtDelegatingHandler>();
-
-builder.Services.AddIdentityHttpClients(builder.Configuration);
-
-builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
+//builder.Services.AddDbContext<CommitteeContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("CommitteeConnectionString"))
+//);
 
 // ==========================
 // Register Services of All Layers
 // ==========================
 builder.Services.AddApplicationServices()
-                .AddInfrastructureServices();
+                .AddInfrastructureServices(builder.Configuration);
+
+builder.Services.AddMemoryCache();
+//builder.Services.AddHttpContextAccessor();
+
+//builder.Services.AddTransient<JwtDelegatingHandler>();
+
+//builder.Services.AddIdentityHttpClients(builder.Configuration);
+
+//builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+//builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
+
+
 
 // ==========================
 // 2️⃣ Identity gRPC Client Registration
@@ -190,7 +189,8 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Authentication must come before Authorization
 app.UseAuthentication();
-app.UseMiddleware<ResourceExtractionMiddleware>();
+//app.UseMiddleware<ResourceExtractionMiddleware>();
+app.UsePermissionMiddleware();
 app.UseAuthorization();
 
 app.MapControllers();

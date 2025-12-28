@@ -1,15 +1,57 @@
-﻿using CommitteeApplication.Wrappers;
+﻿using BuildingBlocks.Infrastructure;
+using BuildingBlocks.Infrastructure.Security;
+using CommitteeApplication.Interfaces.Roles;
+using CommitteeApplication.Wrappers;
 using CommitteeCore.Repositories;
+using CommitteeInfrastructure.Data;
 using CommitteeInfrastructure.Repositories;
+using CommitteeInfrastructure.Roles;
 using CommitteeInfrastructure.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CommitteeInfrastructure
 {
     public static class InfrastructureDependencyInjection
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
+        public static IServiceCollection AddInfrastructureServices(
+              this IServiceCollection services
+            , IConfiguration configuration)
         {
+
+            // 1. تسجيل البنية التحتية الأساسية (User, HttpContext)
+            services.AddSharedInfrastructure();
+
+            // 2. ✅ تسجيل نظام التصاريح (الجديد)
+            services.AddDynamicPermissions();
+
+            // 3. ✅ تسجيل خدمة الاتصال بالهوية (للتحقق من الصلاحيات)
+            // يجب أن تتأكد من وجود هذا الرابط في appsettings.json
+            var identityUrl = configuration["Services:IdentityBaseUrl"]
+                ?? throw new InvalidOperationException("IdentityBaseUrl is not configured");
+
+            if (!string.IsNullOrEmpty(identityUrl))
+            {
+                services.AddRemotePermissionService(identityUrl);
+            }
+
+            // Role client
+            services.AddHttpClient<IRoleServiceHttpClient, RoleServiceHttpClient>(client =>
+            {
+                client.BaseAddress = new Uri(identityUrl);
+            })
+            .AddHttpMessageHandler<JwtDelegatingHandler>();
+
+            var connectionString = configuration.GetConnectionString("CommitteeConnectionString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException("CRITICAL: Connection string 'CommitteeConnectionString' is missing.");
+            }
+            services.AddDbContext<CommitteeContext>(
+                options => options.UseSqlServer
+                (connectionString));
+
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
             services.AddScoped<ICommitteeRepository, CommitteeRepository>();
