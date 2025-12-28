@@ -1,4 +1,6 @@
 ﻿using Identity.Core.Entities;
+using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +32,12 @@ namespace Identity.Infrastructure.Data
 
         public DbSet<UserRolePermReso> UserRolePermResos => Set<UserRolePermReso>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
+        // MassTransit Outbox Tables
+        public DbSet<OutboxMessage> OutboxMessages { get; set; }
+        public DbSet<OutboxState> OutboxStates { get; set; }
+        public DbSet<InboxState> InboxStates { get; set; }
+
         #endregion
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -299,6 +307,7 @@ namespace Identity.Infrastructure.Data
 
             #endregion
 
+            builder.AddTransactionalOutboxEntities();
         }
     }
 }

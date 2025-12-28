@@ -1,8 +1,10 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
+using Identity.Application.Security;
 using Identity.Core.Entities;
 using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -19,9 +21,17 @@ namespace Identity.Infrastructure.Services
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IEmailService _emailService;
         private readonly RoleManager<ApplicationRole> _roleManager;
+        private readonly ILoginSecurityService _loginSecurityService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthService(UserManager<ApplicationUser> userManager, ApplicationDbContext dbContext, IJwtTokenService jwtTokenService,
-            IRefreshTokenService refreshTokenService, IEmailService emailService, RoleManager<ApplicationRole> roleManager)
+        public AuthService(UserManager<ApplicationUser> userManager,
+                           ApplicationDbContext dbContext,
+                           IJwtTokenService jwtTokenService,
+                           IRefreshTokenService refreshTokenService,
+                           IEmailService emailService,
+                           RoleManager<ApplicationRole> roleManager,
+                           ILoginSecurityService loginSecurityService,
+                           IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _dbContext = dbContext;
@@ -29,6 +39,8 @@ namespace Identity.Infrastructure.Services
             _refreshTokenService = refreshTokenService;
             _emailService = emailService;
             _roleManager = roleManager;
+            _loginSecurityService = loginSecurityService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<(bool Success, LoginResponseDto? Response, IEnumerable<string>? Errors)> RegisterAsync(RegisterDto dto)
@@ -103,7 +115,12 @@ namespace Identity.Infrastructure.Services
                 .FirstOrDefaultAsync(u => u.Email == dto.Email && u.AuthType == ApplicationUser.AuthenticationType.Database);
 
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+            {
+                if (user != null)
+                    await _loginSecurityService.HandleFailedLoginAsync(user, GetIp());
+
                 return (false, null, "Invalid credentials", null);
+            }
 
             if (!user.IsActive)
                 return (false, null, "User is inactive", null);
@@ -138,7 +155,12 @@ namespace Identity.Infrastructure.Services
                 return (true, null, "MFARequired", user.Id.ToString());
             }
 
-
+            //  Login ناجح بالكامل → تصفير AccessFailedCount
+            if (user.AccessFailedCount > 0)
+            {
+                user.AccessFailedCount = 0;
+                await _userManager.UpdateAsync(user);
+            }
 
             // إذا لم يكن MFA مفعلًا، توليد JWT مباشرة
             var jwtResult = await _jwtTokenService.GenerateJwtTokenAsync(user);
@@ -250,6 +272,11 @@ namespace Identity.Infrastructure.Services
             return random.ToString($"D{digits}");
         }
 
+        private string GetIp()
+        {
+            return _httpContextAccessor.HttpContext?
+                .Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        }
     }
 
 }

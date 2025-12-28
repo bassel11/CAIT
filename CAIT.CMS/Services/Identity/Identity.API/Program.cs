@@ -3,28 +3,15 @@ using FluentValidation.AspNetCore;
 using Identity.API.Middlewares;
 using Identity.API.Models;
 using Identity.Application.Authorization;
-using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Authorization;
-using Identity.Application.Interfaces.Permissions;
-using Identity.Application.Interfaces.RolePermissions;
-using Identity.Application.Interfaces.Roles;
-using Identity.Application.Interfaces.UserRoles;
-using Identity.Application.Interfaces.Users;
-using Identity.Application.Interfaces.UsrRolPermRes;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
 using Identity.Core.Entities;
+using Identity.Infrastructure;
 using Identity.Infrastructure.Authorization;
 using Identity.Infrastructure.Configurations;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Grpc.Services;
-using Identity.Infrastructure.Services;
 using Identity.Infrastructure.Services.Authorization;
-using Identity.Infrastructure.Services.Permissions;
-using Identity.Infrastructure.Services.RolePermissions;
-using Identity.Infrastructure.Services.Roles;
-using Identity.Infrastructure.Services.UserRoles;
-using Identity.Infrastructure.Services.Users;
-using Identity.Infrastructure.Services.UsrRolPermRes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -50,9 +37,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnectionString"));
 });
 
+// Add services to the container.
+builder.Services
+    //.AddApplicationServices()
+    .AddInfrastructureServices(builder.Configuration);
+
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
 
 // ---------------- JWT Config ----------------
 var jwtConfig = builder.Configuration.GetSection("Jwt");
@@ -196,27 +189,6 @@ builder.Services.AddAuthentication(options =>
 
 //builder.Services.AddAuthorization();
 
-
-// ---------------- Dependency Injection ----------------
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
-builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IMfaService, MfaService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IAzureAuthService, AzureAuthService>();
-builder.Services.AddScoped<IAzureB2BService, AzureB2BService>();
-builder.Services.AddScoped<IGuestUserAsync, GuestUserAsync>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IUserRoleService, UserRoleService>();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<IRolePremissionService, RolePremissionService>();
-builder.Services.AddScoped<IPermissionCacheInvalidator, PermissionCacheInvalidator>();
-builder.Services.AddScoped<IUsrRolPermResService, UsrRolPermResService>();
-
-
-
 // ---------------- FluentValidation Configuration ----------------
 builder.Services
     .AddFluentValidationAutoValidation() // يفعّل التحقق التلقائي قبل Controller
@@ -225,8 +197,6 @@ builder.Services
 
 
 // Register permission checker & handler
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
 
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
@@ -325,8 +295,6 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseMiddleware<ResourceExtractionMiddleware>();
-//app.UseMiddleware<PermissionMiddleware>();
-//app.UseMiddleware<CustomErrorMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
