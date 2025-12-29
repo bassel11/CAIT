@@ -422,3 +422,4 @@ FodyWeavers.xsd
 /CAIT.CMS/Services/Identity/Identity.API/appsettings.json
 /CAIT.CMS/Services/Auth
 /project-structure.txt
+/CAIT.CMS/Services/Identity/Identity.API/appsettings.Development.json
