@@ -33,7 +33,7 @@ namespace CommitteeInfrastructure
 
             if (!string.IsNullOrEmpty(identityUrl))
             {
-                services.AddRemotePermissionService(identityUrl);
+                //services.AddRemotePermissionService(identityUrl);
             }
 
             // Role client

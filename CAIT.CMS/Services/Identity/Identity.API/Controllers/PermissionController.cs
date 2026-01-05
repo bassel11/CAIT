@@ -1,9 +1,9 @@
-﻿using FluentValidation;
+﻿using BuildingBlocks.Shared.Authorization;
+using FluentValidation;
 using FluentValidation.Results;
 using Identity.API.Controllers.Base;
 using Identity.Application.DTOs.Permissions;
 using Identity.Application.Interfaces.Authorization;
-using Identity.Application.Interfaces.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,15 +13,21 @@ namespace Identity.API.Controllers
     [ApiController]
     public class PermissionController : BaseController
     {
-        private readonly IPermissionService _permissionService;
+        private readonly Application.Interfaces.Permissions.IPermissionService _permissionService;
         private readonly IValidator<PermissionFilterDto> _validator;
         private readonly IPermissionChecker _checker;
+        private readonly IPermissionSnapshotQuery _query;
 
-        public PermissionController(IPermissionService permissionService, IValidator<PermissionFilterDto> validator, IPermissionChecker checker)
+        public PermissionController(
+            Application.Interfaces.Permissions.IPermissionService permissionService,
+            IValidator<PermissionFilterDto> validator,
+            IPermissionChecker checker,
+            IPermissionSnapshotQuery query)
         {
             _permissionService = permissionService;
             _validator = validator;
             _checker = checker;
+            _query = query;
         }
 
         [HttpGet("GetAllPermissions")]
@@ -88,6 +94,61 @@ namespace Identity.API.Controllers
             bool has = await _checker.HasPermissionAsync(userId, permission, resourceId, parentResourceId);
             return Ok(new { allowed = has });
         }
+
+        //[HttpGet("snapshot")]
+        //[AllowAnonymous]
+        //public async Task<IActionResult> Snapshot(Guid userId)
+        //{
+        //    var snapshots = await _query.GetSnapshotsAsync(userId);
+        //    return Ok(snapshots);
+        //}
+
+        [HttpGet("snapshot")]
+        [AllowAnonymous]
+        public async Task<ActionResult<PermissionSnapshot>> Snapshot([FromQuery] Guid userId)
+        {
+            // 1. جلب البيانات الداخلية (Internal DTOs List)
+            var internalList = await _query.GetSnapshotsAsync(userId);
+
+            // 2. تجهيز كائن الاستجابة المشترك
+            var sharedSnapshot = new PermissionSnapshot
+            {
+                UserId = userId,
+                GeneratedAt = DateTime.UtcNow,
+                Permissions = new List<PermissionEntry>()
+            };
+
+            // 3. عملية التحويل (Mapping) من Internal إلى Shared
+            // هذا يحل مشكلة الـ JsonException لأننا نعبئ القائمة ونرسل الكائن الحاوي
+            if (internalList != null && internalList.Any())
+            {
+                sharedSnapshot.Permissions = internalList.Select(x => new PermissionEntry
+                {
+                    Name = x.Name,
+                    Description = x.Description,
+                    IsActive = x.IsActive,
+                    Allow = x.Allow,
+
+                    // تحويل الـ Enums (Casting) لأن الأرقام متطابقة
+                    //Scope = (ScopeType)(int)x.Scope,
+                    ScopeName = x.ScopeName,
+
+                    //ResourceType = x.ResourceType.HasValue ? (ResourceType)(int)x.ResourceType.Value : null,
+                    ResourceTypeName = x.ResourceTypeName,
+                    ResourceId = x.ResourceId,
+
+                    //ParentResourceType = x.ParentResourceType.HasValue ? (ResourceType)(int)x.ParentResourceType.Value : null,
+                    ParentResourceTypeName = x.ParentResourceTypeName,
+                    ParentResourceId = x.ParentResourceId
+
+                }).ToList();
+            }
+
+            // 4. إرجاع 200 OK مع الكائن
+            return Ok(sharedSnapshot);
+        }
+
+
 
     }
 }

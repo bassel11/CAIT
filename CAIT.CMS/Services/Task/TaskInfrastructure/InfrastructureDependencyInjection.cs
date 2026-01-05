@@ -28,7 +28,10 @@ namespace TaskInfrastructure
             var identityUrl = configuration["Services:IdentityBaseUrl"];
             if (!string.IsNullOrEmpty(identityUrl))
             {
-                services.AddRemotePermissionService(identityUrl);
+                services.AddRemotePermissionService(
+                    identityUrl,
+                    configuration: configuration,
+                    serviceName: "Task");
             }
 
             // 4. تسجيل Interceptors

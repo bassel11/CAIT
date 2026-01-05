@@ -22,7 +22,11 @@ namespace DecisionInfrastructure
             var identityUrl = configuration["Services:IdentityBaseUrl"];
             if (!string.IsNullOrEmpty(identityUrl))
             {
-                services.AddRemotePermissionService(identityUrl);
+                //services.AddRemotePermissionService(identityUrl);
+                services.AddRemotePermissionService(
+                    identityUrl,
+                    configuration: configuration,
+                    serviceName: "Decision");
             }
 
             // 4. تسجيل Interceptors

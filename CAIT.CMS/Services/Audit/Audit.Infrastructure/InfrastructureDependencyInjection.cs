@@ -34,7 +34,8 @@ namespace Audit.Infrastructure
             var identityUrl = configuration["Services:IdentityBaseUrl"];
             if (!string.IsNullOrEmpty(identityUrl))
             {
-                services.AddRemotePermissionService(identityUrl);
+                //services.AddRemotePermissionService(identityUrl);
+
             }
             else
             {

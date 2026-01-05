@@ -8,7 +8,7 @@ namespace BuildingBlocks.Infrastructure.Services
     {
         private readonly IDistributedCache _cache;
         private readonly IHttpPermissionFetcher _fetcher;
-        private readonly string _serviceName; // اسم الخدمة الحالية (task, committee)
+        private readonly string _serviceName; // اسم الخدمة الحالية (Task, Committee)
 
         public RedisPermissionService(
             IDistributedCache cache,
@@ -22,9 +22,9 @@ namespace BuildingBlocks.Infrastructure.Services
 
         public async Task<bool> HasPermissionAsync(Guid userId, string permission, Guid? resourceId = null)
         {
-            // بناء مفتاح خاص بالخدمة والمستخدم
-            // مثال: auth:perm:task:GUID
-            string cacheKey = GetCacheKey(userId);
+            // بناء مفتاح الكاش: auth:perm:userId
+            // ملاحظة: سيتم إضافة بادئة الخدمة تلقائياً بفضل InstanceName
+            string cacheKey = $"auth:perm:{userId}";
 
             var cachedData = await _cache.GetStringAsync(cacheKey);
             PermissionSnapshot snapshot;
@@ -34,29 +34,29 @@ namespace BuildingBlocks.Infrastructure.Services
                 // Cache Miss: جلب من Identity
                 snapshot = await _fetcher.FetchAsync(userId, _serviceName);
 
+                // تخزين الكائن كاملاً في Redis
                 var options = new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30), // صلاحية الكاش 30 دقيقة
-                    SlidingExpiration = TimeSpan.FromMinutes(10) // تجديد 10 دقائق عند الاستخدام
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(60), // ساعة واحدة
+                    SlidingExpiration = TimeSpan.FromMinutes(20) // تمديد 20 دقيقة عند الاستخدام
                 };
 
                 await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(snapshot), options);
             }
             else
             {
-                // Cache Hit
+                // Cache Hit: تحويل النص المخزن إلى كائن
                 snapshot = JsonSerializer.Deserialize<PermissionSnapshot>(cachedData)!;
             }
 
-            return snapshot.Has(permission);
+            // الفحص يتم في الذاكرة باستخدام الدالة الذكية التي كتبناها في Shared
+            return snapshot.Has(permission, resourceId);
         }
 
         public async Task InvalidateCacheAsync(Guid userId)
         {
-            string cacheKey = GetCacheKey(userId);
+            string cacheKey = $"auth:perm:{userId}";
             await _cache.RemoveAsync(cacheKey);
         }
-
-        private string GetCacheKey(Guid userId) => $"auth:perm:{_serviceName}:{userId}";
     }
 }

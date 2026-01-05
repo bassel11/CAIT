@@ -29,7 +29,11 @@ namespace Monitoring.Infrastructure
 
             if (!string.IsNullOrWhiteSpace(identityBaseUrl))
             {
-                services.AddRemotePermissionService(identityBaseUrl);
+                //services.AddRemotePermissionService(identityBaseUrl);
+                services.AddRemotePermissionService(
+                    identityBaseUrl,
+                    configuration: configuration,
+                    serviceName: "Monitoring");
             }
 
             // 4️⃣ Monitoring Database (Read / Analytics / Monitoring DB)

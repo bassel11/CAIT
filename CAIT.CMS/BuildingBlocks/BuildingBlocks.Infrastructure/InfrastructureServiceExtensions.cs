@@ -4,6 +4,7 @@ using BuildingBlocks.Shared.Authorization;
 using BuildingBlocks.Shared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BuildingBlocks.Infrastructure
@@ -50,17 +51,40 @@ namespace BuildingBlocks.Infrastructure
         /// تسجيل عميل HTTP للاتصال بخدمة الهوية والتحقق من الصلاحيات
         /// (يستخدم في Audit, Decision, Meeting)
         /// </summary>
-        public static IServiceCollection AddRemotePermissionService(this IServiceCollection services, string identityBaseUrl)
+        public static IServiceCollection AddRemotePermissionService(
+            this IServiceCollection services,
+            string identityBaseUrl,
+            IConfiguration configuration,
+            string serviceName)
         {
+
+            // 1. تسجيل Redis مع InstanceName (هذا هو العزل)
+            // أي مفتاح تخزنه هذه الخدمة سيبدأ بـ "CMS_Task_" مثلاً
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration.GetConnectionString("Redis");
+                options.InstanceName = $"CMS_{serviceName}_";
+            });
+
             if (string.IsNullOrWhiteSpace(identityBaseUrl))
                 throw new ArgumentNullException(nameof(identityBaseUrl), "Identity Service URL cannot be empty.");
 
-            // تسجيل HttpClient مع تفعيل الـ Handler لإرفاق التوكن تلقائياً
-            services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
+            services.AddHttpClient<IHttpPermissionFetcher, HttpPermissionFetcher>(client =>
             {
-                client.BaseAddress = new Uri(identityBaseUrl);
+                client.BaseAddress = new Uri(identityBaseUrl!);
             })
-            .AddHttpMessageHandler<JwtDelegatingHandler>();
+             .AddHttpMessageHandler<JwtDelegatingHandler>();
+
+            // 3. تسجيل خدمة IPermissionService كـ Scoped
+            // هنا نقوم بحقن اسم الخدمة يدوياً للكلاس
+            services.AddScoped<IPermissionService>(sp =>
+            {
+                var cache = sp.GetRequiredService<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
+                var fetcher = sp.GetRequiredService<IHttpPermissionFetcher>();
+
+                // نمرر اسم الخدمة للكلاس
+                return new RedisPermissionService(cache, fetcher, serviceName);
+            });
 
             return services;
         }
