@@ -15,7 +15,7 @@ namespace CommitteeApplication.Authorization
 
         public Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
         {
-            // ✅ تحقق من الـ Prefix أولاً
+            // تحقق من الـ Prefix أولاً
             if (policyName.StartsWith(POLICY_PREFIX, StringComparison.OrdinalIgnoreCase))
             {
                 var permissionName = policyName.Substring(POLICY_PREFIX.Length);

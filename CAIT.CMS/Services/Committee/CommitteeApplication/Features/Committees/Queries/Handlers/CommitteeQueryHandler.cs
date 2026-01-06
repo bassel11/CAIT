@@ -70,8 +70,8 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
         {
             var query = _committeeRepository.Query();
 
-            // ---------------------------------------------------------
-            // 1) SuperAdmin → يشاهد جميع اللجان بدون قيود
+
+            // 1 SuperAdmin → يشاهد جميع اللجان بدون قيود
             // ---------------------------------------------------------
             if (!_currentUser.IsSuperAdmin)
             {
@@ -82,8 +82,8 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
                     .Where(c => c.CommitteeMembers.Any(m => m.UserId == userId));
             }
 
-            // ---------------------------------------------------------
-            // 2) Search
+
+            // 2 Search
             // ---------------------------------------------------------
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
@@ -94,23 +94,23 @@ namespace CommitteeApplication.Features.Committees.Queries.Handlers
                 );
             }
 
-            // ---------------------------------------------------------
-            // 3) Dynamic Filters
+
+            // 3 Dynamic Filters
             // ---------------------------------------------------------
             query = query.ApplyDynamicFilters(request.Filters);
 
-            // ---------------------------------------------------------
-            // 4) Sorting
+
+            // 4 Sorting
             // ---------------------------------------------------------
             query = query.ApplySorting(request.SortBy, defaultSort: "CreatedAt desc");
 
-            // ---------------------------------------------------------
-            // 5) Projection (AutoMapper → يُحوّل الاستعلام لـ SELECT فقط)
+
+            // 5 Projection (AutoMapper → يُحوّل الاستعلام لـ SELECT فقط)
             // ---------------------------------------------------------
             var projected = _mapper.ProjectTo<GetComitsFilteredResponse>(query);
 
-            // ---------------------------------------------------------
-            // 6) Pagination
+
+            // 6 Pagination
             // ---------------------------------------------------------
             return await _paginationService.PaginateAsync(
                 projected,

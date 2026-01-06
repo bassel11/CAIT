@@ -26,11 +26,11 @@ namespace NotificationService
             services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
             services.AddScoped<IEmailService, EmailService>();
 
-            // 3. ✅ خدمات الإشعارات الجديدة
+            // 3. خدمات الإشعارات الجديدة
             services.AddScoped<IPushNotificationService, FirebasePushNotificationService>(); // خدمة FCM
             services.AddScoped<IAppNotificationService, AppNotificationService>();   // الخدمة الموحدة
 
-            // 4. ✅ إعداد Quartz (للـ Cleanup Job)
+            // 4. إعداد Quartz (للـ Cleanup Job)
             services.AddQuartz(q =>
             {
                 var jobKey = new JobKey("NotificationCleanupJob");

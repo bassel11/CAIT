@@ -41,7 +41,7 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
                 throw new ArgumentException("CommitteeId must not be empty.", nameof(request.CommitteeId));
             }
 
-            // 2️⃣ تحقق من وجود اللجنة نفسها
+            // تحقق من وجود اللجنة نفسها
             var committee = await _commiteeRepository.GetByIdAsync(request.CommitteeId);
             if (committee == null)
             {

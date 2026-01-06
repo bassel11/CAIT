@@ -9,8 +9,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 
-// 1. تسجيل الخدمات (Layers)
-// لاحظ أننا أزلنا تسجيل DbContext من هنا لأنه انتقل إلى Infrastructure
+
 builder.Services.AddApplicationServices()
                 .AddInfrastructureServices(builder.Configuration);
 

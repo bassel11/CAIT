@@ -36,7 +36,7 @@ namespace Audit.API.Controllers
             return Ok(history);
         }
 
-        // نقطة نهاية للتقارير الشاملة [المصدر: 31-33]
+
         [HttpGet("report")]
         public async Task<IActionResult> GetReport([FromQuery] string? committeeId, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {

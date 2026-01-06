@@ -14,9 +14,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================
-// 1️⃣ Database Context
-// ==========================
+// Database Context
+
 //builder.Services.AddDbContext<CommitteeContext>(options =>
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("CommitteeConnectionString"))
 //);
@@ -39,15 +38,14 @@ builder.Services.AddMemoryCache();
 
 
 
-// ==========================
-// 2️⃣ Identity gRPC Client Registration
+// Identity gRPC Client Registration
 // ==========================
 var identityGrpcUrl = builder.Configuration.GetValue<string>("Services:GrpcUrl") ?? "http://localhost:9001";
 builder.Services.AddIdentityGrpcClient(identityGrpcUrl);
 
 
-// ==========================
-// 7️⃣ JWT Authentication
+
+// JWT Authentication
 // ==========================
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 
@@ -72,13 +70,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// ==========================
-// 8️⃣ Authorization
+
+//  Authorization
 // ==========================
 builder.Services.AddAuthorization();
 
-// ==========================
-// 9️⃣ Controllers & Swagger
+
+//  Controllers & Swagger
 // ==========================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -115,7 +113,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 
-// ==========================
+
 //  Localization Services
 // ==========================
 builder.Services.AddLocalization();
@@ -138,7 +136,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 var app = builder.Build();
 
-// ==========================
+
 // Apply Migrations & Seed
 // ==========================
 using (var scope = app.Services.CreateScope())
