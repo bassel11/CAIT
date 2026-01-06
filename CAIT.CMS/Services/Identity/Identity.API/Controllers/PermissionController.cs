@@ -17,17 +17,20 @@ namespace Identity.API.Controllers
         private readonly IValidator<PermissionFilterDto> _validator;
         private readonly IPermissionChecker _checker;
         private readonly IPermissionSnapshotQuery _query;
+        private readonly IPermissionSnapshotService _snapshotService;
 
         public PermissionController(
             Application.Interfaces.Permissions.IPermissionService permissionService,
             IValidator<PermissionFilterDto> validator,
             IPermissionChecker checker,
-            IPermissionSnapshotQuery query)
+            IPermissionSnapshotQuery query,
+            IPermissionSnapshotService snapshotService)
         {
             _permissionService = permissionService;
             _validator = validator;
             _checker = checker;
             _query = query;
+            _snapshotService = snapshotService;
         }
 
         [HttpGet("GetAllPermissions")]
@@ -95,6 +98,16 @@ namespace Identity.API.Controllers
             return Ok(new { allowed = has });
         }
 
+
+        [HttpGet("snapshot")]
+        [AllowAnonymous] // internal service-to-service
+        public async Task<ActionResult<PermissionSnapshot>> Snapshot([FromQuery] Guid userId)
+        {
+            var snapshot = await _snapshotService.BuildSnapshotAsync(userId);
+            return Ok(snapshot);
+        }
+
+
         //[HttpGet("snapshot")]
         //[AllowAnonymous]
         //public async Task<IActionResult> Snapshot(Guid userId)
@@ -103,50 +116,50 @@ namespace Identity.API.Controllers
         //    return Ok(snapshots);
         //}
 
-        [HttpGet("snapshot")]
-        [AllowAnonymous]
-        public async Task<ActionResult<PermissionSnapshot>> Snapshot([FromQuery] Guid userId)
-        {
-            // 1. جلب البيانات الداخلية (Internal DTOs List)
-            var internalList = await _query.GetSnapshotsAsync(userId);
+        //[HttpGet("snapshot")]
+        //[AllowAnonymous]
+        //public async Task<ActionResult<PermissionSnapshot>> Snapshot([FromQuery] Guid userId)
+        //{
+        //    // 1. جلب البيانات الداخلية (Internal DTOs List)
+        //    var internalList = await _query.GetSnapshotsAsync(userId);
 
-            // 2. تجهيز كائن الاستجابة المشترك
-            var sharedSnapshot = new PermissionSnapshot
-            {
-                UserId = userId,
-                GeneratedAt = DateTime.UtcNow,
-                Permissions = new List<PermissionEntry>()
-            };
+        //    // 2. تجهيز كائن الاستجابة المشترك
+        //    var sharedSnapshot = new PermissionSnapshot
+        //    {
+        //        UserId = userId,
+        //        GeneratedAt = DateTime.UtcNow,
+        //        Permissions = new List<PermissionEntry>()
+        //    };
 
-            // 3. عملية التحويل (Mapping) من Internal إلى Shared
-            // هذا يحل مشكلة الـ JsonException لأننا نعبئ القائمة ونرسل الكائن الحاوي
-            if (internalList != null && internalList.Any())
-            {
-                sharedSnapshot.Permissions = internalList.Select(x => new PermissionEntry
-                {
-                    Name = x.Name,
-                    Description = x.Description,
-                    IsActive = x.IsActive,
-                    Allow = x.Allow,
+        //    // 3. عملية التحويل (Mapping) من Internal إلى Shared
+        //    // هذا يحل مشكلة الـ JsonException لأننا نعبئ القائمة ونرسل الكائن الحاوي
+        //    if (internalList != null && internalList.Any())
+        //    {
+        //        sharedSnapshot.Permissions = internalList.Select(x => new PermissionEntry
+        //        {
+        //            Name = x.Name,
+        //            Description = x.Description,
+        //            IsActive = x.IsActive,
+        //            Allow = x.Allow,
 
-                    // تحويل الـ Enums (Casting) لأن الأرقام متطابقة
-                    //Scope = (ScopeType)(int)x.Scope,
-                    ScopeName = x.ScopeName,
+        //            // تحويل الـ Enums (Casting) لأن الأرقام متطابقة
+        //            //Scope = (ScopeType)(int)x.Scope,
+        //            ScopeName = x.ScopeName,
 
-                    //ResourceType = x.ResourceType.HasValue ? (ResourceType)(int)x.ResourceType.Value : null,
-                    ResourceTypeName = x.ResourceTypeName,
-                    ResourceId = x.ResourceId,
+        //            //ResourceType = x.ResourceType.HasValue ? (ResourceType)(int)x.ResourceType.Value : null,
+        //            ResourceTypeName = x.ResourceTypeName,
+        //            ResourceId = x.ResourceId,
 
-                    //ParentResourceType = x.ParentResourceType.HasValue ? (ResourceType)(int)x.ParentResourceType.Value : null,
-                    ParentResourceTypeName = x.ParentResourceTypeName,
-                    ParentResourceId = x.ParentResourceId
+        //            //ParentResourceType = x.ParentResourceType.HasValue ? (ResourceType)(int)x.ParentResourceType.Value : null,
+        //            ParentResourceTypeName = x.ParentResourceTypeName,
+        //            ParentResourceId = x.ParentResourceId
 
-                }).ToList();
-            }
+        //        }).ToList();
+        //    }
 
-            // 4. إرجاع 200 OK مع الكائن
-            return Ok(sharedSnapshot);
-        }
+        //    // 4. إرجاع 200 OK مع الكائن
+        //    return Ok(sharedSnapshot);
+        //}
 
 
 

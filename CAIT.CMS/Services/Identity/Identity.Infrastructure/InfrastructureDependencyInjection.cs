@@ -51,6 +51,7 @@ namespace Identity.Infrastructure
             services.AddScoped<IPermissionCacheInvalidator, PermissionCacheInvalidator>();
             services.AddScoped<IUsrRolPermResService, UsrRolPermResService>();
             services.AddScoped<IPermissionSnapshotQuery, PermissionSnapshotQuery>();
+            services.AddScoped<IPermissionSnapshotService, PermissionSnapshotService>();
 
             // Security
             services.AddScoped<ILoginSecurityService, LoginSecurityService>();
