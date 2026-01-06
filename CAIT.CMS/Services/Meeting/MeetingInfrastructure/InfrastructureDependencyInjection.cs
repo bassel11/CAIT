@@ -12,7 +12,6 @@ using MeetingInfrastructure.Audit;
 using MeetingInfrastructure.Data;
 using MeetingInfrastructure.Integrations;
 using MeetingInfrastructure.Interceptors;
-using MeetingInfrastructure.Messaging.Consumers;
 using MeetingInfrastructure.Pdf;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
@@ -145,7 +144,7 @@ namespace MeetingInfrastructure
 
             services.AddMessageBroker<MeetingDbContext>(
                 configuration,
-                typeof(OutlookAttachMoMConsumer).Assembly // تحديد الأسمبلي لاكتشاف الـ Consumers
+                typeof(MeetingInfrastructure.InfrastructureDependencyInjection).Assembly // تحديد الأسمبلي لاكتشاف الـ Consumers
             );
             // Hosted Service لتشغيل الـ Bus تلقائياً
             //services.AddMassTransitHostedService();
