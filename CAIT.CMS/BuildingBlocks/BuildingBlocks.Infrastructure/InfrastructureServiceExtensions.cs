@@ -63,7 +63,7 @@ namespace BuildingBlocks.Infrastructure
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = configuration.GetConnectionString("Redis");
-                options.InstanceName = $"CMS_{serviceName}_";
+                options.InstanceName = $"cms:{serviceName}";
             });
 
             if (string.IsNullOrWhiteSpace(identityBaseUrl))

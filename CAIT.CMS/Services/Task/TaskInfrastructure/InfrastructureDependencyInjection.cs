@@ -31,7 +31,7 @@ namespace TaskInfrastructure
                 services.AddRemotePermissionService(
                     identityUrl,
                     configuration: configuration,
-                    serviceName: "Task");
+                    serviceName: "task:");
             }
 
             // 4. تسجيل Interceptors
