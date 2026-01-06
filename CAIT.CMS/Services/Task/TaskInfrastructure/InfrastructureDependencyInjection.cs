@@ -14,7 +14,9 @@ namespace TaskInfrastructure
 {
     public static class InfrastructureDependencyInjection
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructureServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
 
             // 1. تسجيل البنية التحتية الأساسية (User, HttpContext)

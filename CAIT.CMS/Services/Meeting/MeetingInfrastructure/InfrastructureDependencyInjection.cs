@@ -42,7 +42,7 @@ namespace MeetingInfrastructure
                 services.AddRemotePermissionService(
                     identityUrl,
                     configuration: configuration,
-                    serviceName: "Meeting");
+                    serviceName: "meeting:");
             }
 
             // 1. تسجيل Generic Audit Handler (لأن MediatR لا يراه تلقائياً في Assembly آخر)

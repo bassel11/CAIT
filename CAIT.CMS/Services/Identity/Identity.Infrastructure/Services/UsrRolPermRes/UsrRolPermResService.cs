@@ -98,9 +98,13 @@ namespace Identity.Infrastructure.Services.UsrRolPermRes
                 _context.UserRolePermResos.Add(newUsrRolePermReso);
 
             }
+
+
+            await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
+
             await _context.SaveChangesAsync();
             // مسح كاش الصلاحيات للمستخدمين الذين ينتمون لهذا الدور
-            await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
+            //await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
 
             return true;
 
@@ -185,10 +189,13 @@ namespace Identity.Infrastructure.Services.UsrRolPermRes
 
             //  إزالة السجل
             _context.UserRolePermResos.Remove(entity);
+
+            await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
+
             await _context.SaveChangesAsync();
 
             // مسح كاش الصلاحيات للمستخدمين الذين ينتمون لهذا الدور
-            await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
+            //await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
             return true;
         }
 
