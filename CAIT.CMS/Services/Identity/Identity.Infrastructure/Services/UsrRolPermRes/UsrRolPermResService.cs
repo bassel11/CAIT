@@ -99,11 +99,10 @@ namespace Identity.Infrastructure.Services.UsrRolPermRes
 
             }
 
-
-            await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
-
             await _context.SaveChangesAsync();
+
             // مسح كاش الصلاحيات للمستخدمين الذين ينتمون لهذا الدور
+            // تم ايقافه لان inteceptor هو من يقوم بالنشر
             //await _cacheInvalidator.InvalidateUserPermissionsByUserAsync(dto.UserId);
 
             return true;

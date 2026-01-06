@@ -10,6 +10,7 @@ using Identity.Application.Interfaces.UsrRolPermRes;
 using Identity.Application.Security;
 using Identity.Application.Security.SecurityEventPublisher;
 using Identity.Infrastructure.Data;
+using Identity.Infrastructure.Interceptors;
 using Identity.Infrastructure.Messaging;
 using Identity.Infrastructure.Security;
 using Identity.Infrastructure.Services;
@@ -20,6 +21,7 @@ using Identity.Infrastructure.Services.Roles;
 using Identity.Infrastructure.Services.UserRoles;
 using Identity.Infrastructure.Services.Users;
 using Identity.Infrastructure.Services.UsrRolPermRes;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,6 +31,20 @@ namespace Identity.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+
+            // 1. تسجيل الـ Interceptor (مهم جداً)
+            services.AddScoped<PermissionChangeInterceptor>();
+
+            // 2. إعداد قاعدة البيانات وربط الـ Interceptor
+            // نقلنا الإعداد من Program.cs إلى هنا لضمان Clean Architecture
+            services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            {
+                var interceptor = sp.GetRequiredService<PermissionChangeInterceptor>();
+
+                options.UseSqlServer(configuration.GetConnectionString("IdentityConnectionString"));
+                options.AddInterceptors(interceptor); // 👈 تفعيل الجاسوس
+            });
+
             // Http Context
             services.AddHttpContextAccessor();
             // Memory Cache

@@ -32,10 +32,10 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 
 
 // Database 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnectionString"));
-});
+//builder.Services.AddDbContext<ApplicationDbContext>(options =>
+//{
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnectionString"));
+//});
 
 // Add services to the container.
 builder.Services
@@ -274,11 +274,36 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    var dbContext = services.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate(); // Apply migrations
 
-    await PermissionSeeder.SeedPermissionsAsync(dbContext);
-    await IdentitySeed.SeedRolesAndAdminAsync(services); // Seed Basic roles & admin
+    // 1. جلب DbContext وتطبيق المايجريشن
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+    try
+    {
+        Console.WriteLine("--> Updating Database...");
+        dbContext.Database.Migrate();
+
+        // 2. جلب الـ Interceptor لتعطيله
+        var interceptor = services.GetRequiredService<Identity.Infrastructure.Interceptors.PermissionChangeInterceptor>();
+
+        // 🔇 إيقاف النشر مؤقتاً
+        interceptor.SuppressPublishing = true;
+
+        Console.WriteLine("--> Seeding Data...");
+        await PermissionSeeder.SeedPermissionsAsync(dbContext);
+        await IdentitySeed.SeedRolesAndAdminAsync(services);
+
+        // إعادة التفعيل (شكلياً)
+        interceptor.SuppressPublishing = false;
+
+        Console.WriteLine("--> Initialization Done.");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "❌ Error during database initialization.");
+        // لا توقف التطبيق بالكامل إذا فشل الـ Seeding فقط، لكن إذا فشل المايجريشن سيتوقف لاحقاً
+    }
 }
 
 // Configure the HTTP request pipeline.
