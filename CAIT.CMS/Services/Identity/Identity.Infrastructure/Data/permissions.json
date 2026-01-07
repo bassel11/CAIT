@@ -716,6 +716,15 @@
     "Description": "Register New Device in Notification Service",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "Monitoring.View",
+    "ResourceType": 12,
+    "Action": 0,
+    "Description": "View Dashboard in Monitoring",
+    "IsGlobal": false,
+    "IsActive": true
   }
 
 

@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Monitoring.Application.Features.Monitoring.Queries.GetComplianceReport;
 using Monitoring.Application.Features.Monitoring.Queries.GetSuperAdminDashboard;
@@ -7,6 +8,7 @@ namespace Monitoring.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MonitoringController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -18,6 +20,7 @@ namespace Monitoring.API.Controllers
 
         // لوحة قيادة المدير العام (Super Admin Dashboard)
         [HttpGet("dashboard/super-admin")]
+        [Authorize(Policy = "Permission:Monitoring.View")]
         public async Task<IActionResult> GetSuperAdminDashboard()
         {
             // إرسال الطلب (Query) واستلام النتيجة
@@ -27,6 +30,7 @@ namespace Monitoring.API.Controllers
 
         // تقرير الامتثال
         [HttpGet("reports/compliance")]
+        [Authorize(Policy = "Permission:Monitoring.View")]
         public async Task<IActionResult> GetComplianceReport()
         {
             var result = await _mediator.Send(new GetComplianceReportQuery());

@@ -13,6 +13,7 @@
         Audit = 8,
         Notification = 9,
         Integration = 10,
-        Settings = 11
+        Settings = 11,
+        Monitoring = 12
     }
 }

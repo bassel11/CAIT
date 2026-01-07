@@ -33,7 +33,7 @@ namespace Monitoring.Infrastructure
                 services.AddRemotePermissionService(
                     identityBaseUrl,
                     configuration: configuration,
-                    serviceName: "Monitoring");
+                    serviceName: "monitoring");
             }
 
             // 4️⃣ Monitoring Database (Read / Analytics / Monitoring DB)
