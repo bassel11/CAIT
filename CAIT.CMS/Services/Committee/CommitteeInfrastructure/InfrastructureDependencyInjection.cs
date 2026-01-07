@@ -1,5 +1,6 @@
 ﻿using BuildingBlocks.Infrastructure;
 using BuildingBlocks.Infrastructure.Security;
+using BuildingBlocks.Messaging.MassTransit;
 using CommitteeApplication.Interfaces.Roles;
 using CommitteeApplication.Wrappers;
 using CommitteeCore.Repositories;
@@ -23,17 +24,26 @@ namespace CommitteeInfrastructure
             // 1. تسجيل البنية التحتية الأساسية (User, HttpContext)
             services.AddSharedInfrastructure();
 
-            // 2. ✅ تسجيل نظام التصاريح (الجديد)
+            // 2. تسجيل نظام التصاريح (الجديد)
             services.AddDynamicPermissions();
 
-            // 3. ✅ تسجيل خدمة الاتصال بالهوية (للتحقق من الصلاحيات)
+            // 3. تسجيل خدمة الاتصال بالهوية (للتحقق من الصلاحيات)
             // يجب أن تتأكد من وجود هذا الرابط في appsettings.json
-            var identityUrl = configuration["Services:IdentityBaseUrl"]
-                ?? throw new InvalidOperationException("IdentityBaseUrl is not configured");
+            //var identityUrl = configuration["Services:IdentityBaseUrl"]
+            //    ?? throw new InvalidOperationException("IdentityBaseUrl is not configured");
 
+            //if (!string.IsNullOrEmpty(identityUrl))
+            //{
+            //    //services.AddRemotePermissionService(identityUrl);
+            //}
+
+            var identityUrl = configuration["Services:IdentityBaseUrl"];
             if (!string.IsNullOrEmpty(identityUrl))
             {
-                //services.AddRemotePermissionService(identityUrl);
+                services.AddRemotePermissionService(
+                    identityUrl,
+                    configuration: configuration,
+                    serviceName: "committee:");
             }
 
             // Role client
@@ -62,6 +72,11 @@ namespace CommitteeInfrastructure
 
             // Services
             services.AddScoped<IPaginationService, PaginationService>();
+
+            services.AddMessageBroker<CommitteeContext>(
+                configuration,
+                typeof(CommitteeApplication.ApplicationDependencyInjection).Assembly
+            );
 
             return services;
         }

@@ -31,16 +31,25 @@ namespace Audit.Infrastructure
 
             // تسجيل خدمة الاتصال بالهوية (Identity Service Client)
             // بدلاً من كتابة كود HttpClient و DelegatingHandler يدوياً
+            //var identityUrl = configuration["Services:IdentityBaseUrl"];
+            //if (!string.IsNullOrEmpty(identityUrl))
+            //{
+            //    //services.AddRemotePermissionService(identityUrl);
+
+            //}
+            //else
+            //{
+            //    // تحذير أو استثناء إذا كان الرابط مفقوداً
+            //    throw new InvalidOperationException("IdentityBaseUrl is not configured in appsettings.");
+            //}
+
             var identityUrl = configuration["Services:IdentityBaseUrl"];
             if (!string.IsNullOrEmpty(identityUrl))
             {
-                //services.AddRemotePermissionService(identityUrl);
-
-            }
-            else
-            {
-                // تحذير أو استثناء إذا كان الرابط مفقوداً
-                throw new InvalidOperationException("IdentityBaseUrl is not configured in appsettings.");
+                services.AddRemotePermissionService(
+                    identityUrl,
+                    configuration: configuration,
+                    serviceName: "audit:");
             }
 
             // =========================================================

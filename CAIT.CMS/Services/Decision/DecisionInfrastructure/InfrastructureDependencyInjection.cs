@@ -26,7 +26,7 @@ namespace DecisionInfrastructure
                 services.AddRemotePermissionService(
                     identityUrl,
                     configuration: configuration,
-                    serviceName: "Decision");
+                    serviceName: "decision:");
             }
 
             // 4. تسجيل Interceptors
