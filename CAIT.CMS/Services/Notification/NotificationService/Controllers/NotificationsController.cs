@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
 
@@ -6,6 +7,7 @@ namespace NotificationService.Controllers
 {
     [ApiController]
     [Route("api/notifications")]
+    [Authorize]
     public class NotificationsController : ControllerBase
     {
         private readonly NotificationDbContext _context;
@@ -17,6 +19,7 @@ namespace NotificationService.Controllers
 
         // 1. Fetch History (Scenario: User opens app after being offline)
         [HttpGet("{userId}")]
+        [Authorize(Policy = "Permission:Notification.View")]
         public async Task<IActionResult> GetMyNotifications(Guid userId)
         {
             var notifications = await _context.AppNotifications
@@ -31,6 +34,7 @@ namespace NotificationService.Controllers
 
         // 2. Get Unread Count (For the red badge on load)
         [HttpGet("{userId}/unread-count")]
+        [Authorize(Policy = "Permission:Notification.View")]
         public async Task<IActionResult> GetUnreadCount(Guid userId)
         {
             var count = await _context.AppNotifications
@@ -41,6 +45,7 @@ namespace NotificationService.Controllers
 
         // 3. Mark as Read (Scenario: User clicks a notification)
         [HttpPut("{id}/read")]
+        [Authorize(Policy = "Permission:Notification.Update")]
         public async Task<IActionResult> MarkAsRead(Guid id)
         {
             await _context.AppNotifications
@@ -52,6 +57,7 @@ namespace NotificationService.Controllers
 
         // 4. Mark All as Read (Scenario: User clicks "Clear All")
         [HttpPut("{userId}/read-all")]
+        [Authorize(Policy = "Permission:Notification.Update")]
         public async Task<IActionResult> MarkAllAsRead(Guid userId)
         {
             await _context.AppNotifications

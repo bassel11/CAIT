@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Messaging.MassTransit;
+﻿using BuildingBlocks.Infrastructure;
+using BuildingBlocks.Messaging.MassTransit;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Consumers.SendEmail;
 using NotificationService.Data;
@@ -12,6 +13,24 @@ namespace NotificationService
     {
         public static IServiceCollection AddNotificationInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+
+            // 1. تسجيل البنية التحتية الأساسية (User, HttpContext)
+            services.AddSharedInfrastructure();
+
+            // 2. ✅ تسجيل نظام التصاريح (الجديد)
+            services.AddDynamicPermissions();
+
+            // 3. ✅ تسجيل خدمة الاتصال بالهوية (للتحقق من الصلاحيات)
+            // يجب أن تتأكد من وجود هذا الرابط في appsettings.json
+            var identityUrl = configuration["Services:IdentityBaseUrl"];
+            if (!string.IsNullOrEmpty(identityUrl))
+            {
+                services.AddRemotePermissionService(
+                    identityUrl,
+                    configuration: configuration,
+                    serviceName: "notification:");
+            }
+
             // 1. إعداد الداتابيز (ضرورية للـ Outbox/Inbox)
             var connectionString = configuration.GetConnectionString("NotificationConnectionString");
             services.AddDbContext<NotificationDbContext>(options =>
@@ -39,7 +58,7 @@ namespace NotificationService
                 q.AddTrigger(opts => opts
                     .ForJob(jobKey)
                     .WithIdentity("NotificationCleanup-Trigger")
-                    .WithCronSchedule("0 5 9 * * ?")); // يعمل الساعة 3 فجراً يومياً
+                    .WithCronSchedule("0 5 9 * * ?")); // يعمل الساعة 3 فجراً يومياً 
             });
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
@@ -56,7 +75,7 @@ namespace NotificationService
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", builder => builder
-                    .SetIsOriginAllowed((host) => true)
+                    .SetIsOriginAllowed((host) => true) // يجب تعديله لانه حاليا يسمح للجميع (local)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials());

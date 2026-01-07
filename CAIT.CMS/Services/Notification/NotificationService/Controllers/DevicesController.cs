@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
 using NotificationService.Entities;
@@ -7,6 +8,7 @@ namespace NotificationService.Controllers
 {
     [ApiController]
     [Route("api/devices")]
+    [Authorize]
     public class DevicesController : ControllerBase
     {
         private readonly NotificationDbContext _context;
@@ -19,6 +21,7 @@ namespace NotificationService.Controllers
         public record RegisterDeviceDto(Guid UserId, string DeviceToken, string Platform);
 
         [HttpPost("register")]
+        [Authorize(Policy = "Permission:Device.Register")]
         public async Task<IActionResult> RegisterDevice([FromBody] RegisterDeviceDto dto)
         {
             var existingDevice = await _context.UserDeviceTokens

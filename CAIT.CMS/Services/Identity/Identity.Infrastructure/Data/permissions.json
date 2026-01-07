@@ -691,7 +691,33 @@
     "Description": "View Task History",
     "IsGlobal": false,
     "IsActive": true
+  },
+
+  {
+    "Name": "Notification.View",
+    "ResourceType": 9,
+    "Action": 0,
+    "Description": "View Notifications",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Notification.Update",
+    "ResourceType": 9,
+    "Action": 2,
+    "Description": "Update Notifications",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Device.Register",
+    "ResourceType": 9,
+    "Action": 15,
+    "Description": "Register New Device in Notification Service",
+    "IsGlobal": false,
+    "IsActive": true
   }
+
 
 
 ]
