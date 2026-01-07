@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Messaging.MassTransit;
+﻿using BuildingBlocks.Infrastructure;
+using BuildingBlocks.Messaging.MassTransit;
 using Identity.Application.Interfaces;
 using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Interfaces.Permissions;
@@ -31,22 +32,25 @@ namespace Identity.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
-
-            // 1. تسجيل الـ Interceptor (مهم جداً)
+            services.AddSharedInfrastructure();
+            // 1. Register Interceptors (Scoped)
             services.AddScoped<PermissionChangeInterceptor>();
+            services.AddScoped<AuditPublishingInterceptor>(); // <--- Register Audit Interceptor
 
-            // 2. إعداد قاعدة البيانات وربط الـ Interceptor
-            // نقلنا الإعداد من Program.cs إلى هنا لضمان Clean Architecture
+            // 2. Configure Database and Interceptors
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
-                var interceptor = sp.GetRequiredService<PermissionChangeInterceptor>();
+                var permissionInterceptor = sp.GetRequiredService<PermissionChangeInterceptor>();
+                var auditInterceptor = sp.GetRequiredService<AuditPublishingInterceptor>(); // <--- Resolve Audit Interceptor
 
                 options.UseSqlServer(configuration.GetConnectionString("IdentityConnectionString"));
-                options.AddInterceptors(interceptor); // 👈 تفعيل الجاسوس
+
+                // Add both interceptors
+                options.AddInterceptors(permissionInterceptor, auditInterceptor);
             });
 
             // Http Context
-            services.AddHttpContextAccessor();
+            // services.AddHttpContextAccessor();
             // Memory Cache
             services.AddMemoryCache();
 

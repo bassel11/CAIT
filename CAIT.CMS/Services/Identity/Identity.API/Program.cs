@@ -2,6 +2,7 @@
 using FluentValidation.AspNetCore;
 using Identity.API.Middlewares;
 using Identity.API.Models;
+using Identity.Application;
 using Identity.Application.Authorization;
 using Identity.Application.Interfaces.Authorization;
 using Identity.Application.Validators; // حيث يوجد PermissionQueryValidator
@@ -39,7 +40,7 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 
 // Add services to the container.
 builder.Services
-    //.AddApplicationServices()
+    .AddApplicationServices()
     .AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>()
