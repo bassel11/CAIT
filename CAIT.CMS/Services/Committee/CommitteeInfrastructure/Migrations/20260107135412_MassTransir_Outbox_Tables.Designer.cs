@@ -4,6 +4,7 @@ using CommitteeInfrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommitteeInfrastructure.Migrations
 {
     [DbContext(typeof(CommitteeContext))]
-    partial class CommitteeContextModelSnapshot : ModelSnapshot
+    [Migration("20260107135412_MassTransir_Outbox_Tables")]
+    partial class MassTransir_Outbox_Tables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

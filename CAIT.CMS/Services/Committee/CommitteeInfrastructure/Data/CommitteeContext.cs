@@ -1,4 +1,6 @@
 ﻿using CommitteeCore.Entities;
+using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.EntityFrameworkCore;
 
 namespace CommitteeInfrastructure.Data
@@ -35,9 +37,19 @@ namespace CommitteeInfrastructure.Data
         public DbSet<CommitteeDecision> CommitteeDecisions { get; set; }
         public DbSet<CommitteeQuorumRule> CommitteeQuorumRules { get; set; }
 
+        public DbSet<OutboxMessage> OutboxMessages { get; set; }
+        public DbSet<OutboxState> OutboxStates { get; set; }
+        public DbSet<InboxState> InboxStates { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // =========================================================
+            // ✅ MASS TRANSIT OUTBOX CONFIGURATION (The Best Way)
+            // =========================================================
+            // هذا السطر الواحد يغنيك عن الأسطر الثلاثة السابقة
+            modelBuilder.AddTransactionalOutboxEntities();
 
 
             // ---------------------------------------

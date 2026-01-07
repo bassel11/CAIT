@@ -5,6 +5,7 @@ using CommitteeApplication.Interfaces.Roles;
 using CommitteeApplication.Wrappers;
 using CommitteeCore.Repositories;
 using CommitteeInfrastructure.Data;
+using CommitteeInfrastructure.Interceptors;
 using CommitteeInfrastructure.Repositories;
 using CommitteeInfrastructure.Roles;
 using CommitteeInfrastructure.Services;
@@ -53,14 +54,21 @@ namespace CommitteeInfrastructure
             })
             .AddHttpMessageHandler<JwtDelegatingHandler>();
 
+            services.AddScoped<AuditPublishingInterceptor>();
+
             var connectionString = configuration.GetConnectionString("CommitteeConnectionString");
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new InvalidOperationException("CRITICAL: Connection string 'CommitteeConnectionString' is missing.");
             }
-            services.AddDbContext<CommitteeContext>(
-                options => options.UseSqlServer
-                (connectionString));
+            services.AddDbContext<CommitteeContext>((sp, options) =>
+            {
+                // Resolve the interceptor from the service provider
+                var auditInterceptor = sp.GetRequiredService<AuditPublishingInterceptor>();
+
+                options.UseSqlServer(connectionString)
+                       .AddInterceptors(auditInterceptor); // Add interceptor to DbContext options
+            });
 
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));

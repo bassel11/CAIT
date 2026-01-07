@@ -152,7 +152,7 @@ using (var scope = app.Services.CreateScope())
         await context.Database.MigrateAsync();
 
         // Seed البيانات (100 لجنة عشوائية)
-        await CommitteeContextSeed.SeedAsync(context, logger);
+        // await CommitteeContextSeed.SeedAsync(context, logger);
     }
     catch (Exception ex)
     {
