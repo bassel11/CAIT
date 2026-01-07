@@ -38,7 +38,7 @@ namespace BuildingBlocks.Infrastructure.Services
                 var options = new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(60), // ساعة واحدة
-                    SlidingExpiration = TimeSpan.FromMinutes(20) // تمديد 20 دقيقة عند الاستخدام
+                    SlidingExpiration = TimeSpan.FromMinutes(30) // تمديد 20 دقيقة عند الاستخدام
                 };
 
                 await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(snapshot), options);

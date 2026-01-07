@@ -1,6 +1,5 @@
-﻿using CommitteeApplication.Interfaces.Authorization;
+﻿using BuildingBlocks.Infrastructure.Security;
 using CommitteeApplication.Interfaces.Roles;
-using CommitteeInfrastructure.Authorization;
 using CommitteeInfrastructure.Roles;
 
 namespace CommitteeAPI.Extensions
@@ -24,11 +23,11 @@ namespace CommitteeAPI.Extensions
             .AddHttpMessageHandler<JwtDelegatingHandler>();   // إضافة التوكن
 
             // Permission client
-            services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
-            {
-                client.BaseAddress = baseUrl;
-            })
-            .AddHttpMessageHandler<JwtDelegatingHandler>();   // إضافة التوكن
+            //services.AddHttpClient<IPermissionService, PermissionServiceHttpClient>(client =>
+            //{
+            //    client.BaseAddress = baseUrl;
+            //})
+            //.AddHttpMessageHandler<JwtDelegatingHandler>();   // إضافة التوكن
 
             return services;
         }

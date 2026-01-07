@@ -180,10 +180,7 @@ app.UseRequestLocalization(locOptions);
 
 app.UseHttpsRedirection();
 
-
-//  ضع Middleware الاستثناءات هنا
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 
 // Authentication must come before Authorization
 app.UseAuthentication();
