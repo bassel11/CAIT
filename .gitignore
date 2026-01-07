@@ -416,10 +416,16 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/CAIT.CMS/Services/Identity/Identity.API/appsettings.json
-/CAIT.CMS/Services/Identity/Identity.API/appsettings.json
-/CAIT.CMS/Services/Identity/Identity.API/appsettings.json
-/CAIT.CMS/Services/Identity/Identity.API/appsettings.json
-/CAIT.CMS/Services/Auth
+
+
+# =====================================================================
+# SECURITY & CUSTOM RULES (Updated)
+# =====================================================================
+
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+secrets.json
+
 /project-structure.txt
-/CAIT.CMS/Services/Identity/Identity.API/appsettings.Development.json
+
