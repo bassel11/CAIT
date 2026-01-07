@@ -30,7 +30,6 @@
 
   <ItemGroup>
     <Folder Include="Integrations\Identity\" />
-    <Folder Include="RabbitMQ\" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,4 @@
-﻿using MediatR;
-
-namespace TaskCore.Events.Audit
+﻿namespace TaskCore.Events.Audit
 {
     public record AuditLogEvent(
         string EntityName,

@@ -49,11 +49,13 @@ namespace MeetingInfrastructure
 
             // 2. تسجيل Interceptor
             services.AddScoped<DispatchDomainEventsInterceptor>();
+            services.AddScoped<AuditPublishingInterceptor>();
 
             // 3. إعداد DB Context (مع التحقق الصارم من نص الاتصال)
             services.AddDbContext<MeetingDbContext>((sp, options) =>
             {
                 var interceptor = sp.GetRequiredService<DispatchDomainEventsInterceptor>();
+                var auditInterceptor = sp.GetRequiredService<AuditPublishingInterceptor>();
 
                 // البحث عن نص الاتصال
                 var connectionString = configuration.GetConnectionString("MeetingConnectionString")
@@ -66,7 +68,7 @@ namespace MeetingInfrastructure
                 }
 
                 options.UseSqlServer(connectionString)
-                       .AddInterceptors(interceptor);
+                       .AddInterceptors(interceptor, auditInterceptor);
             });
 
             // Repositories

@@ -1,10 +1,11 @@
 ﻿using BuildingBlocks.Shared.Services;
 using MediatR;
+using MeetingCore.Events.Audit;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json;
-using TaskCore.Events.Audit;
 
-namespace TaskInfrastructure.Data.Interceptors
+namespace MeetingInfrastructure.Interceptors
 {
     public class AuditPublishingInterceptor : SaveChangesInterceptor
     {
