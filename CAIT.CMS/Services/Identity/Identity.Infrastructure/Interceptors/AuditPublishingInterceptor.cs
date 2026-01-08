@@ -1,16 +1,16 @@
 ﻿using BuildingBlocks.Shared.Services;
-using Identity.Core.Events.Audit; // تأكد من الـ Namespace الصحيح
+using Identity.Core.Entities;
+using Identity.Core.Events.Audit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection; // ضروري جداً
+using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 
 namespace Identity.Infrastructure.Interceptors
 {
     public class AuditPublishingInterceptor : SaveChangesInterceptor
     {
-        // التغيير هنا:  ServiceProvider بدلاً من Publisher مباشرة
         private readonly IServiceProvider _serviceProvider;
         private readonly ICurrentUserService _currentUser;
 
@@ -34,23 +34,61 @@ namespace Identity.Infrastructure.Interceptors
 
         private async Task PublishLocalAuditEvents(DbContext context, CancellationToken ct)
         {
-            // 1. فحص هل هناك تغييرات تستحق النشر؟
+            // 1. قائمة الأسماء المحظورة (الأسماء المختصرة)
+            var ignoredEntities = new HashSet<string>
+            {
+                "OutboxMessage",
+                "OutboxState",
+                "InboxState",
+                "AuditLog",
+                "IntegrationEventLogEntry",
+                //"UserRolePermReso",
+                "UserPasswordHistory",
+                
+                // التأكد من كتابة الأسماء كما هي في الكلاسات
+                nameof(RefreshToken),
+                "IdentityUserToken",
+                "UserToken",
+                "UserLogin",
+                "RoleClaim",
+                "UserClaim"
+            };
+
+            // 2. جلب الإدخالات المعدلة
             var entries = context.ChangeTracker.Entries()
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
-                .Where(e => !e.Metadata.Name.Contains("Outbox") &&
-                            !e.Metadata.Name.Contains("Audit") &&
-                            !e.Metadata.Name.Contains("IntegrationEvent"))
-                .ToList();
+                .ToList(); // نجلب القائمة أولاً ثم نفلتر بداخل الـ Loop لدقة أعلى
 
             if (entries.Count == 0) return;
 
-            // 👇 الحل السحري: نطلب الناشر الآن فقط (عند الحاجة) وليس عند تشغيل التطبيق
-            // هذا يمنع مشكلة الـ Circular Dependency
-            // using var scope = _serviceProvider.CreateScope();
             var publisher = _serviceProvider.GetRequiredService<IPublisher>();
 
             foreach (var entry in entries)
             {
+                // =================================================================
+                // 🛑 الفلترة الدقيقة (The Critical Fix)
+                // =================================================================
+
+                // 1. الحصول على الاسم المختصر (Class Name Only)
+                // مثال: يعيد "RefreshToken" بدلاً من "Identity.Core.Entities.RefreshToken"
+                var simpleName = entry.Metadata.ClrType.Name;
+
+                // 2. الحصول على الاسم الكامل (للاحتياط)
+                var fullName = entry.Metadata.Name;
+
+                // 3. التحقق:
+                // أ) هل الاسم المختصر موجود في القائمة؟
+                // ب) هل الاسم الكامل ينتهي بأحد الأسماء المحظورة؟ (حماية إضافية)
+                // ج) هل هو DTO أو View؟
+                if (ignoredEntities.Contains(simpleName) ||
+                    fullName.Contains("RefreshToken") || // 👈 تشرط صريح لمنع الريفرش توكن مهما كان اسمه
+                    simpleName.EndsWith("DTO") ||
+                    simpleName.Contains("View"))
+                {
+                    continue; // 🚫 تخطي هذا السجل وعدم إرساله للـ Audit
+                }
+                // =================================================================
+
                 Dictionary<string, object?> oldVal = new();
                 Dictionary<string, object?> newVal = new();
                 List<string> changedCols = new();
@@ -78,7 +116,6 @@ namespace Identity.Infrastructure.Interceptors
 
                 if (entry.State == EntityState.Modified && changedCols.Count == 0) continue;
 
-                // استخراج CommitteeId إن وجد (أو أي معرف آخر)
                 string? committeeId = null;
                 var committeeProp = entry.Entity.GetType().GetProperty("CommitteeId");
                 if (committeeProp != null)
@@ -86,9 +123,8 @@ namespace Identity.Infrastructure.Interceptors
                     committeeId = committeeProp.GetValue(entry.Entity)?.ToString();
                 }
 
-                // إنشاء الحدث
                 var localEvent = new AuditLogEvent(
-                    EntityName: entry.Entity.GetType().Name,
+                    EntityName: simpleName, // نستخدم الاسم المختصر هنا ليكون أجمل في اللوج
                     PrimaryKey: entry.Properties.FirstOrDefault(p => p.Metadata.IsPrimaryKey())?.CurrentValue?.ToString() ?? "N/A",
                     ActionType: entry.State.ToString(),
                     UserId: _currentUser.UserId.ToString(),
@@ -102,7 +138,6 @@ namespace Identity.Infrastructure.Interceptors
                     ChangedColumns: changedCols.Count > 0 ? string.Join(",", changedCols) : null
                 );
 
-                // النشر
                 await publisher.Publish(localEvent, ct);
             }
         }
