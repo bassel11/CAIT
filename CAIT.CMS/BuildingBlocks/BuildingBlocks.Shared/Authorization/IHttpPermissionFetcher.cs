@@ -2,7 +2,11 @@
 {
     public interface IHttpPermissionFetcher
     {
-        Task<PermissionSnapshot> FetchAsync(Guid userId, string serviceName);
+        Task<PermissionSnapshot> FetchAsync(
+            Guid userId,
+            string serviceName,
+            Guid? resourceId,
+            Guid? parentResourceId);
     }
 
 }

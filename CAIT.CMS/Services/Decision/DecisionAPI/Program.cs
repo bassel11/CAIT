@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Infrastructure;
+﻿using Asp.Versioning.ApiExplorer;
+using BuildingBlocks.Infrastructure;
 using DecisionAPI;
 using DecisionApplication;
 using DecisionInfrastructure;
@@ -47,10 +48,16 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
+// builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddEnterpriseVersioning(
+    apiTitle: "Decision API",
+    apiDescription: "APIs for managing Decisions"
+);
+
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Decision API", Version = "v1" });
+    // c.SwaggerDoc("v1", new OpenApiInfo { Title = "Decision API", Version = "v1" });
 
     // تعريف الـ Bearer Token لـ Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -77,6 +84,8 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    c.OperationFilter<BuildingBlocks.Infrastructure.Swagger.ContextParametersOperationFilter>();
+
 });
 
 var app = builder.Build();
@@ -87,7 +96,19 @@ if (app.Environment.IsDevelopment())
 {
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        // حلقة تكرارية لإنشاء Endpoint لكل إصدار
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant() // يظهر V1
+            );
+        }
+    });
 
     // تهيئة قاعدة البيانات مع Seed إذا لزم
     //await app.Services.InitializeDatabaseAsync();

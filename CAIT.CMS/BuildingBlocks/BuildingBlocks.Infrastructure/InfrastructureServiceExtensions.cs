@@ -1,11 +1,15 @@
-﻿using BuildingBlocks.Infrastructure.Security; // تأكد من وجود هذا الـ Namespace للكلاسات الجديدة
+﻿using Asp.Versioning;
+using BuildingBlocks.Infrastructure.Security; // تأكد من وجود هذا الـ Namespace للكلاسات الجديدة
 using BuildingBlocks.Infrastructure.Services;
+using BuildingBlocks.Infrastructure.Swagger;
 using BuildingBlocks.Shared.Authorization;
 using BuildingBlocks.Shared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace BuildingBlocks.Infrastructure
 {
@@ -43,6 +47,8 @@ namespace BuildingBlocks.Infrastructure
 
             // 4. تسجيل معالج الـ Token لطلبات HTTP الصادرة
             services.AddTransient<JwtDelegatingHandler>();
+
+            services.AddSingleton<IAuthorizationMiddlewareResultHandler, CustomAuthorizationMiddlewareResultHandler>();
 
             return services;
         }
@@ -96,6 +102,42 @@ namespace BuildingBlocks.Infrastructure
         {
             app.UseMiddleware<ResourceExtractionMiddleware>();
             return app;
+        }
+
+        public static IServiceCollection AddEnterpriseVersioning(
+                    this IServiceCollection services,
+                    string apiTitle,        // 👈 بارامتر جديد
+                    string apiDescription)  // 👈 بارامتر جديد
+        {
+            // 1. تسجيل الإعدادات كـ Singleton ليتم حقنها في ConfigureSwaggerOptions
+            var settings = new SwaggerApiSettings
+            {
+                Title = apiTitle,
+                Description = apiDescription
+            };
+            services.AddSingleton(settings);
+
+            // 2. إعداد Versioning (كما هو)
+            var builder = services.AddApiVersioning(options =>
+            {
+                options.ReportApiVersions = true;
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            });
+
+            builder.AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
+
+            builder.AddMvc();
+
+            // 3. تسجيل ConfigureSwaggerOptions (الذي سيستخدم settings أعلاه)
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
+            return services;
         }
     }
 }

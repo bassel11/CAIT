@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Infrastructure;
+﻿using Asp.Versioning.ApiExplorer;
+using BuildingBlocks.Infrastructure;
 using CommitteeAPI.Middlewares;
 using CommitteeApplication;
 using CommitteeInfrastructure;
@@ -79,11 +80,17 @@ builder.Services.AddAuthorization();
 //  Controllers & Swagger
 // ==========================
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+// builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddEnterpriseVersioning(
+    apiTitle: "Committee API",
+    apiDescription: "APIs for managing Committees"
+);
+
 //builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "CommitteeAPI", Version = "v1" });
+    // c.SwaggerDoc("v1", new() { Title = "CommitteeAPI", Version = "v1" });
 
     // إضافة دعم Authorization Bearer
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -110,6 +117,8 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    c.OperationFilter<BuildingBlocks.Infrastructure.Swagger.ContextParametersOperationFilter>();
+
 });
 
 
@@ -170,7 +179,19 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        // حلقة تكرارية لإنشاء Endpoint لكل إصدار
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant() // يظهر V1
+            );
+        }
+    });
 }
 
 // Localization Middleware (يجب أن يكون فوق UseHttpsRedirection)

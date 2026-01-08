@@ -16,7 +16,12 @@ namespace BuildingBlocks.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<PermissionSnapshot> FetchAsync(Guid userId, string serviceName)
+        public async Task<PermissionSnapshot> FetchAsync(
+            Guid userId,
+            string serviceName,
+            Guid? resourceId,
+            Guid? parentResourceId)
+
         {
             var url = $"api/permission/snapshot?userId={userId}&service={serviceName}";
 

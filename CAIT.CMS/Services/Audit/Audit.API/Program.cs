@@ -1,4 +1,5 @@
-﻿using Audit.Application;
+﻿using Asp.Versioning.ApiExplorer;
+using Audit.Application;
 using Audit.Infrastructure;
 using Audit.Infrastructure.Config;
 using BuildingBlocks.Infrastructure;
@@ -53,11 +54,17 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
+// builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddEnterpriseVersioning(
+    apiTitle: "Audit API",
+    apiDescription: "APIs for Audit Logs"
+);
+
 //builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Audit.API", Version = "v1" });
+    // c.SwaggerDoc("v1", new() { Title = "Audit.API", Version = "v1" });
 
     // إضافة دعم Authorization Bearer
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -93,7 +100,19 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        // حلقة تكرارية لإنشاء Endpoint لكل إصدار
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant() // يظهر V1
+            );
+        }
+    });
 }
 
 app.UseHttpsRedirection();

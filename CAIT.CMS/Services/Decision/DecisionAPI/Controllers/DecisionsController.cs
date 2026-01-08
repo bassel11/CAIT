@@ -1,4 +1,6 @@
-﻿using BuildingBlocks.Shared.Pagination;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using BuildingBlocks.Shared.Pagination;
 using DecisionApplication.Decisions.Commands.CreateDecision;
 using DecisionApplication.Decisions.Commands.DeleteDecision;
 using DecisionApplication.Decisions.Commands.UpdateDecision;
@@ -13,10 +15,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DecisionAPI.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/Decisions")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class DecisionsController : ControllerBase
+    public class DecisionsController : BaseApiController
     {
         private readonly ISender _mediator;
 

@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using MediatR;
 using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingApplication.Features.Attendances.Queries.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -6,10 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MeetingAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/Attendance")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class AttendanceController : ControllerBase
+    public class AttendanceController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

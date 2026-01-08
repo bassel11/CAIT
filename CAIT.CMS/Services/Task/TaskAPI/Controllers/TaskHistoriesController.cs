@@ -1,14 +1,19 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Features.Histories.Queries.GetHistory;
 
 namespace TaskAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/TaskHistories")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class TaskHistoriesController : ControllerBase
+    public class TaskHistoriesController : BaseApiController
     {
         private readonly IMediator _mediator;
 

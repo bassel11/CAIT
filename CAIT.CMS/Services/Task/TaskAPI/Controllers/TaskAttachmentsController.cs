@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Features.Attachments.Queries.GetAttachment;
@@ -6,10 +8,14 @@ using TaskApplication.Features.Attachments.Queries.GetAttachmentHistory;
 
 namespace TaskAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/TaskAttachments")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class TaskAttachmentsController : ControllerBase
+    public class TaskAttachmentsController : BaseApiController
     {
         private readonly IMediator _mediator;
 

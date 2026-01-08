@@ -1,4 +1,6 @@
-﻿using CommitteeApplication.Features.CommitteeQuorumRules.Commands.Models;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using CommitteeApplication.Features.CommitteeQuorumRules.Commands.Models;
 using CommitteeApplication.Features.CommitteeQuorumRules.Queries.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -7,9 +9,13 @@ using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CommitteeQuorumRuleController : ControllerBase
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/CommitteeQuorumRule")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
+    [Authorize]
+    public class CommitteeQuorumRuleController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

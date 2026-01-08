@@ -1,4 +1,6 @@
-﻿using CommitteeApplication.Features.CommitteeStatuses.Queries.Models;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using CommitteeApplication.Features.CommitteeStatuses.Queries.Models;
 using CommitteeApplication.Features.CommitteeStatuses.Queries.Results;
 using CommitteeApplication.Wrappers;
 using MediatR;
@@ -8,10 +10,13 @@ using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/CommitteeStatus")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class CommitteeStatusController : ControllerBase
+    public class CommitteeStatusController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

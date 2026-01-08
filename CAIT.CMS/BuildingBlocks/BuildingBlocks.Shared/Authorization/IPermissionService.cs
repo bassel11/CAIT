@@ -5,7 +5,8 @@
         Task<bool> HasPermissionAsync(
             Guid userId,
             string permissionName,
-            Guid? resourceId = null);
+            Guid? resourceId = null,
+            Guid? parentResourceId = null);
 
         // دالة لإبطال الكاش عند وصول حدث التحديث
         Task InvalidateCacheAsync(Guid userId);

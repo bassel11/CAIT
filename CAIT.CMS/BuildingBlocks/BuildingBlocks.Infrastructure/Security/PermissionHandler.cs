@@ -29,26 +29,40 @@ namespace BuildingBlocks.Infrastructure.Security
                 return;
             }
 
-            // 1. سوبر أدمن (مركزي)
+            // السوبر أدمن يتجاوز كل الفحوصات
             if (_currentUser.IsSuperAdmin)
             {
                 context.Succeed(requirement);
                 return;
             }
 
-            // 2. استخراج ResourceId
-            Guid? resourceId = null;
             var http = _contextAccessor.HttpContext;
-            // البحث في Items (من Middleware)
+
+            // 1. استخراج ResourceId من الـ Items (التي عبأها Middleware)
+            Guid? resourceId = null;
             if (http?.Items.TryGetValue("ResourceId", out var r) == true && r is Guid g)
             {
                 resourceId = g;
             }
 
-            // 3. الفحص
+            // 2. استخراج ParentResourceId (الجديد) ✅
+            Guid? parentResourceId = null;
+            if (http?.Items.TryGetValue("ParentResourceId", out var pr) == true && pr is Guid pg)
+            {
+                parentResourceId = pg;
+            }
+
             try
             {
-                if (await _permissionService.HasPermissionAsync(_currentUser.UserId, requirement.PermissionName, resourceId))
+                // تمرير القيمتين للخدمة
+                bool hasPermission = await _permissionService.HasPermissionAsync(
+                    _currentUser.UserId,
+                    requirement.PermissionName,
+                    resourceId,
+                    parentResourceId
+                );
+
+                if (hasPermission)
                 {
                     context.Succeed(requirement);
                 }

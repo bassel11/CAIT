@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using MediatR;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingApplication.Features.Meetings.Queries.Models;
@@ -11,10 +13,13 @@ using System.Net;
 
 namespace MeetingAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/Meeting")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class MeetingController : ControllerBase
+    public class MeetingController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

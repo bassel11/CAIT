@@ -1,11 +1,14 @@
-﻿using Audit.Application.DTOs;
+﻿using Asp.Versioning;
+using Audit.Application.DTOs;
 using Audit.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Audit.API.Controllers
 {
-    [Route("api/[controller]")]
+
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/Audit")]
     [ApiController]
     [Authorize(Policy = "Permission:Audit.View")]
     public class AuditQueryController : ControllerBase

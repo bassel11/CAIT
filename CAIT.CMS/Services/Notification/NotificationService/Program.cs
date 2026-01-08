@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Infrastructure;
+﻿using Asp.Versioning.ApiExplorer;
+using BuildingBlocks.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -44,10 +45,16 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
+// builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddEnterpriseVersioning(
+    apiTitle: "Notification API",
+    apiDescription: "APIs for Notification"
+);
+
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Notification API", Version = "v1" });
+    //c.SwaggerDoc("v1", new OpenApiInfo { Title = "Notification API", Version = "v1" });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -73,6 +80,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    c.OperationFilter<BuildingBlocks.Infrastructure.Swagger.ContextParametersOperationFilter>();
+
 });
 
 var app = builder.Build();
@@ -81,7 +91,20 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        // حلقة تكرارية لإنشاء Endpoint لكل إصدار
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant() // يظهر V1
+            );
+        }
+    });
+
 }
 app.UseStaticFiles(); // Added for Locally Files on wwwroot
 

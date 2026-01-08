@@ -1,19 +1,6 @@
-﻿
-
-namespace BuildingBlocks.Shared.Authorization
+﻿namespace BuildingBlocks.Shared.Authorization
 {
-    //public class PermissionSnapshot
-    //{
-    //    public Guid UserId { get; set; }
-    //    public List<string> Permissions { get; set; } = new();
-    //    public bool Has(string permission, Guid? resourceId = null)
-    //    {
-    //        // لو أردت دعم ResourceId
-    //        return Permissions.Contains(permission);
-    //    }
-    //}
-
-    // 1. التفاصيل الكاملة للصف الواحد (Rich Entry)
+    // 1. هيكل بيانات الصلاحية الواحدة
     public class PermissionEntry
     {
         public string Name { get; set; } = string.Empty;
@@ -21,51 +8,91 @@ namespace BuildingBlocks.Shared.Authorization
         public bool IsActive { get; set; }
         public bool Allow { get; set; }
 
-        // Enums
-        //public ScopeType Scope { get; set; }
-        public string ScopeName { get; set; } = string.Empty;
+        public string ScopeName { get; set; } = string.Empty; // "Global", "Resource", "Parent"
 
-        // Resource
-        //public ResourceType? ResourceType { get; set; }
         public string? ResourceTypeName { get; set; }
         public Guid? ResourceId { get; set; }
 
-        // Parent Resource
-        //public ResourceType? ParentResourceType { get; set; }
         public string? ParentResourceTypeName { get; set; }
         public Guid? ParentResourceId { get; set; }
     }
 
-    // 2. الحاوية الرئيسية (هذا ما يتم تخزينه في الكاش وإرساله عبر الشبكة)
+    // 2. الحاوية الرئيسية
     public class PermissionSnapshot
     {
         public Guid UserId { get; set; }
-        public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 
-        // القائمة الكاملة
+        // 0=None, 1=Predefined, 2=Custom
+        public int UserPrivilageType { get; set; }
+
+        public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
         public List<PermissionEntry> Permissions { get; set; } = new();
 
-        // 🧠 المنطق الذكي للفحص (يستخدم كل الحقول)
-        public bool Has(string permissionName, Guid? resourceId = null)
+        /// <summary>
+        /// الفحص الصارم للصلاحيات بناءً على القيود المخزنة لدى المستخدم
+        /// </summary>
+        public bool Has(string permissionName, Guid? resourceId = null, Guid? parentResourceId = null)
         {
-            // نبحث عن الصلاحية بالاسم وتكون فعالة ومسموحة
-            var entries = Permissions.Where(p =>
+            // 🛑 الحالة 0: رفض قاطع
+            if (UserPrivilageType == 0) return false;
+
+            // تصفية أولية (الاسم، الفعالية، السماحية)
+            var candidates = Permissions.Where(p =>
                 p.Name.Equals(permissionName, StringComparison.OrdinalIgnoreCase) &&
                 p.IsActive &&
                 p.Allow);
 
-            if (!entries.Any()) return false;
+            if (!candidates.Any()) return false;
 
-            // إذا لم نمرر ResourceId، يكفي وجود أي entry (Global or specific)
-            if (resourceId == null) return true;
+            // ✅ الحالة 1: Predefined (دائماً مقبول بمجرد وجود الصلاحية)
+            if (UserPrivilageType == 1) return true;
 
-            // إذا مررنا ResourceId، يجب التحقق من النطاق
-            return entries.Any(p =>
-                //p.Scope == ScopeType.Global || // صلاحية عامة
-                p.ResourceId == resourceId ||  // صلاحية خاصة بهذا العنصر
-                (p.ParentResourceId.HasValue && /* منطق الوراثة هنا إن وجد */ false)
-            );
+            // 🚀 الحالة 2: Custom (التحقق الصارم)
+            if (UserPrivilageType == 2)
+            {
+                // ---------------------------------------------------------
+                // أ) الحالة العامة: لم يتم تمرير أي موارد (طلب عام)
+                // ---------------------------------------------------------
+                // هنا نطلب حصراً أن يمتلك المستخدم صلاحية Global
+                if (resourceId == null && parentResourceId == null)
+                {
+                    return candidates.Any(p => p.ScopeName.Equals("Global", StringComparison.OrdinalIgnoreCase));
+                }
+
+                // ---------------------------------------------------------
+                // ب) الحالة المحددة: تم تمرير موارد (تطبيق القيود الصارمة)
+                // ---------------------------------------------------------
+                return candidates.Any(p =>
+                {
+                    // 1. إذا كانت الصلاحية Global فهي مقبولة دائماً
+                    if (p.ScopeName.Equals("Global", StringComparison.OrdinalIgnoreCase)) return true;
+
+                    // 2. التحقق من قيد ResourceId (إذا كان مسجلاً في الصلاحية)
+                    if (p.ResourceId.HasValue)
+                    {
+                        // الشرط: يجب أن يكون المطور قد مرر ResourceId، ويجب أن يطابق بدقة
+                        if (!resourceId.HasValue || resourceId.Value != p.ResourceId.Value)
+                        {
+                            return false; // فشل القيد
+                        }
+                    }
+
+                    // 3. التحقق من قيد ParentResourceId (إذا كان مسجلاً في الصلاحية)
+                    if (p.ParentResourceId.HasValue)
+                    {
+                        // الشرط: يجب أن يكون المطور قد مرر ParentResourceId، ويجب أن يطابق بدقة
+                        if (!parentResourceId.HasValue || parentResourceId.Value != p.ParentResourceId.Value)
+                        {
+                            return false; // فشل القيد
+                        }
+                    }
+
+                    // إذا وصلنا هنا، فهذا يعني أن جميع القيود الموجودة في هذا السجل قد تم استيفاؤها بنجاح
+                    return true;
+                });
+            }
+
+            return false;
         }
     }
-
 }

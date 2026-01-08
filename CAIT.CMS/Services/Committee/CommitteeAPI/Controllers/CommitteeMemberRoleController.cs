@@ -1,4 +1,6 @@
-﻿using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Models;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Models;
 using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Results;
 using CommitteeApplication.Features.CommitteeMemberRoles.Queries.Models;
 using CommitteeApplication.Features.CommitteeMemberRoles.Queries.Results;
@@ -9,10 +11,13 @@ using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/CommitteeMemberRole")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class CommitteeMemberRoleController : ControllerBase
+    public class CommitteeMemberRoleController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

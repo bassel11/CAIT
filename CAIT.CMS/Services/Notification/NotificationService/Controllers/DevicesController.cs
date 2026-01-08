@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
@@ -6,10 +8,11 @@ using NotificationService.Entities;
 
 namespace NotificationService.Controllers
 {
-    [ApiController]
-    [Route("api/devices")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/Notifications")]
+
     [Authorize]
-    public class DevicesController : ControllerBase
+    public class DevicesController : BaseApiController
     {
         private readonly NotificationDbContext _context;
 

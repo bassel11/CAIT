@@ -100,9 +100,12 @@ namespace Identity.API.Controllers
 
 
         [HttpGet("snapshot")]
-        [AllowAnonymous] // internal service-to-service
+        [AllowAnonymous] // للسماح بالاتصال الداخلي بين الخدمات (يفضل استخدام Client Credentials لاحقاً)
         public async Task<ActionResult<PermissionSnapshot>> Snapshot([FromQuery] Guid userId)
         {
+            if (userId == Guid.Empty)
+                return BadRequest("UserId is required");
+
             var snapshot = await _snapshotService.BuildSnapshotAsync(userId);
             return Ok(snapshot);
         }

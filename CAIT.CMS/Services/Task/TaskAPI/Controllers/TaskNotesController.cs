@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Features.Notes.Commands.AddTaskNote;
@@ -8,9 +10,14 @@ using TaskApplication.Features.Notes.Queries.GetNotes;
 
 namespace TaskAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class TaskNotesController : ControllerBase
+
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/TaskNotes")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
+    [Authorize]
+    public class TaskNotesController : BaseApiController
     {
         private readonly IMediator _mediator;
 

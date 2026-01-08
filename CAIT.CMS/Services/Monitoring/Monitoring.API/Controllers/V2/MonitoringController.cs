@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Monitoring.Application.Features.Monitoring.Queries.GetComplianceReport;
 using Monitoring.Application.Features.Monitoring.Queries.GetSuperAdminDashboard;
 
-namespace Monitoring.API.Controllers
+namespace Monitoring.API.Controllers.V2
 {
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/Monitoring")]
 
     //[Route("api/[controller]")]
@@ -42,4 +42,5 @@ namespace Monitoring.API.Controllers
             return Ok(result);
         }
     }
+
 }

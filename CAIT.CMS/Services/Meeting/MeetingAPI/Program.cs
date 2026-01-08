@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Infrastructure;
+﻿using Asp.Versioning.ApiExplorer;
+using BuildingBlocks.Infrastructure;
 using MeetingAPI.Middlewares;
 using MeetingApplication;
 using MeetingInfrastructure;
@@ -64,12 +65,18 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
+//builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddEnterpriseVersioning(
+    apiTitle: "Meeting API",
+    apiDescription: "APIs for managing Meetings"
+);
+
 //builder.Services.AddSwaggerGen();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "MeetingAPI", Version = "v1" });
+    // c.SwaggerDoc("v1", new() { Title = "MeetingAPI", Version = "v1" });
 
     // إضافة دعم Authorization Bearer
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -96,6 +103,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    c.OperationFilter<BuildingBlocks.Infrastructure.Swagger.ContextParametersOperationFilter>();
+
 });
 
 
@@ -154,7 +164,19 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        // حلقة تكرارية لإنشاء Endpoint لكل إصدار
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant() // يظهر V1
+            );
+        }
+    });
 }
 
 

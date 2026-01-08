@@ -1,51 +1,88 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace BuildingBlocks.Infrastructure.Security
 {
-    // 1. يجب أن يرث من IMiddleware
+    // 1. يرث من IMiddleware لدعم الحقن عبر DI Factory
     public class ResourceExtractionMiddleware : IMiddleware
     {
-        // 2. نحذف RequestDelegate من الكونستركتور
-        // الكونستركتور يبقى نظيفاً (أو تحقن فيه خدمات أخرى مثل ILogger)
-        public ResourceExtractionMiddleware()
+        private readonly ILogger<ResourceExtractionMiddleware> _logger;
+
+        // 2. حقن Logger للمساعدة في التتبع (Best Practice)
+        public ResourceExtractionMiddleware(ILogger<ResourceExtractionMiddleware> logger)
         {
+            _logger = logger;
         }
 
-        // 3. نعدل دالة InvokeAsync لتستقبل (context, next)
+        // 3. تنفيذ الدالة الأساسية
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            Guid? resourceId = null;
+            // =================================================================
+            // أ) استخراج Resource Id
+            // =================================================================
+            // المفاتيح المتوقعة:
+            // Query/Route: "resourceId"
+            // Header: "X-ResourceId"
+            var resourceId = ExtractGuid(context, keyName: "resourceId", headerName: "X-ResourceId");
 
-            // 1. Query String
-            if (context.Request.Query.TryGetValue("resourceId", out var qv) &&
-                Guid.TryParse(qv.FirstOrDefault(), out var queryId))
+            if (resourceId.HasValue)
             {
-                resourceId = queryId;
+                context.Items["ResourceId"] = resourceId.Value;
+                _logger.LogDebug("ResourceId extracted: {ResourceId}", resourceId);
             }
 
-            // 2. Headers
-            if (resourceId == null &&
-                context.Request.Headers.TryGetValue("X-ResourceId", out var hv) &&
-                Guid.TryParse(hv.FirstOrDefault(), out var headerId))
+            // =================================================================
+            // ب) استخراج Parent Resource Id (الجديد)
+            // =================================================================
+            // المفاتيح المتوقعة:
+            // Query/Route: "parentResourceId"
+            // Header: "X-ParentResourceId"
+            var parentResourceId = ExtractGuid(context, keyName: "parentResourceId", headerName: "X-ParentResourceId");
+
+            if (parentResourceId.HasValue)
             {
-                resourceId = headerId;
+                context.Items["ParentResourceId"] = parentResourceId.Value;
+                _logger.LogDebug("ParentResourceId extracted: {ParentResourceId}", parentResourceId);
             }
 
-            // 3. Route Values
-            if (resourceId == null &&
-                context.Request.RouteValues.TryGetValue("resourceId", out var rv) &&
-                Guid.TryParse(rv?.ToString(), out var routeId))
-            {
-                resourceId = routeId;
-            }
-
-            if (resourceId != null)
-            {
-                context.Items["ResourceId"] = resourceId;
-            }
-
-            // استدعاء الميدل وير التالي
+            // الانتقال للميدل وير التالي
             await next(context);
+        }
+
+        /// <summary>
+        /// دالة مساعدة لاستخراج GUID من مصادر متعددة بترتيب أولوية محدد
+        /// </summary>
+        /// <param name="context">سياق الطلب</param>
+        /// <param name="keyName">اسم المفتاح في الرابط أو الكويري</param>
+        /// <param name="headerName">اسم المفتاح في الهيدر</param>
+        /// <returns>Guid? or null</returns>
+        private Guid? ExtractGuid(HttpContext context, string keyName, string headerName)
+        {
+            // 1. الأولوية الأولى: Query String
+            // مثال: ?resourceId=...
+            if (context.Request.Query.TryGetValue(keyName, out var queryVal) &&
+                Guid.TryParse(queryVal.FirstOrDefault(), out var queryId))
+            {
+                return queryId;
+            }
+
+            // 2. الأولوية الثانية: Headers
+            // مثال: X-ResourceId: ...
+            if (context.Request.Headers.TryGetValue(headerName, out var headerVal) &&
+                Guid.TryParse(headerVal.FirstOrDefault(), out var headerId))
+            {
+                return headerId;
+            }
+
+            // 3. الأولوية الثالثة: Route Values
+            // مثال: api/tasks/{resourceId}
+            if (context.Request.RouteValues.TryGetValue(keyName, out var routeVal) &&
+                Guid.TryParse(routeVal?.ToString(), out var routeId))
+            {
+                return routeId;
+            }
+
+            return null;
         }
     }
 }

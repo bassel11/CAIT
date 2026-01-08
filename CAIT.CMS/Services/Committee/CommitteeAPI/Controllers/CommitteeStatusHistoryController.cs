@@ -1,4 +1,6 @@
-﻿using CommitteeApplication.Features.StatusHistories.Commands.Models;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using CommitteeApplication.Features.StatusHistories.Commands.Models;
 using CommitteeApplication.Features.StatusHistories.Queries.Models;
 using CommitteeApplication.Features.StatusHistories.Queries.Results;
 using CommitteeApplication.Wrappers;
@@ -9,9 +11,13 @@ using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CommitteeStatusHistoryController : ControllerBase
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/CommitteeStatusHistory")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
+    [Authorize]
+    public class CommitteeStatusHistoryController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

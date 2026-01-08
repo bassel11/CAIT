@@ -5,10 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
 
-namespace NotificationService.Controllers
+namespace NotificationService.Controllers.V2
 {
-    [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/Notifications")]
+    [ApiVersion("2.0")]
+    [Route("api/v{version:apiVersion}/notifications")]
+
     [Authorize]
     public class NotificationsController : BaseApiController
     {
@@ -69,4 +70,5 @@ namespace NotificationService.Controllers
             return NoContent();
         }
     }
+
 }

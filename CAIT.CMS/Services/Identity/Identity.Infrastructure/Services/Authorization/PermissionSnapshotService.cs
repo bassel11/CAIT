@@ -14,35 +14,33 @@ namespace Identity.Infrastructure.Services.Authorization
 
         public async Task<PermissionSnapshot> BuildSnapshotAsync(Guid userId)
         {
-            // 1️⃣ جلب البيانات الداخلية
-            var internalPermissions = await _query.GetSnapshotsAsync(userId);
+            // 1️⃣ جلب البيانات (النوع + القائمة)
+            var data = await _query.GetSnapshotsAsync(userId);
 
             // 2️⃣ تجهيز الحاوية النهائية
             var snapshot = new PermissionSnapshot
             {
                 UserId = userId,
+                // ✅ نقل نوع الامتياز للكلاينت
+                UserPrivilageType = (int)data.UserPrivilageType,
                 GeneratedAt = DateTime.UtcNow
             };
 
-            // 3️⃣ Mapping (Internal DTO → Shared Contract)
-            if (internalPermissions == null || !internalPermissions.Any())
+            // 3️⃣ Mapping
+            if (data.Permissions == null || !data.Permissions.Any())
                 return snapshot;
 
-            snapshot.Permissions = internalPermissions.Select(p => new PermissionEntry
+            snapshot.Permissions = data.Permissions.Select(p => new PermissionEntry
             {
                 Name = p.Name,
                 Description = p.Description,
                 IsActive = p.IsActive,
                 Allow = p.Allow,
-
                 ScopeName = p.ScopeName,
-
                 ResourceTypeName = p.ResourceTypeName,
                 ResourceId = p.ResourceId,
-
                 ParentResourceTypeName = p.ParentResourceTypeName,
                 ParentResourceId = p.ParentResourceId
-
             }).ToList();
 
             return snapshot;

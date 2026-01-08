@@ -8,7 +8,7 @@ namespace BuildingBlocks.Infrastructure.Services
     {
         private readonly IDistributedCache _cache;
         private readonly IHttpPermissionFetcher _fetcher;
-        private readonly string _serviceName; // اسم الخدمة الحالية (Task, Committee)
+        private readonly string _serviceName; // اسم الخدمة الحالية لتمييز الطلب
 
         public RedisPermissionService(
             IDistributedCache cache,
@@ -20,37 +20,41 @@ namespace BuildingBlocks.Infrastructure.Services
             _serviceName = serviceName;
         }
 
-        public async Task<bool> HasPermissionAsync(Guid userId, string permission, Guid? resourceId = null)
+        public async Task<bool> HasPermissionAsync(
+            Guid userId,
+            string permissionName,
+            Guid? resourceId = null,
+            Guid? parentResourceId = null)
         {
-            // بناء مفتاح الكاش: auth:perm:userId
-            // ملاحظة: سيتم إضافة بادئة الخدمة تلقائياً بفضل InstanceName
+            // 1. مفتاح الكاش: يعتمد فقط على المستخدم (نخزن كل صلاحياته دفعة واحدة)
+            // هذا يقلل عدد المفاتيح في Redis بشكل هائل
             string cacheKey = $"auth:perm:{userId}";
 
-            var cachedData = await _cache.GetStringAsync(cacheKey);
             PermissionSnapshot snapshot;
+            var cachedJson = await _cache.GetStringAsync(cacheKey);
 
-            if (string.IsNullOrEmpty(cachedData))
+            if (string.IsNullOrEmpty(cachedJson))
             {
-                // Cache Miss: جلب من Identity
-                snapshot = await _fetcher.FetchAsync(userId, _serviceName);
+                // Cache Miss: جلب كل الصلاحيات من Identity
+                snapshot = await _fetcher.FetchAsync(userId, _serviceName, resourceId, parentResourceId);
 
-                // تخزين الكائن كاملاً في Redis
+                // تخزينها في Redis لمدة طويلة (ساعة مثلاً) مع Sliding Expiration
                 var options = new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(60), // ساعة واحدة
-                    SlidingExpiration = TimeSpan.FromMinutes(30) // تمديد 20 دقيقة عند الاستخدام
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
+                    SlidingExpiration = TimeSpan.FromMinutes(30)
                 };
 
                 await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(snapshot), options);
             }
             else
             {
-                // Cache Hit: تحويل النص المخزن إلى كائن
-                snapshot = JsonSerializer.Deserialize<PermissionSnapshot>(cachedData)!;
+                // Cache Hit
+                snapshot = JsonSerializer.Deserialize<PermissionSnapshot>(cachedJson)!;
             }
 
-            // الفحص يتم في الذاكرة باستخدام الدالة الذكية التي كتبناها في Shared
-            return snapshot.Has(permission, resourceId);
+            // 2. الفحص يتم محلياً في الذاكرة (سريع جداً)
+            return snapshot.Has(permissionName, resourceId, parentResourceId);
         }
 
         public async Task InvalidateCacheAsync(Guid userId)

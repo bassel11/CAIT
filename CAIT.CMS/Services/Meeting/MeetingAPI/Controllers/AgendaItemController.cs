@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using MediatR;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
 using MeetingApplication.Features.AgendaItems.Queries.Models;
 using MeetingApplication.Features.AgendaItems.Queries.Results;
@@ -8,10 +10,13 @@ using System.Net;
 
 namespace MeetingAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/AgendaItem")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class AgendaItemController : ControllerBase
+    public class AgendaItemController : BaseApiController
     {
         #region Fields
         private readonly IMediator _mediator;

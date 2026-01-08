@@ -1,4 +1,6 @@
-﻿using BuildingBlocks.Shared.Pagination;
+﻿using Asp.Versioning;
+using BuildingBlocks.Shared.Controllers;
+using BuildingBlocks.Shared.Pagination;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +16,13 @@ using TaskApplication.Features.Tasks.Queries.GetTasks;
 
 namespace TaskAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/tasks")]
+
+    //[Route("api/[controller]")]
+    //[ApiController]
     [Authorize]
-    public class TasksController : ControllerBase
+    public class TasksController : BaseApiController
     {
         private readonly IMediator _mediator;
 

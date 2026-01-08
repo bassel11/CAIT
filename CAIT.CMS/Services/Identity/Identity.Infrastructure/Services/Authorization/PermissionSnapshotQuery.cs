@@ -6,10 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Identity.Infrastructure.Services.Authorization
 {
-    /// <summary>
-    /// Responsible for building Permission Snapshots (Read Model)
-    /// No caching here – caching should be applied at higher layers (Redis)
-    /// </summary>
     public sealed class PermissionSnapshotQuery : IPermissionSnapshotQuery
     {
         private readonly ApplicationDbContext _context;
@@ -19,104 +15,89 @@ namespace Identity.Infrastructure.Services.Authorization
             _context = context;
         }
 
-        /// <summary>
-        /// Returns all permission snapshots for a user based on PrivilageType
-        /// </summary>
-        public async Task<IReadOnlyList<FullUserPermission>> GetSnapshotsAsync(Guid userId)
+        public async Task<SnapshotData> GetSnapshotsAsync(Guid userId)
         {
+            // 1. جلب معلومات المستخدم الأساسية أولاً لتحديد النوع
             var user = await _context.Users
                 .AsNoTracking()
                 .Select(u => new { u.Id, u.IsActive, u.PrivilageType })
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
+            // إذا لم يوجد مستخدم، نعيد النوع None وقائمة فارغة
             if (user == null)
-                return Array.Empty<FullUserPermission>();
-
-            return user.PrivilageType switch
             {
-                PrivilageType.None =>
-                    Array.Empty<FullUserPermission>(),
+                return new SnapshotData
+                {
+                    UserPrivilageType = PrivilageType.None,
+                    Permissions = Array.Empty<FullUserPermission>()
+                };
+            }
 
-                PrivilageType.PredifinedRoles =>
-                    await GetPredefinedRoleSnapshots(userId),
+            // 2. جلب الصلاحيات بناءً على النوع
+            IReadOnlyList<FullUserPermission> permissions = user.PrivilageType switch
+            {
+                PrivilageType.None => Array.Empty<FullUserPermission>(),
 
-                PrivilageType.CustomRolesAndPermission =>
-                    await GetCustomPermissionSnapshots(userId),
+                PrivilageType.PredifinedRoles => await GetPredefinedRoleSnapshots(userId),
+
+                PrivilageType.CustomRolesAndPermission => await GetCustomPermissionSnapshots(userId),
 
                 _ => Array.Empty<FullUserPermission>()
             };
+
+            // 3. إرجاع النتيجة المجمعة
+            return new SnapshotData
+            {
+                UserPrivilageType = user.PrivilageType,
+                Permissions = permissions
+            };
         }
 
-        // -------------------------------------------------
-        // 🔹 Predefined Roles Permissions (Global scope)
-        // -------------------------------------------------
         private async Task<IReadOnlyList<FullUserPermission>> GetPredefinedRoleSnapshots(Guid userId)
         {
-            var permissions = await _context.UserRoles
+            return await _context.UserRoles
                 .Where(ur => ur.UserId == userId)
                 .SelectMany(ur => ur.Role.RolePermissions)
                 .Select(rp => rp.Permission)
                 .AsNoTracking()
+                .Where(p => p.IsActive) // تحقق إضافي أن الصلاحية فعالة
                 .Distinct()
                 .Select(p => new FullUserPermission
                 {
                     Name = p.Name,
                     Description = p.Description,
                     IsActive = p.IsActive,
-
                     Scope = ScopeType.Global,
-                    ScopeName = ScopeType.Global.ToString(),
-
-                    ResourceType = null,
-                    ResourceTypeName = null,
-                    ResourceId = null,
-
-                    ParentResourceType = null,
-                    ParentResourceTypeName = null,
-                    ParentResourceId = null,
-
+                    ScopeName = "Global",
                     Allow = true
                 })
                 .ToListAsync();
-
-            return permissions;
         }
 
-        // -------------------------------------------------
-        // 🔹 Custom Roles & Permissions (Resource based)
-        // -------------------------------------------------
         private async Task<IReadOnlyList<FullUserPermission>> GetCustomPermissionSnapshots(Guid userId)
         {
-            var records = await _context.UserRolePermResos
+            return await _context.UserRolePermResos
                 .Where(x => x.UserId == userId)
                 .AsNoTracking()
+                // يمكن إضافة شرط IsActive للصلاحية هنا أيضاً
+                .Where(x => x.Permission.IsActive)
                 .Select(r => new FullUserPermission
                 {
                     Name = r.Permission.Name,
                     Description = r.Permission.Description,
                     IsActive = r.Permission.IsActive,
-
                     Scope = r.Scope,
                     ScopeName = r.Scope.ToString(),
-
                     ResourceType = r.ResourceId.HasValue ? r.ResourceType : null,
-                    ResourceTypeName = r.ResourceId.HasValue
-                        ? r.ResourceType.ToString()
-                        : null,
+                    ResourceTypeName = r.ResourceId.HasValue ? r.ResourceType.ToString() : null,
                     ResourceId = r.ResourceId,
-
                     ParentResourceType = r.ParentResourceId.HasValue ? r.ParentResourceType : null,
-                    ParentResourceTypeName = r.ParentResourceId.HasValue
-                        ? r.ParentResourceType.ToString()
-                        : null,
+                    ParentResourceTypeName = r.ParentResourceId.HasValue ? r.ParentResourceType.ToString() : null,
                     ParentResourceId = r.ParentResourceId,
-
                     Allow = r.Allow
                 })
-                .OrderByDescending(x => x.Allow) // Allow > Deny
+                .OrderByDescending(x => x.Allow)
                 .ToListAsync();
-
-            return records;
         }
     }
 }

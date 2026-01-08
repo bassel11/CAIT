@@ -1,11 +1,11 @@
-﻿using MeetingApplication.Integrations;
+﻿using BuildingBlocks.Shared.Controllers;
+using MeetingApplication.Integrations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetingAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class DebugRabbitController : ControllerBase
+    public class DebugRabbitController : BaseApiController
     {
         private readonly IMessageBus _bus;
 
