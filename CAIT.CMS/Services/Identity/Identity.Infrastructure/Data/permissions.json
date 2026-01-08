@@ -47,6 +47,14 @@
     "IsGlobal": true,
     "IsActive": true
   },
+  {
+    "Name": "User.Activate",
+    "ResourceType": 2,
+    "Action": 10,
+    "Description": "Activate User",
+    "IsGlobal": true,
+    "IsActive": true
+  },
 
   {
     "Name": "UserRole.Assign",

@@ -58,5 +58,31 @@ namespace Identity.API.Controllers
             return Ok(new { Message = "Deactivate User successfully" });
         }
 
+        // Activate User Only for SuperAdmin Roles (or authorized users)
+        [HttpPost("activateUser")]
+        [Authorize(Policy = "Permission:User.Activate")] // ✅ تأكد من إضافة هذه الصلاحية في قاعدة البيانات
+        public async Task<IActionResult> ActivateUser([FromBody] ActivateUserDto dto)
+        {
+            // التحقق من صحة المدخلات
+            if (string.IsNullOrEmpty(dto.UserId))
+                return BadRequest("Invalid User ID");
+
+            // استدعاء الخدمة
+            var result = await _userService.ActivateUserAsync(dto.UserId);
+
+            // التعامل مع الأخطاء
+            if (!result.Success)
+            {
+                // يمكن تخصيص الرد أكثر إذا كان الخطأ "User not found" ليكون NotFound
+                if (result.Error == "User not found")
+                    return NotFound(result.Error);
+
+                return BadRequest(result.Error);
+            }
+
+            return Ok(new { Message = "User activated successfully" });
+        }
+
+
     }
 }

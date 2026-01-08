@@ -197,6 +197,47 @@ namespace Identity.Infrastructure.Services.Users
 
         }
 
+        public async Task<(bool Success, string? Error)> ActivateUserAsync(string userId)
+        {
+            // 1. البحث عن المستخدم
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return (false, "User not found");
+
+            // 2. التحقق من أن المستخدم غير مفعل بالفعل (لتجنب تحديث بلا داعٍ)
+            if (user.IsActive)
+                return (false, "User is already active");
+
+            // 3. تفعيل المستخدم
+            user.IsActive = true;
+
+            // إذا كنت تستخدم LockoutEnd، يفضل تصفيره أيضاً لضمان الدخول فوراً
+            if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow)
+            {
+                user.LockoutEnd = null;
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return (false, "Failed to activate user");
+            }
+
+            // 4. (اختياري) تسجيل العملية في الـ Audit Log
+            /*
+            await _auditService.LogAsync(new AuditLog
+            {
+                UserId = _currentUserService.UserId, // أو User.Identity.Name
+                Action = "ActivateUser",
+                TargetUserId = user.Id,
+                Timestamp = DateTime.UtcNow,
+                Description = $"User {user.UserName} has been activated"
+            });
+            */
+
+            return (true, null);
+        }
+
         #region Private Functions
 
         private async Task<string?> ValidateUserPermissionsAsync(Guid userId, PrivilageType newType)

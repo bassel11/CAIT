@@ -11,5 +11,8 @@ namespace Identity.Application.Interfaces.Users
         Task<(bool Success, string? Error)> SoftDeleteAsync(Guid id);
 
         Task<(bool Success, string? Error)> DeactivateUserAsync(string userId);
+
+        // ✅ الدالة الجديدة
+        Task<(bool Success, string? Error)> ActivateUserAsync(string userId);
     }
 }
