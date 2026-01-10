@@ -22,17 +22,17 @@ namespace BuildingBlocks.Infrastructure.Swagger
                 (p.Name.Equals("resourceId", StringComparison.OrdinalIgnoreCase) ||
                  p.Name.Equals("id", StringComparison.OrdinalIgnoreCase)));
 
-            if (!hasRouteResourceId)
+            //if (!hasRouteResourceId)
+            //{
+            operation.Parameters.Add(new OpenApiParameter
             {
-                operation.Parameters.Add(new OpenApiParameter
-                {
-                    Name = "X-ResourceId",
-                    In = ParameterLocation.Header,
-                    Description = "Target Resource ID (used if not provided in URL path).",
-                    Required = false,
-                    Schema = new OpenApiSchema { Type = "string", Format = "uuid" }
-                });
-            }
+                Name = "X-ResourceId",
+                In = ParameterLocation.Header,
+                Description = "Target Resource ID (used if not provided in URL path).",
+                Required = false,
+                Schema = new OpenApiSchema { Type = "string", Format = "uuid" }
+            });
+            //}
 
             // =================================================================
             // 1. معالجة Parent Resource ID (Query String)
