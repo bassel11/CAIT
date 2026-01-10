@@ -1,7 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces.Committee;
@@ -39,12 +37,12 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             var mom = await _momRepo.GetByIdAsync(req.MoMId);
             if (mom == null)
             {
-                throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+                throw new NotFoundException(nameof(MinutesOfMeeting), req.MoMId);
             }
             var meeting = await _meetRepo.GetByIdAsync(mom.MeetingId);
             if (meeting == null)
             {
-                throw new MeetingNotFoundException(nameof(Meeting), mom.MeetingId);
+                throw new NotFoundException(nameof(Meeting), mom.MeetingId);
             }
 
             // Business rule: ensure quorum met before submit (configurable; can be relaxed)

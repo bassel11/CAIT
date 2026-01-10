@@ -1,6 +1,4 @@
 ﻿using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Repositories;
@@ -30,8 +28,11 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
         #region Actions
         public async Task<Guid> Handle(AddAgendaItemCommand req, CancellationToken ct)
         {
-            var meeting = await _meetingRepository.GetByIdAsync(req.MeetingId)
-                ?? throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
+            var meeting = await _meetingRepository.GetByIdAsync(req.MeetingId);
+
+
+            if (meeting == null)
+                throw new NotFoundException("Meeting", req.MeetingId);
 
             var item = new AgendaItem
             {

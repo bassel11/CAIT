@@ -1,7 +1,4 @@
 ﻿using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingCore.Entities;
@@ -11,7 +8,7 @@ using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
 {
-    public class RejectMoMCommandHandler : IRequestHandler<RejectMoMCommand, Unit>
+    public class RejectMoMCommandHandler : IRequestHandler<RejectMoMCommand, Guid>
     {
         private readonly IMoMRepository _repo;
         private readonly ICurrentUserService _user;
@@ -26,12 +23,12 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             _eventBus = eventBus;
         }
 
-        public async Task<Unit> Handle(RejectMoMCommand req, CancellationToken ct)
+        public async Task<Guid> Handle(RejectMoMCommand req, CancellationToken ct)
         {
-            var mom = await _repo.GetByIdAsync(req.MoMId);
+            var mom = await _repo.GetByIdAsync(req.Id);
             if (mom == null)
             {
-                throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+                throw new NotFoundException(nameof(MinutesOfMeeting), req.Id);
             }
 
             if (mom.Status == MoMStatus.Approved)
@@ -63,7 +60,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             await _eventBus.PublishAsync(new MoMDraftUpdatedEvent(mom.Id, mom.MeetingId, note.CreatedBy, note.CreatedAt), ct);
 
-            return Unit.Value;
+            return mom.Id;
         }
     }
 }

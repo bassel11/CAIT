@@ -12,7 +12,7 @@
         public static TaskTitle Of(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Title cannot be empty.");
+                throw new DomainException("Title cannot be empty.");
 
             // إذا أردت، يمكن إضافة تحقق لطول محدد
             // if (value.Length > 100) throw new ArgumentException("Title too long.");

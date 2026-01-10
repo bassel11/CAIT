@@ -57,7 +57,7 @@ namespace BuildingBlocks.Infrastructure.Services
             catch (HttpRequestException ex)
             {
                 // هذا الخطأ يحدث عند انقطاع الشبكة تماماً (Connection Refused)
-                _logger.LogError(ex, $"💥 Network Error: Could not connect to Identity Service for user {userId}");
+                _logger.LogError(ex, $"Network Error: Could not connect to Identity Service for user {userId}");
                 throw new IdentityServiceUnavailableException("Could not reach Identity Service.", ex);
             }
             // ملاحظة: لا تلتقط IdentityServiceUnavailableException هنا، دعها تصعد للأعلى

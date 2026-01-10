@@ -1,7 +1,6 @@
-﻿using MediatR;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
-using MeetingCore.Entities;
 using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
@@ -28,7 +27,7 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
             var item = await _agendaRepository.GetByIdAsync(request.Id);
 
             if (item == null)
-                throw new AgendaNotFoundException(nameof(AgendaItem), request.Id);
+                throw new NotFoundException("AgendaItem", request.Id);
 
             await _agendaRepository.DeleteAsync(item);
 

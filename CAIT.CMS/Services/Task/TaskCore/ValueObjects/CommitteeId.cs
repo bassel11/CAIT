@@ -12,7 +12,7 @@
         public static CommitteeId Of(Guid value)
         {
             if (value == Guid.Empty)
-                throw new ArgumentException("CommitteeId cannot be empty.");
+                throw new DomainException("CommitteeId cannot be empty.");
 
             return new CommitteeId(value);
         }

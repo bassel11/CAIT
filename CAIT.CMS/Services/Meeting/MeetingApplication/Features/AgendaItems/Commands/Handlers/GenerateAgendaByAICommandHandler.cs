@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
+using BuildingBlocks.Shared.Exceptions;
 using MediatR;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
 using MeetingApplication.Features.AgendaItems.Queries.Results;
 using MeetingCore.Entities;
@@ -21,8 +21,10 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
 
         public async Task<List<GetAgendaItemResponse>> Handle(GenerateAgendaByAICommand req, CancellationToken ct)
         {
-            var meeting = await _meetingRepository.GetByIdAsync(req.MeetingId)
-                ?? throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
+            var meeting = await _meetingRepository.GetByIdAsync(req.MeetingId);
+
+            if (meeting is null)
+                throw new NotFoundException(nameof(Meeting), req.MeetingId);
 
             // Simulated AI logic (replace with your model)
             var aiItems = new List<GetAgendaItemResponse>

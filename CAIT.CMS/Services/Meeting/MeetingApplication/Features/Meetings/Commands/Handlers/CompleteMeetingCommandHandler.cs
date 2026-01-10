@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
+using BuildingBlocks.Shared.Exceptions;
 using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Interfaces;
 using MeetingCore.Entities;
@@ -40,7 +39,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
         public async Task<Unit> Handle(CompleteMeetingCommand request, CancellationToken cancellationToken)
         {
             var meetingCompleted = await _meetingRepository.GetByIdAsync(request.Id);
-            if (meetingCompleted == null) throw new MeetingNotFoundException(nameof(Meeting), request.Id);
+            if (meetingCompleted == null) throw new NotFoundException(nameof(Meeting), request.Id);
 
             if (meetingCompleted.Status == MeetingStatus.Completed)
                 throw new DomainException("Meeting already completed");

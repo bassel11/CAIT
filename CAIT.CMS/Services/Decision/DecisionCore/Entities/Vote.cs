@@ -1,8 +1,4 @@
-﻿using DecisionCore.Abstractions;
-using DecisionCore.Enums;
-using DecisionCore.ValueObjects;
-
-namespace DecisionCore.Entities
+﻿namespace DecisionCore.Entities
 {
     public class Vote : Entity<VoteId>
     {

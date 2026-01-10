@@ -1,15 +1,13 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
-using MediatR;
+using BuildingBlocks.Shared.Exceptions;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingApplication.Features.Meetings.Queries.Models;
 using MeetingApplication.Features.Meetings.Queries.Results;
-using MeetingApplication.Responses;
 using MeetingApplication.Wrappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace MeetingAPI.Controllers
 {
@@ -21,150 +19,125 @@ namespace MeetingAPI.Controllers
     [Authorize]
     public class MeetingController : BaseApiController
     {
-        #region Fields
-        private readonly IMediator _mediator;
-        private readonly ILogger<MeetingController> _logger;
-        #endregion
 
-        #region Constructor
-        public MeetingController(IMediator mediator
-                                   , ILogger<MeetingController> logger)
-        {
-            _mediator = mediator;
-            _logger = logger;
-        }
-        #endregion
 
         #region Actions
 
         // -------------------------------------------------------
         // CREATE Meeting
         // -------------------------------------------------------
-        [HttpPost(Name = "CreateMeeting")]
-        [ProducesResponseType((int)HttpStatusCode.OK)]
+        [HttpPost]
         [Authorize(Policy = "Permission:Meeting.Create")]
-        public async Task<ActionResult<CreateMeetingResponse>> Create([FromBody] CreateMeetingCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status201Created)]
+        public async Task<IActionResult> Create([FromBody] CreateMeetingCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var response = await Mediator.Send(command);
+
+            // ✅ استخدام CreatedSuccess الموحدة
+            return CreatedSuccess(
+                nameof(GetById),
+                new { id = response.Id, version = "1.0" }, // ✅ التصحيح هنا: استخراج الـ ID
+                response.Id,
+                "MeetingCreatedSuccessfully");
         }
 
         // -------------------------------------------------------
         // UPDATE Meeting
         // -------------------------------------------------------
-        [HttpPut("{id:guid}", Name = "UpdateMeeting")]
+        [HttpPut("{id:guid}")]
         [Authorize(Policy = "Permission:Meeting.Update")]
-        public async Task<ActionResult<UpdateMeetingResponse>> Update(Guid id, [FromBody] UpdateMeetingCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMeetingCommand command)
         {
             if (id != command.Id)
-                return BadRequest("Id mismatch");
+                throw new BadRequestException("ID mismatch"); // ✅ استخدام استثناء موحد
 
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var result = await Mediator.Send(command);
+
+            return Success(result, "MeetingUpdatedSuccessfully");
         }
 
         // -------------------------------------------------------
         // CANCEL Meeting
         // -------------------------------------------------------
-        [HttpDelete("{id:guid}/cancel", Name = "CancelMeeting")]
+        [HttpDelete("{id:guid}/cancel")]
         [Authorize(Policy = "Permission:Meeting.Cancel")]
-        public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelMeetingCommand command)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Cancel(Guid id)
         {
+            // نمرر الـ ID للـ Command (يفضل أن يكون الـ Command يستقبل ID في الـ Constructor)
+            await Mediator.Send(new CancelMeetingCommand(id));
 
-            if (id != command.Id)
-                return BadRequest("ID mismatch");
-
-            await _mediator.Send(command);
-            return Ok(new
-            {
-                message = "Meeting Canceled successfully"
-            });
+            return Success("MeetingCanceledSuccessfully");
         }
 
 
         // -------------------------------------------------------
-        // Complete Meeting
+        // COMPLETE Meeting
         // -------------------------------------------------------
-        [HttpPut("{id:guid}/complete", Name = "CompleteMeeting")]
+        [HttpPut("{id:guid}/complete")]
         [Authorize(Policy = "Permission:Meeting.Complete")]
-        public async Task<IActionResult> Complete(Guid id, [FromBody] CompleteMeetingCommand command)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Complete(Guid id)
         {
-            if (id != command.Id)
-                return BadRequest("ID mismatch");
-
-            await _mediator.Send(command);
-            return Ok(new
-            {
-                message = "Meeting Completed successfully"
-            });
+            await Mediator.Send(new CompleteMeetingCommand(id));
+            return Success("MeetingCompletedSuccessfully");
         }
 
 
         // -------------------------------------------------------
-        // Reschedule Meeting
+        // RESCHEDULE Meeting
         // -------------------------------------------------------
-        [HttpPut("{id:guid}/reschedule", Name = "RescheduleMeeting")]
+        [HttpPut("{id:guid}/reschedule")]
         [Authorize(Policy = "Permission:Meeting.Reschedule")]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Reschedule(Guid id, [FromBody] RescheduleMeetingCommand command)
         {
             if (id != command.Id)
-                return BadRequest("ID mismatch");
+                throw new BadRequestException("ID mismatch");
 
-            await _mediator.Send(command);
-            return Ok(new
-            {
-                message = "Meeting Completed successfully"
-            });
+            await Mediator.Send(command);
+            return Success("MeetingRescheduledSuccessfully");
         }
 
 
         // -------------------------------------------------------
-        // Get Meeting By Id
+        // GET Meeting By Id
         // -------------------------------------------------------
-        [HttpGet("GetMeetingById/{id:guid}")]
+        [HttpGet("{id:guid}")] // ✅ مسار نظيف (RESTful)
         [Authorize(Policy = "Permission:Meeting.View")]
-        [ProducesResponseType(typeof(Response<GetMeetingResponse>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Response<GetMeetingResponse>>> GetMeetingById(Guid id)
+        [ProducesResponseType(typeof(Result<GetMeetingResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetById(Guid id)
         {
-            var query = new GetMeetingByIdQuery(id);
-            var response = await _mediator.Send(query);
+            var result = await Mediator.Send(new GetMeetingByIdQuery(id));
 
-            if (!response.Succeeded)
-                return NotFound(response);
-
-            return Ok(response);
+            // لا حاجة لفحص الـ NULL هنا، الـ Handler سيرمي NotFoundException إذا لم يجدها
+            return Success(result, "MeetingRetrievedSuccessfully");
         }
 
 
         // -------------------------------------------------------
-        // Get Paginated and filtered and Sorted Meeting
+        // GET Paginated Meetings
         // -------------------------------------------------------
-        [HttpPost("GetMeeting", Name = "GetMeeting")]
-        [ProducesResponseType(typeof(PaginatedResult<GetMeetingResponse>), (int)HttpStatusCode.OK)]
+        [HttpPost("search")] // ✅ تغيير الاسم ليكون أوضح
         [Authorize(Policy = "Permission:Meeting.View")]
-        public async Task<ActionResult<PaginatedResult<GetMeetingResponse>>> GetMeetings([FromBody] GetMeetingsQuery query)
+        [ProducesResponseType(typeof(Result<PaginatedResult<GetMeetingResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMeetings([FromBody] GetMeetingsQuery query)
         {
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
         // -------------------------------------------------------
-        // Get Meeting By CommitteeId
+        // GET By CommitteeId
         // -------------------------------------------------------
-        [HttpGet("GetMeetingByCommitteeId/{id:guid}")]
+        [HttpGet("committee/{committeeId:guid}")] // ✅ مسار نظيف
         [Authorize(Policy = "Permission:Meeting.View")]
-        [ProducesResponseType(typeof(Response<GetMeetingResponse>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Response<GetMeetingResponse>>> GetMeetingByCommitteeId(Guid committeeId, CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(Result<List<GetMeetingResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetByCommitteeId(Guid committeeId)
         {
-            var query = new GetMeetingsByCommitteeIdQuery(committeeId);
-            var response = await _mediator.Send(query);
-
-            if (!response.Succeeded)
-                return NotFound(response);
-
-            return Ok(response);
+            var result = await Mediator.Send(new GetMeetingsByCommitteeIdQuery(committeeId));
+            return Success(result);
         }
 
         #endregion

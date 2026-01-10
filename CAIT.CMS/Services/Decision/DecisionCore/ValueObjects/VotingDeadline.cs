@@ -9,7 +9,7 @@
         public static VotingDeadline Of(DateTime value)
         {
             if (value <= DateTime.UtcNow)
-                throw new ArgumentException("Voting deadline must be in the future.");
+                throw new DomainException("Voting deadline must be in the future.");
 
             return new VotingDeadline(value);
         }

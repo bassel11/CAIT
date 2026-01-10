@@ -10,7 +10,6 @@ namespace NotificationService.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/Notifications")]
-
     [Authorize]
     public class DevicesController : BaseApiController
     {
@@ -49,7 +48,7 @@ namespace NotificationService.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Device registered successfully" });
+            return Success("Device Registered Successfully");
         }
     }
 }

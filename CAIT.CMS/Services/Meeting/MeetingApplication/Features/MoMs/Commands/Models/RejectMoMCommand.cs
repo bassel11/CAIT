@@ -2,9 +2,5 @@
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class RejectMoMCommand : IRequest<Unit>
-    {
-        public Guid MoMId { get; set; }
-        public string Reason { get; set; }
-    }
+    public record RejectMoMCommand(Guid Id, string Reason) : IRequest<Guid>;
 }

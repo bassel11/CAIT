@@ -1,6 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
@@ -18,7 +17,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             var mom = await _momRepo.GetByIdAsync(req.MoMId);
             if (mom == null)
             {
-                throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+                throw new NotFoundException(nameof(MinutesOfMeeting), req.MoMId);
             }
             mom.Status = MoMStatus.Archived;
             //mom.UpdatedAt = _clock.UtcNow;

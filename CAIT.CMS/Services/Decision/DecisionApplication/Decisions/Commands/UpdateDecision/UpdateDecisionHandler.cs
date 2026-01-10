@@ -1,5 +1,5 @@
-﻿using DecisionCore.Enums;
-using DecisionCore.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using DecisionCore.Enums;
 
 namespace DecisionApplication.Decisions.Commands.UpdateDecision
 {
@@ -23,7 +23,7 @@ namespace DecisionApplication.Decisions.Commands.UpdateDecision
                 .FirstOrDefaultAsync(d => d.Id == decisionId, cancellationToken);
 
             if (decision is null)
-                throw new DecisionNotFoundException(command.DecisionId);
+                throw new NotFoundException("Decision", command.DecisionId);
 
             UpdateDecisionWithNewValues(decision, command.Decision);
 
@@ -39,7 +39,7 @@ namespace DecisionApplication.Decisions.Commands.UpdateDecision
         {
             // ❌ لا نسمح بالتعديل بعد الإقرار النهائي
             if (decision.Status is DecisionStatus.Approved or DecisionStatus.Rejected)
-                throw new InvalidDecisionStateException(decision.Id.Value);
+                throw new DomainException("Cannot update a decision that has been finalized (Approved or Rejected).");
 
             decision.Update(
                 title: DecisionTitle.Of(dto.Title),

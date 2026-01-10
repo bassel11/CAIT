@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
+using BuildingBlocks.Shared.Services;
 using MediatR;
-using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Extensions;
 using MeetingApplication.Features.Attendances.Queries.Models;
 using MeetingApplication.Features.Attendances.Queries.Results;

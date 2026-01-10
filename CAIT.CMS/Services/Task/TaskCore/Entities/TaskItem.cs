@@ -81,8 +81,7 @@ namespace TaskCore.Entities
             // التحقق من أن المهمة ليست مغلقة أو مؤرشفة (حسب قواعد العمل)
             if (Status == Enums.TaskStatus.Completed || Status == Enums.TaskStatus.Cancelled)
             {
-                // في بعض الأنظمة يمنع التعديل على المهام المنتهية
-                // throw new DomainException("Cannot update details of a completed task.");
+                throw new DomainException("Cannot update details of a completed or cancelled task.");
             }
 
             // نحتفظ بالقيم القديمة للمقارنة (اختياري للتدقيق الدقيق)

@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TaskCore.Entities;
-
-namespace TaskApplication.Data
+﻿namespace TaskApplication.Data
 {
     public interface IApplicationDbContext
     {

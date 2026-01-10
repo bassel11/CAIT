@@ -14,10 +14,10 @@
         public static DecisionText Of(string arabic, string english)
         {
             if (string.IsNullOrWhiteSpace(arabic))
-                throw new ArgumentException("Arabic text is required.");
+                throw new DomainException("Arabic text is required for the decision.");
 
             if (string.IsNullOrWhiteSpace(english))
-                throw new ArgumentException("English text is required.");
+                throw new DomainException("English text is required for the decision.");
 
             return new DecisionText(arabic, english);
         }

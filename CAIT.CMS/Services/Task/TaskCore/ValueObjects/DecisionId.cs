@@ -12,7 +12,7 @@
         public static DecisionId Of(Guid value)
         {
             if (value == Guid.Empty)
-                throw new ArgumentException("DecisionId cannot be empty.");
+                throw new DomainException("DecisionId cannot be empty.");
 
             return new DecisionId(value);
         }

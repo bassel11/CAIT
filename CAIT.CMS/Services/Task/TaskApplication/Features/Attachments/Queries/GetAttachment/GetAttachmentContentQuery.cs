@@ -1,6 +1,4 @@
-﻿using BuildingBlocks.Shared.CQRS;
-
-namespace TaskApplication.Features.Attachments.Queries.GetAttachment
+﻿namespace TaskApplication.Features.Attachments.Queries.GetAttachment
 {
     public record GetAttachmentContentQuery(Guid TaskId, Guid AttachmentId) : IQuery<FileDownloadResponse>;
 

@@ -1,4 +1,5 @@
 ﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Exceptions;
 using TaskApplication.Common.Interfaces;
 using TaskApplication.Dtos;
 using TaskCore.ValueObjects;
@@ -17,7 +18,8 @@ namespace TaskApplication.Features.Histories.Queries.GetHistory
         public async Task<List<TaskHistoryDto>> Handle(GetTaskHistoryQuery request, CancellationToken cancellationToken)
         {
             var task = await _repository.GetByIdAsync(TaskItemId.Of(request.TaskId), cancellationToken);
-            if (task == null) throw new KeyNotFoundException("Task not found.");
+            if (task == null)
+                throw new NotFoundException("Task", request.TaskId);
 
             // تحويل إلى DTO
             return task.TaskHistories

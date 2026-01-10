@@ -12,7 +12,7 @@
         public static MoMId Of(Guid value)
         {
             if (value == Guid.Empty)
-                throw new ArgumentException("MoMId cannot be empty.");
+                throw new DomainException("MoMId cannot be empty.");
 
             return new MoMId(value);
         }

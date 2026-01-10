@@ -1,140 +1,137 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
-using MediatR;
+using BuildingBlocks.Shared.Exceptions;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Features.MoMs.Queries.Models;
 using MeetingApplication.Features.MoMs.Queries.Results;
 using MeetingApplication.Wrappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace MeetingAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/MoM")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class MoMController : BaseApiController
     {
-        #region Fields
-        private readonly IMediator _mediator;
-        private readonly ILogger<MoMController> _logger;
-        #endregion
-
-        #region Constructor
-        public MoMController(IMediator mediator
-                                   , ILogger<MoMController> logger)
-        {
-            _mediator = mediator;
-            _logger = logger;
-        }
-        #endregion
 
         #region Actions
 
         // -------------------------------------------------------------
-        // POST: api/MoM/Create
+        // CREATE
         // -------------------------------------------------------------
-        [HttpPost("create")]
+        [HttpPost]
         [Authorize(Policy = "Permission:MoM.Create")]
-        public async Task<ActionResult<Guid>> Create([FromBody] CreateMoMCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status201Created)]
+        public async Task<IActionResult> Create([FromBody] CreateMoMCommand command)
         {
-            var id = await _mediator.Send(command);
-            return Ok(id);
+            var id = await Mediator.Send(command);
+
+            return CreatedSuccess(
+                nameof(GetById),
+                new { id, version = "1.0" },
+                id,
+                "MoMCreatedSuccessfully");
         }
 
         // -------------------------------------------------------------
-        // PUT: api/MoM/Update
+        // UPDATE
         // -------------------------------------------------------------
-        [HttpPut("update")]
+        [HttpPut("{id:guid}")]
         [Authorize(Policy = "Permission:MoM.Update")]
-        public async Task<ActionResult<Guid>> Update([FromBody] UpdateMoMCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMoMCommand command)
         {
-            var id = await _mediator.Send(command);
-            return Ok(id);
+            if (id != command.MoMId)
+                throw new BadRequestException("ID mismatch");
+
+            var resultId = await Mediator.Send(command);
+
+            return Success(resultId, "MoMUpdatedSuccessfully");
         }
 
-
         // -------------------------------------------------------------
-        // PUT: api/MoM/Submit
+        // SUBMIT (Send for Approval)
         // -------------------------------------------------------------
-        [HttpPut("submit")]
+        [HttpPut("{id:guid}/submit")]
         [Authorize(Policy = "Permission:MoM.Submit")]
-        public async Task<ActionResult<Guid>> Approve([FromBody] SubmitMoMForApprovalCommand command)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Submit(Guid id)
         {
-            var id = await _mediator.Send(command);
-            return Ok();
+            // نفترض أن الـ Command يستقبل ID (يفضل استخدام Record)
+            await Mediator.Send(new SubmitMoMForApprovalCommand(id));
+
+            return Success("MoMSubmittedSuccessfully");
         }
 
-
         // -------------------------------------------------------------
-        // PUT: api/MoM/Approve
+        // APPROVE
         // -------------------------------------------------------------
-        [HttpPut("approve")]
+        [HttpPut("{id:guid}/approve")]
         [Authorize(Policy = "Permission:MoM.Approve")]
-        public async Task<ActionResult<Guid>> Approve([FromBody] ApproveMoMCommand command)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Approve(Guid id)
         {
-            var id = await _mediator.Send(command);
-            return Ok();
+            await Mediator.Send(new ApproveMoMCommand(id));
+
+            return Success("MoMApprovedSuccessfully");
         }
 
         // -------------------------------------------------------------
-        // PUT: api/MoM/Reject
+        // REJECT
         // -------------------------------------------------------------
-        [HttpPut("reject")]
+        [HttpPut("{id:guid}/reject")]
         [Authorize(Policy = "Permission:MoM.Reject")]
-        public async Task<ActionResult<Guid>> Reject([FromBody] RejectMoMCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Reject(Guid id, [FromBody] RejectMoMCommand command)
         {
-            var id = await _mediator.Send(command);
-            return Ok(id);
+            if (id != command.Id)
+                throw new BadRequestException("ID mismatch");
+
+            var resultId = await Mediator.Send(command);
+
+            return Success(resultId, "MoMRejectedSuccessfully");
         }
 
         // -------------------------------------------------------------
-        // GET: api/MoM/GetById
+        // GET By ID
         // -------------------------------------------------------------
-        [HttpGet("GetById/{momId}")]
+        [HttpGet("{id:guid}")]
         [Authorize(Policy = "Permission:MoM.View")]
-        public async Task<ActionResult<GetMinutesResponse>> GetById(Guid momId, CancellationToken ct)
+        [ProducesResponseType(typeof(Result<GetMinutesResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetById(Guid id)
         {
-            var query = new GetMoMByIdQuery { MoMId = momId };
-            var result = await _mediator.Send(query, ct);
+            var result = await Mediator.Send(new GetMoMByIdQuery { MoMId = id });
 
-            if (result == null)
-                return NotFound();
-
-            return Ok(result);
+            // لا حاجة لفحص null، الـ Handler يرمي NotFoundException
+            return Success(result, "MoMRetrievedSuccessfully");
         }
 
         // -------------------------------------------------------------
-        // GET: api/MoM/GetByMeetingId
+        // GET By Meeting ID
         // -------------------------------------------------------------
-        [HttpGet("GetByMeetingId/{meetingId}")]
+        [HttpGet("meeting/{meetingId:guid}")]
         [Authorize(Policy = "Permission:MoM.View")]
-        public async Task<ActionResult<List<GetMinutesResponse>>> GetByMeetingId(Guid meetingId, CancellationToken ct)
+        [ProducesResponseType(typeof(Result<List<GetMinutesResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetByMeetingId(Guid meetingId)
         {
-            var query = new GetMoMsForMeetingQuery { MeetingId = meetingId };
-            var result = await _mediator.Send(query, ct);
+            var result = await Mediator.Send(new GetMoMsForMeetingQuery { MeetingId = meetingId });
 
-            if (result == null || result.Count == 0)
-                return NotFound(); // 404 إذا لم يوجد أي MoMs
-
-            return Ok(result); // 200 مع القائمة
+            return Success(result, "MoMsRetrievedSuccessfully");
         }
-
 
         // -------------------------------------------------------
-        // Get Paginated and filtered and Sorted MoMs
+        // Search (Paginated)
         // -------------------------------------------------------
-        [HttpPost("GetMoMs", Name = "GetMoMs")]
-        [ProducesResponseType(typeof(PaginatedResult<GetMinutesResponse>), (int)HttpStatusCode.OK)]
+        [HttpPost("search")]
         [Authorize(Policy = "Permission:MoM.View")]
-        public async Task<ActionResult<PaginatedResult<GetMinutesResponse>>> GetMeetings([FromBody] GetMoMsByMeetingQuery query)
+        [ProducesResponseType(typeof(Result<PaginatedResult<GetMinutesResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMoMs([FromBody] GetMoMsByMeetingQuery query)
         {
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
         #endregion

@@ -12,7 +12,7 @@
         public static TaskDescription Of(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Description cannot be empty.");
+                throw new DomainException("Description cannot be empty.");
 
             // إذا أردت، يمكن إضافة تحقق لطول محدد
             // if (value.Length > 100) throw new ArgumentException("Title too long.");

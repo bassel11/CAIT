@@ -1,7 +1,4 @@
 ﻿using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingCore.Entities;
@@ -34,7 +31,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             var mom = await _repo.GetByIdAsync(req.MoMId);
             if (mom == null)
             {
-                throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+                throw new NotFoundException(nameof(MinutesOfMeeting), req.MoMId);
             }
 
             if (mom.Status != MoMStatus.Draft && mom.Status != MoMStatus.PendingApproval)

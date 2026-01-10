@@ -1,5 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.Attendances.Queries.Models;
 using MeetingApplication.Features.Attendances.Queries.Results;
 using MeetingApplication.Interfaces.Committee;
@@ -30,7 +30,7 @@ namespace MeetingApplication.Features.Attendances.Queries.Handlers
             var meeting = await _meetings.GetByIdAsync(req.MeetingId);
             if (meeting == null)
             {
-                throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
+                throw new NotFoundException(nameof(Meeting), req.MeetingId);
             }
 
             // Fetch data from Committee Service

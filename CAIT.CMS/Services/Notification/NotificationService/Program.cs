@@ -10,6 +10,8 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 
+builder.Services.AddCoreInfrastructure();
+
 builder.Services.AddNotificationInfrastructure(builder.Configuration);
 // Add services to the container.
 // Add configuration
@@ -86,6 +88,9 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+//  تفعيل معالج الأخطاء الموحد (أهم سطر ناقص)
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

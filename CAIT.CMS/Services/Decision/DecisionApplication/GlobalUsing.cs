@@ -1,7 +1,6 @@
 ﻿global using BuildingBlocks.Shared.CQRS;
 global using DecisionApplication.Data;
 global using DecisionApplication.Dtos;
-global using DecisionApplication.Exceptions;
 global using DecisionApplication.Extensions;
 global using DecisionCore.Entities;
 global using DecisionCore.Events;

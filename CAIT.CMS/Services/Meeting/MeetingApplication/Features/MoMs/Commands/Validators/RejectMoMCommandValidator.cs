@@ -7,7 +7,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Validators
     {
         public RejectMoMCommandValidator()
         {
-            RuleFor(x => x.MoMId).NotEmpty();
+            RuleFor(x => x.Id).NotEmpty();
             RuleFor(x => x.Reason).NotEmpty().MaximumLength(1000);
         }
     }

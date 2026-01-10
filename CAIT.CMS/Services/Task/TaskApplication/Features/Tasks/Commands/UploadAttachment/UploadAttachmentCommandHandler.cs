@@ -1,4 +1,5 @@
 ﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Exceptions;
 using BuildingBlocks.Shared.Services;
 using TaskApplication.Common.Interfaces;
 using TaskCore.ValueObjects;
@@ -25,7 +26,8 @@ namespace TaskApplication.Features.Tasks.Commands.UploadAttachment
         public async Task<UploadAttachmentResult> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
         {
             var task = await _repository.GetByIdAsync(TaskItemId.Of(request.TaskId), cancellationToken);
-            if (task == null) throw new KeyNotFoundException("Task not found");
+            if (task == null)
+                throw new NotFoundException("Task", request.TaskId);
 
             // 1. Upload to Azure Blob Storage (via Interface)
             // Path: tasks/{taskId}/{fileName}
@@ -58,7 +60,15 @@ namespace TaskApplication.Features.Tasks.Commands.UploadAttachment
                 // ⚠️ Compensating Action (عملية تعويضية)
                 // حدث خطأ في الدومين أو الداتابيز، يجب حذف الملف الذي تم رفعه للتو
                 // لكي لا نترك ملفات "يتيمة" (Orphaned Files) في السيرفر
-                await _storageService.DeleteAsync(blobPath, cancellationToken);
+                try
+                {
+                    await _storageService.DeleteAsync(blobPath, cancellationToken);
+                }
+                catch
+                {
+                    // Log error here: "Failed to rollback file upload"
+                    // لا نرمي خطأ الحذف، بل نركز على الخطأ الأصلي، لكن يجب تسجيل هذا الفشل في السيرفر
+                }
 
                 // إعادة رمي الخطأ ليظهر للفرونت إند
                 throw;

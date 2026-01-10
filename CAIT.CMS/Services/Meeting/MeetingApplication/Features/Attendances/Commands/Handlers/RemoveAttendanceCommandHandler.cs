@@ -1,5 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Repositories;
@@ -24,7 +24,7 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
 
             if (rec == null)
             {
-                throw new AttendanceNotFoundException(nameof(Attendance), req.Id);
+                throw new NotFoundException(nameof(Attendance), req.Id);
             }
 
             await _repo.DeleteAsync(rec);

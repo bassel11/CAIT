@@ -2,13 +2,12 @@
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class UpdateMoMCommand : IRequest<Guid>
-    {
-        public Guid MoMId { get; set; }
-        public string? AttendanceSummary { get; set; }
-        public string? AgendaSummary { get; set; }
-        public string? DecisionsSummary { get; set; }
-        public string? ActionItemsJson { get; set; }
-        public string Content { get; set; }
-    }
+    public record UpdateMoMCommand(
+        Guid MoMId,
+        string Content,
+        string? AttendanceSummary = null,
+        string? AgendaSummary = null,
+        string? DecisionsSummary = null,
+        string? ActionItemsJson = null
+    ) : IRequest<Guid>;
 }

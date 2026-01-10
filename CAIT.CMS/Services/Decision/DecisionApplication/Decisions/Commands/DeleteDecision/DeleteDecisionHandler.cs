@@ -1,4 +1,6 @@
-﻿namespace DecisionApplication.Decisions.Commands.DeleteDecision
+﻿using BuildingBlocks.Shared.Exceptions;
+
+namespace DecisionApplication.Decisions.Commands.DeleteDecision
 {
     public class DeleteDecisionHandler
         : ICommandHandler<DeleteDecisionCommand, DeleteDecisionResult>
@@ -20,7 +22,7 @@
                 .FirstOrDefaultAsync(d => d.Id == decisionId, cancellationToken);
 
             if (decision is null)
-                throw new DecisionNotFoundException(command.DecisionId);
+                throw new NotFoundException("Decision", command.DecisionId);
 
             // منطق الحذف داخل الـ Aggregate
             decision.Delete();

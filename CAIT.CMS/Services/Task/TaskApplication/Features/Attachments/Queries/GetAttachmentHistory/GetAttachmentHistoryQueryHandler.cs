@@ -1,7 +1,4 @@
-﻿using BuildingBlocks.Shared.CQRS;
-using TaskApplication.Common.Interfaces;
-using TaskApplication.Dtos;
-using TaskCore.ValueObjects;
+﻿using TaskApplication.Dtos;
 
 namespace TaskApplication.Features.Attachments.Queries.GetAttachmentHistory
 {
@@ -17,10 +14,12 @@ namespace TaskApplication.Features.Attachments.Queries.GetAttachmentHistory
         public async Task<List<TaskAttachmentDto>> Handle(GetAttachmentHistoryQuery request, CancellationToken cancellationToken)
         {
             var task = await _repository.GetByIdAsync(TaskItemId.Of(request.TaskId), cancellationToken);
-            if (task == null) throw new KeyNotFoundException("Task not found.");
+            if (task == null)
+                throw new NotFoundException("Task", request.TaskId);
 
             var currentAttachment = task.TaskAttachments.FirstOrDefault(a => a.Id == TaskAttachmentId.Of(request.CurrentAttachmentId));
-            if (currentAttachment == null) throw new KeyNotFoundException("Attachment not found.");
+            if (currentAttachment == null)
+                throw new NotFoundException("Attachment", request.CurrentAttachmentId);
 
             // ✅ المنطق الذكي: البحث عن كل المرفقات التي لها نفس الاسم في نفس المهمة
             // هذا يعيد لك الإصدار 1، 2، 3... لنفس الملف

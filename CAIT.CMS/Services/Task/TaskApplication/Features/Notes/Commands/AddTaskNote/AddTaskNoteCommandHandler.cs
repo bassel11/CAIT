@@ -1,4 +1,5 @@
 ﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Exceptions;
 using BuildingBlocks.Shared.Services;
 using TaskApplication.Common.Interfaces;
 using TaskCore.ValueObjects;
@@ -19,7 +20,8 @@ namespace TaskApplication.Features.Notes.Commands.AddTaskNote
         public async Task<AddTaskNoteResult> Handle(AddTaskNoteCommand request, CancellationToken cancellationToken)
         {
             var task = await _repository.GetByIdAsync(TaskItemId.Of(request.TaskId), cancellationToken);
-            if (task == null) throw new KeyNotFoundException("Task not found.");
+            if (task == null)
+                throw new NotFoundException("Task", request.TaskId);
 
             // استدعاء الدومين (سيقوم بالتحقق مما إذا كان المستخدم معيناً للمهمة)
             task.AddNote(UserId.Of(_currentUser.UserId), request.Content);

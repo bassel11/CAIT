@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BuildingBlocks.Shared.Wrappers;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BuildingBlocks.Shared.Controllers
 {
@@ -14,6 +17,9 @@ namespace BuildingBlocks.Shared.Controllers
         /// الحصول على معرف المورد الحالي (إذا وجد)
         /// يتم استخراجه من Route {resourceId} أو Header X-ResourceId أو Query
         /// </summary>
+        /// 
+        private ISender? _mediator;
+        protected ISender Mediator => _mediator ??= HttpContext.RequestServices.GetRequiredService<ISender>();
         protected Guid? CurrentResourceId
         {
             get
@@ -40,6 +46,21 @@ namespace BuildingBlocks.Shared.Controllers
                 }
                 return null;
             }
+        }
+
+        protected IActionResult Success<T>(T data, string message = "Operation completed successfully.")
+        {
+            return Ok(Result<T>.Success(data, message));
+        }
+
+        protected IActionResult CreatedSuccess<T>(string actionName, object routeValues, T data, string message = "Resource created successfully.")
+        {
+            return CreatedAtAction(actionName, routeValues, Result<T>.Success(data, message));
+        }
+
+        protected IActionResult Success(string message = "Operation completed successfully.")
+        {
+            return Ok(Result.Success(message));
         }
     }
 }

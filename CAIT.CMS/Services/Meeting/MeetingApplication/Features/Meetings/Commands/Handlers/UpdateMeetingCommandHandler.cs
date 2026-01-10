@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
+using BuildingBlocks.Shared.Exceptions;
 using MediatR;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingCore.Entities;
@@ -36,7 +36,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             var meetingToUpdate = await _meetingRepository.GetByIdAsync(request.Id);
             if (meetingToUpdate == null)
             {
-                throw new MeetingNotFoundException(nameof(Meeting), request.Id);
+                throw new NotFoundException(nameof(Meeting), request.Id);
             }
 
             // Business rule: cannot update cancelled or completed meetings (example)

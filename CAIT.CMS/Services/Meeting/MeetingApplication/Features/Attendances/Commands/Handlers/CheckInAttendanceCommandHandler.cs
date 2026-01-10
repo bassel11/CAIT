@@ -1,5 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
@@ -24,7 +24,7 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
 
             if (meeting == null)
             {
-                throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
+                throw new NotFoundException(nameof(Meeting), req.MeetingId);
             }
 
             // optionally: only allow check-in during [StartDate - X .. EndDate + Y] window. (Business rule)

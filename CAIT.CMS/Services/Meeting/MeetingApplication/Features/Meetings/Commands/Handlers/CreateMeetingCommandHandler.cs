@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using MediatR;
-using MeetingApplication.Common.CurrentUser;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingCore.Entities;
@@ -39,7 +38,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
         public async Task<CreateMeetingResponse> Handle(CreateMeetingCommand request, CancellationToken cancellationToken)
         {
             if (request.EndDate <= request.StartDate)
-                throw new ArgumentException("EndDate must be greater than StartDate");
+                throw new DomainException("EndDate must be greater than StartDate");
 
             // تحويل الـ Command إلى كيان (Entity)
             var meetingEntity = _mapper.Map<Meeting>(request);

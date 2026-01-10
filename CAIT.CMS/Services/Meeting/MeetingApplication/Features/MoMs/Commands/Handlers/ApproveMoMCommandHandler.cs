@@ -1,11 +1,9 @@
 ﻿using BuildingBlocks.Contracts.Integration;
 using BuildingBlocks.Contracts.Notifications;
 using BuildingBlocks.Contracts.Outlook;
+using BuildingBlocks.Shared.Exceptions;
 using MassTransit;
 using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
@@ -55,7 +53,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
         {
             var mom = await _momRepo.GetMoMByIdAsync(req.MoMId);
             if (mom == null)
-                throw new MoMNotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+                throw new NotFoundException(nameof(MinutesOfMeeting), req.MoMId);
 
             mom.Approve(_clock.UtcNow, _user.UserId);
 

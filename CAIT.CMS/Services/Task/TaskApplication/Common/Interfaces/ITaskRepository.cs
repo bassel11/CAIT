@@ -1,7 +1,4 @@
-﻿using TaskCore.Entities;
-using TaskCore.ValueObjects;
-
-namespace TaskApplication.Common.Interfaces
+﻿namespace TaskApplication.Common.Interfaces
 {
     public interface ITaskRepository
     {

@@ -1,6 +1,4 @@
-﻿using DecisionCore.Exceptions;
-
-namespace DecisionCore.ValueObjects
+﻿namespace DecisionCore.ValueObjects
 {
     public sealed record VoteId
     {

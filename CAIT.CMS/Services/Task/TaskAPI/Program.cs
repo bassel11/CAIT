@@ -10,6 +10,8 @@ using TaskInfrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+builder.Services.AddCoreInfrastructure();
 // Add services to the container.
 builder.Services
     .AddApplicationServices(builder.Configuration)
@@ -93,6 +95,9 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// تفعيل معالج الأخطاء الموحد (أول شيء ليمسك أي خطأ)
+app.UseExceptionHandler();
+
 app.UseApiServices();
 
 // Configure the HTTP request pipeline.
@@ -117,6 +122,7 @@ if (app.Environment.IsDevelopment())
     // تهيئة قاعدة البيانات مع Seed إذا لزم
     //await app.Services.InitializeDatabaseAsync();
 }
+
 app.UseStaticFiles(); // Added for Locally Files on wwwroot
 
 app.UseHttpsRedirection();

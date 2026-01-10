@@ -1,4 +1,6 @@
-﻿namespace DecisionCore.Entities
+﻿using BuildingBlocks.Shared.Exceptions;
+
+namespace DecisionCore.Entities
 {
     public class Decision : Aggregate<DecisionId>
     {
@@ -52,7 +54,7 @@
             AgendaItemId? agendaItemId)
         {
             if (Status is DecisionStatus.Approved or DecisionStatus.Rejected)
-                throw new InvalidDecisionStateException(Id.Value);
+                throw new DomainException("Cannot update a decision that has been finalized.");
 
             Title = title;
             Text = text;
@@ -73,7 +75,7 @@
         public void Delete()
         {
             if (Status is DecisionStatus.Approved or DecisionStatus.Rejected)
-                throw new InvalidDecisionStateException(Id.Value);
+                throw new DomainException("Cannot delete a decision that has been finalized.");
 
             AddDomainEvent(new DecisionDeletedEvent(Id, Title));
         }
@@ -81,7 +83,7 @@
         public void OpenVoting(VotingDeadline deadline)
         {
             if (Type != DecisionType.Voting)
-                throw new InvalidOperationException("This decision does not support voting.");
+                throw new DomainException("This decision type does not support voting.");
 
             VotingDeadline = deadline;
             Status = DecisionStatus.PendingVoting;
@@ -92,13 +94,13 @@
         public void AddVote(Guid memberId, VoteType voteType)
         {
             if (Status != DecisionStatus.PendingVoting)
-                throw new InvalidOperationException("Voting is not open.");
+                throw new DomainException("Voting is not currently open for this decision.");
 
             if (VotingDeadline != null && VotingDeadline.IsPassed())
-                throw new InvalidOperationException("Voting deadline has passed.");
+                throw new DomainException("The voting deadline has passed.");
 
             if (_votes.Any(v => v.MemberId == memberId))
-                throw new InvalidOperationException("Member already voted.");
+                throw new DomainException("Member has already voted on this decision.");
 
             var vote = new Vote(Id, memberId, voteType);
             _votes.Add(vote);
@@ -109,10 +111,10 @@
         public void FinalizeDecision(Guid finalizedBy)
         {
             if (Status != DecisionStatus.PendingVoting)
-                throw new InvalidOperationException("Decision cannot be finalized at this stage.");
+                throw new DomainException("Decision cannot be finalized at this stage.");
 
             if (Type == DecisionType.Voting && !_votes.Any())
-                throw new InvalidOperationException("Cannot finalize decision without votes.");
+                throw new DomainException("Cannot finalize a voting decision without any votes.");
 
             var yesVotes = _votes.Count(v => v.Type == VoteType.Yes);
             var noVotes = _votes.Count(v => v.Type == VoteType.No);

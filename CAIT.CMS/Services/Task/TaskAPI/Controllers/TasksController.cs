@@ -1,7 +1,6 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
 using BuildingBlocks.Shared.Pagination;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskApplication.Dtos;
@@ -18,33 +17,35 @@ namespace TaskAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/tasks")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class TasksController : BaseApiController
     {
-        private readonly IMediator _mediator;
+        //private readonly IMediator _mediator;
 
-        public TasksController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
+        //public TasksController(IMediator mediator)
+        //{
+        //    _mediator = mediator;
+        //}
 
         [HttpGet("{id}")]
         [Authorize(Policy = "Permission:Task.View")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var result = await _mediator.Send(new GetTaskDetailsQuery(id));
-            return Ok(result);
+            var result = await Mediator.Send(new GetTaskDetailsQuery(id));
+            return Success(result, "Data Retrieved Successfully");
         }
 
         [HttpPost]
         [Authorize(Policy = "Permission:Task.Create")]
         public async Task<IActionResult> Create(CreateTaskCommand command)
         {
-            var id = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetById), new { id }, id);
+            var id = await Mediator.Send(command);
+            return CreatedSuccess(
+                nameof(GetById),
+                new { id, version = "1.0" },
+                id,
+                "Task Created Successfully"
+            );
         }
 
         [HttpPost("AssignUser")]
@@ -53,8 +54,8 @@ namespace TaskAPI.Controllers
         {
             // نفصل الـ Request Body عن الـ Command لأن الـ ID يأتي من الـ URL
             var command = new AssignUserCommand(request.TaskId, request.UserId, request.Email, request.Name);
-            await _mediator.Send(command);
-            return NoContent();
+            await Mediator.Send(command);
+            return Success("User Assigned Successfully");
         }
 
         [HttpPost("{id}/attachments")]
@@ -74,8 +75,8 @@ namespace TaskAPI.Controllers
                 file.Length
             );
 
-            var attachmentId = await _mediator.Send(command);
-            return Ok(new { AttachmentId = attachmentId });
+            var attachmentId = await Mediator.Send(command);
+            return Success(new { AttachmentId = attachmentId }, "File Uploaded Successfully");
         }
 
 
@@ -86,17 +87,17 @@ namespace TaskAPI.Controllers
             // نستخدم الـ ID من المسار لضمان الأمان
             var command = new UpdateTaskStatusCommand(id, request.NewStatus);
 
-            await _mediator.Send(command);
+            await Mediator.Send(command);
 
-            return NoContent();
+            return Success("Status Updated Successfully");
         }
 
         [HttpDelete("{id}/Unassignees/{userId}")]
         [Authorize(Policy = "Permission:TaskAssignee.Unassign")]
         public async Task<IActionResult> UnassignUser(Guid id, Guid userId)
         {
-            await _mediator.Send(new UnassignUserCommand(id, userId));
-            return NoContent();
+            await Mediator.Send(new UnassignUserCommand(id, userId));
+            return Success("User Unassigned Successfully");
         }
 
         [HttpGet]
@@ -106,8 +107,8 @@ namespace TaskAPI.Controllers
             [FromQuery] GetTasksQuery query,
             CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(query, cancellationToken);
-            return Ok(result);
+            var result = await Mediator.Send(query, cancellationToken);
+            return Success(result, "Data Retrieved Successfully");
         }
 
         [HttpPut("UpdateTask{id}")]
@@ -124,8 +125,8 @@ namespace TaskAPI.Controllers
                 request.Deadline
             );
 
-            await _mediator.Send(command);
-            return NoContent();
+            await Mediator.Send(command);
+            return Success("Task Updated Successfully");
         }
 
 

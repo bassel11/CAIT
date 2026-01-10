@@ -1,4 +1,5 @@
 ﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Exceptions;
 using BuildingBlocks.Shared.Services;
 using TaskApplication.Common.Interfaces;
 using TaskCore.ValueObjects;
@@ -24,15 +25,14 @@ namespace TaskApplication.Features.Tasks.Commands.UpdateTaskStatus
             var task = await _repository.GetByIdAsync(taskId, cancellationToken);
 
             if (task == null)
-                throw new KeyNotFoundException($"Task with ID {request.TaskId} was not found.");
-
+                throw new NotFoundException("Task", request.TaskId);
             // ✅ تصحيح 2: تحويل Guid إلى UserId Value Object
             var currentUserId = UserId.Of(_currentUser.UserId);
 
             // التحقق من الصلاحية
             if (!task.IsUserAssigned(currentUserId))
             {
-                throw new UnauthorizedAccessException("You are not assigned to this task.");
+                throw new DomainException("You are not authorized to update this task's status because you are not an assignee.");
             }
 
             // تحديث الحالة في الدومين

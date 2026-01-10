@@ -1,10 +1,7 @@
-﻿using FluentValidation;
-using MediatR;
-using MeetingApplication.Behaviour;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Features.Meetings.Commands.Handlers;
-using MeetingApplication.Features.Meetings.Commands.Validators;
+﻿using BuildingBlocks.Shared.Behaviors;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace MeetingApplication
 {
@@ -13,26 +10,42 @@ namespace MeetingApplication
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
 
-            // FluentValidation
-            services.AddValidatorsFromAssembly(typeof(CreateMeetingValidator).Assembly);
+            // نأخذ الـ Assembly الحالي مرة واحدة لاستخدامه في التسجيل
+            var assembly = Assembly.GetExecutingAssembly();
 
-            // MediatR
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateMeetingCommandHandler).Assembly));
+            services.AddAutoMapper(assembly);
+            // 1. FluentValidation
+            // تسجيل كل الـ Validators الموجودة في هذا المشروع تلقائياً
+            services.AddValidatorsFromAssembly(assembly);
 
-            // AutoMapper
-            services.AddAutoMapper(typeof(CreateMeetingValidator).Assembly); // أو أي Mapping Profile موجود في Application Layer
-
-            // Pipeline Behaviours
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+            // 2. AutoMapper
+            // نسجل الـ Profiles الموجودة في هذا الـ Assembly
 
 
-            services.AddScoped<ICurrentUserService, CurrentUserService>();
+            // 3. MediatR & Pipeline Behaviors
+            services.AddMediatR(cfg =>
+            {
+                // تسجيل الـ Handlers (Commands/Queries)
+                cfg.RegisterServicesFromAssembly(assembly);
 
+                // ✅ تسجيل السلوكيات المشتركة (من BuildingBlocks)
 
-            // Services
+                // أ) التحقق (Validation): يرمي ValidationException الموحد
+                cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
 
+                // ب) التسجيل (Logging): يسجل الطلبات والأخطاء والأداء
+                cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+
+                // ج) المعاملات (Transaction): 
+                // إذا كان TransactionBehavior موجوداً في BuildingBlocks نستخدمه،
+                // وإلا إذا كان محلياً في هذا المشروع نستخدم المحلي.
+                // يفضل نقله لـ BuildingBlocks إذا كان عاماً.
+                // cfg.AddOpenBehavior(typeof(TransactionBehavior<,>)); 
+            });
+
+            // ❌ تم الحذف: services.AddScoped<ICurrentUserService, CurrentUserService>();
+            // السبب: تنفيذ هذه الخدمة يعتمد على HttpContext وهو جزء من Infrastructure.
+            // يجب نقل هذا السطر إلى MeetingInfrastructure/DependencyInjection.cs
 
             return services;
         }

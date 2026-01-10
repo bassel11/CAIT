@@ -1,7 +1,8 @@
-﻿using BuildingBlocks.Shared.Authorization;
+﻿using BuildingBlocks.Shared.Authorization; // تأكد من وجود PermissionRequirement هنا
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc; // هام جداً لـ ProblemDetails
 using Microsoft.Extensions.Logging;
 using System.Net;
 
@@ -10,8 +11,6 @@ namespace BuildingBlocks.Infrastructure.Security
     public class CustomAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewareResultHandler
     {
         private readonly AuthorizationMiddlewareResultHandler _defaultHandler = new();
-
-        // Logger Singleton (Safe)
         private readonly ILogger<CustomAuthorizationMiddlewareResultHandler> _logger;
 
         public CustomAuthorizationMiddlewareResultHandler(ILogger<CustomAuthorizationMiddlewareResultHandler> logger)
@@ -25,72 +24,65 @@ namespace BuildingBlocks.Infrastructure.Security
             AuthorizationPolicy policy,
             PolicyAuthorizationResult authorizeResult)
         {
-            // 1. Success: دع الطلب يمر
+            // الحالة 1: نجاح (مسموح له بالمرور)
             if (authorizeResult.Succeeded)
             {
                 await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
                 return;
             }
 
-            // =================================================================
-            // 2. Unauthorized (401): المستخدم غير مسجل دخول أو التوكن غير صالح
-            // =================================================================
+            // الحالة 2: غير مسجل دخول (401 Unauthorized)
             if (authorizeResult.Challenged)
             {
-                // تسجيل معلومة بسيطة (Info) وليست تحذير لأن انتهاء التوكن أمر طبيعي
-                _logger.LogInformation("⚠️ Authentication Failed (401). Token might be missing, invalid, or expired.");
-
+                _logger.LogInformation("⚠️ Authentication Failed (401).");
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                context.Response.ContentType = "application/json";
-
-                // إضافة الهيدر القياسي (مهم لبعض المتصفحات)
                 context.Response.Headers.Append("WWW-Authenticate", "Bearer");
 
-                var response = new
+                var problemDetails = new ProblemDetails
                 {
-                    StatusCode = 401,
-                    Error = "Unauthorized",
-                    Message = "Authentication failed. You are not logged in or your token has expired.",
-                    Hint = "Please check your 'Authorization' header (Bearer Token) or refresh your token."
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Unauthorized",
+                    Detail = "Authentication failed. Token is missing, invalid, or expired.",
+                    Instance = context.Request.Path,
+                    Type = "AuthenticationFailure"
                 };
 
-                await context.Response.WriteAsJsonAsync(response);
+                problemDetails.Extensions.Add("traceId", context.TraceIdentifier);
+
+                await context.Response.WriteAsJsonAsync(problemDetails);
                 return;
             }
 
-            // =================================================================
-            // 3. Forbidden (403): المستخدم مسجل دخول لكن لا يملك صلاحية
-            // =================================================================
+            // الحالة 3: مسجل دخول لكن ممنوع (403 Forbidden)
             if (authorizeResult.Forbidden)
             {
-                // استخراج أسماء الصلاحيات الناقصة
                 var requiredPermissions = policy.Requirements
                     .OfType<PermissionRequirement>()
                     .Select(r => r.PermissionName)
                     .ToList();
 
-                // تسجيل تحذير (Warning) لأن هذه محاولة وصول لموارد غير مسموحة
                 var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "Unknown";
-                _logger.LogWarning("⛔ Access Denied (403). User: {UserId}. Missing Permissions: {Permissions}",
-                    userId, string.Join(", ", requiredPermissions));
+                _logger.LogWarning("⛔ Access Denied (403). User: {UserId}. Missing Permissions: {Permissions}", userId, string.Join(", ", requiredPermissions));
 
                 context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                context.Response.ContentType = "application/json";
 
-                var response = new
+                var problemDetails = new ProblemDetails
                 {
-                    StatusCode = 403,
-                    Error = "Forbidden",
-                    Message = "You do not have the required permissions to access this resource.",
-                    RequiredPermissions = requiredPermissions,
-                    Hint = "Please ensure you have the correct permission (Global, Resource-Specific, or Parent-Inherited)."
+                    Status = StatusCodes.Status403Forbidden,
+                    Title = "Forbidden",
+                    Detail = "You do not have the required permissions to access this resource.",
+                    Instance = context.Request.Path,
+                    Type = "AuthorizationFailure"
                 };
 
-                await context.Response.WriteAsJsonAsync(response);
+                problemDetails.Extensions.Add("traceId", context.TraceIdentifier);
+                problemDetails.Extensions.Add("requiredPermissions", requiredPermissions); // مفيد للـ UI
+
+                await context.Response.WriteAsJsonAsync(problemDetails);
                 return;
             }
 
-            // Fallback (أي حالة أخرى نادرة)
+            // الحالة الافتراضية
             await _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
         }
     }

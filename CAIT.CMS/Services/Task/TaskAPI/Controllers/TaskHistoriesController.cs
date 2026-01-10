@@ -1,33 +1,27 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
-using MediatR;
+using BuildingBlocks.Shared.Wrappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TaskApplication.Dtos;
 using TaskApplication.Features.Histories.Queries.GetHistory;
 
 namespace TaskAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/TaskHistories")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class TaskHistoriesController : BaseApiController
     {
-        private readonly IMediator _mediator;
 
-        public TaskHistoriesController(IMediator mediator)
+        [HttpGet("{taskId}")]
+        [Authorize(Policy = "Permission:TaskHistory.View")]
+        [ProducesResponseType(typeof(Result<List<TaskHistoryDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTaskHistory(Guid taskId)
         {
-            _mediator = mediator;
-        }
+            var result = await Mediator.Send(new GetTaskHistoryQuery(taskId));
 
-        [HttpGet("{id}/history")]
-        [Authorize(Policy = "Permission:TaskHsitory.View")]
-        public async Task<IActionResult> GetTaskHistory(Guid id)
-        {
-            var result = await _mediator.Send(new GetTaskHistoryQuery(id));
-            return Ok(result);
+            return Success(result, "HistoryRetrievedSuccessfully");
         }
     }
 }

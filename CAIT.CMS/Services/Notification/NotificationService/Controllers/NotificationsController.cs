@@ -24,14 +24,14 @@ namespace NotificationService.Controllers
         [Authorize(Policy = "Permission:Notification.View")]
         public async Task<IActionResult> GetMyNotifications(Guid userId)
         {
-            var notifications = await _context.AppNotifications
+            var result = await _context.AppNotifications
                 .AsNoTracking()
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt) // Newest first
                 .Take(20) // Limit to last 20
                 .ToListAsync();
 
-            return Ok(notifications);
+            return Success(result, "Notifications Retrieved Successfully");
         }
 
         // 2. Get Unread Count (For the red badge on load)
@@ -42,7 +42,7 @@ namespace NotificationService.Controllers
             var count = await _context.AppNotifications
                 .CountAsync(n => n.UserId == userId && !n.IsRead);
 
-            return Ok(count);
+            return Success(count, "Count Retrieved Successfully");
         }
 
         // 3. Mark as Read (Scenario: User clicks a notification)
@@ -54,7 +54,7 @@ namespace NotificationService.Controllers
                 .Where(n => n.Id == id)
                 .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
 
-            return NoContent();
+            return Success("NotificationMarkedAsRead");
         }
 
         // 4. Mark All as Read (Scenario: User clicks "Clear All")
@@ -66,7 +66,7 @@ namespace NotificationService.Controllers
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
 
-            return NoContent();
+            return Success("AllNotificationsMarkedAsRead");
         }
     }
 }

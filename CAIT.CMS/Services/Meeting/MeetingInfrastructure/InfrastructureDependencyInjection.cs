@@ -3,7 +3,6 @@ using BuildingBlocks.Infrastructure.EventHandlers;
 using BuildingBlocks.Messaging.MassTransit;
 using MassTransit;
 using MediatR;
-using MeetingApplication.Common.DateTimeProvider;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
 using MeetingApplication.Wrappers;
@@ -15,7 +14,6 @@ using MeetingInfrastructure.Interceptors;
 using MeetingInfrastructure.Pdf;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
-using MeetingInfrastructure.Services.DateTimeProvider;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration; // مهم لإضافة IConfiguration
 using Microsoft.Extensions.DependencyInjection;
@@ -84,7 +82,6 @@ namespace MeetingInfrastructure
             // Services
             services.AddScoped<IAIService, AIService>();
             services.AddScoped<IEventBus, EventBus>(); // e.g., MassTransit or custom
-            services.AddScoped<IDateTimeProvider, DateTimeProvider>();
             services.AddScoped<IPaginationService, PaginationService>();
 
             // PDF & Storage

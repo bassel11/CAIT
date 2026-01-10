@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
+using BuildingBlocks.Shared.Exceptions;
 using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Exceptions;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
@@ -38,7 +37,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             var rescheduledMeeting = await _meetingRepository.GetByIdAsync(request.Id);
             if (rescheduledMeeting == null)
             {
-                throw new MeetingNotFoundException(nameof(Meeting), request.Id);
+                throw new NotFoundException(nameof(Meeting), request.Id);
             }
 
             if (rescheduledMeeting.Status == MeetingStatus.Cancelled || rescheduledMeeting.Status == MeetingStatus.Completed)

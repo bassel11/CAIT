@@ -9,7 +9,7 @@
         public static TaskDeadline Of(DateTime value)
         {
             if (value <= DateTime.UtcNow)
-                throw new ArgumentException("Task deadline must be in the future.");
+                throw new DomainException("Task deadline must be in the future.");
 
             return new TaskDeadline(value);
         }

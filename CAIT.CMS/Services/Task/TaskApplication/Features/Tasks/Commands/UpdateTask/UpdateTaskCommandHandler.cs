@@ -1,4 +1,5 @@
 ﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Exceptions;
 using BuildingBlocks.Shared.Services;
 using TaskApplication.Common.Interfaces;
 using TaskCore.ValueObjects;
@@ -20,7 +21,8 @@ namespace TaskApplication.Features.Tasks.Commands.UpdateTask
         public async Task<UpdateTaskResult> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
         {
             var task = await _repository.GetByIdAsync(TaskItemId.Of(request.TaskId), cancellationToken);
-            if (task == null) throw new KeyNotFoundException($"Task {request.TaskId} not found.");
+            if (task == null)
+                throw new NotFoundException("Task", request.TaskId);
 
             // 1. التحقق من الصلاحية (Security)
             // من يحق له تعديل التفاصيل؟
@@ -33,7 +35,7 @@ namespace TaskApplication.Features.Tasks.Commands.UpdateTask
             if (!task.IsUserAssigned(UserId.Of(_currentUser.UserId)))
             {
                 // هنا يمكنك إضافة شرط: || _currentUser.IsAdmin
-                throw new UnauthorizedAccessException("You are not authorized to edit this task.");
+                throw new DomainException("You are not authorized to edit this task details.");
             }
 
             // 2. التحديث عبر الدومين

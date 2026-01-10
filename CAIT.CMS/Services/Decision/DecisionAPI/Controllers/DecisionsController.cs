@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
 using BuildingBlocks.Shared.Pagination;
+using BuildingBlocks.Shared.Wrappers;
 using DecisionApplication.Decisions.Commands.CreateDecision;
 using DecisionApplication.Decisions.Commands.DeleteDecision;
 using DecisionApplication.Decisions.Commands.UpdateDecision;
@@ -8,7 +9,6 @@ using DecisionApplication.Decisions.Queries.GetDecisionById;
 using DecisionApplication.Decisions.Queries.GetDecisions;
 using DecisionApplication.Decisions.Queries.GetDecisionsByMeeting;
 using DecisionApplication.Dtos;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,90 +17,100 @@ namespace DecisionAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/Decisions")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class DecisionsController : BaseApiController
     {
-        private readonly ISender _mediator;
 
-        public DecisionsController(ISender mediator)
+        // 1. Get By Id
+        [HttpGet("{id:guid}")]
+        [Authorize(Policy = "Permission:Decision.View")]
+        [ProducesResponseType(typeof(Result<DecisionDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetById(Guid id)
         {
-            _mediator = mediator;
+            var result = await Mediator.Send(new GetDecisionByIdQuery(id));
+            // لا حاجة لـ if (result == null) لأن الـ Handler سيرمي NotFoundException
+            return Success(result, "DataRetrievedSuccessfully");
         }
 
-        // Create Decision
+        // 2. Create Decision
         [HttpPost]
         [Authorize(Policy = "Permission:Decision.Create")]
-        public async Task<IActionResult> Create([FromBody] CreateDecisionDto createdecisionDto)
+        [ProducesResponseType(typeof(Result<CreateDecisionResult>), StatusCodes.Status201Created)]
+        public async Task<IActionResult> Create([FromBody] CreateDecisionDto createDecisionDto)
         {
-            var command = new CreateDecisionCommand(createdecisionDto);
-            var result = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
+            var command = new CreateDecisionCommand(createDecisionDto);
+            var result = await Mediator.Send(command);
 
-        // Update Decision
+            return CreatedSuccess(
+                nameof(GetById),
+                new { id = result.Id, version = "1.0" },
+                result,
+                "DecisionCreatedSuccessfully"
+            );
+        }
+        // 3. Update Decision
         [HttpPut("{id:guid}")]
         [Authorize(Policy = "Permission:Decision.Update")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDecisionDto updatedecisionDto)
+        [ProducesResponseType(typeof(Result<UpdateDecisionResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDecisionDto updateDecisionDto)
         {
-            var command = new UpdateDecisionCommand(id, updatedecisionDto);
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            // تأكد من تمرير الـ ID من الرابط للـ Command لضمان الأمان
+            var command = new UpdateDecisionCommand(id, updateDecisionDto);
+            var result = await Mediator.Send(command);
+
+            return Success(result, "DecisionUpdatedSuccessfully");
         }
 
-        // Delete Decision
+        // 4. Delete Decision
         [HttpDelete("{id:guid}")]
         [Authorize(Policy = "Permission:Decision.Delete")]
+        [ProducesResponseType(typeof(Result<DeleteDecisionResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var command = new DeleteDecisionCommand(id);
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var result = await Mediator.Send(command);
+
+            return Success(result, "DecisionDeletedSuccessfully");
         }
 
-        // Get paginated decisions
+        // 5. Get Paginated Decisions
         [HttpGet]
         [Authorize(Policy = "Permission:Decision.View")]
-        public async Task<IActionResult> GetAll([FromQuery] int pageIndex = 0, [FromQuery] int pageSize = 10)
+        [ProducesResponseType(typeof(Result<PaginatedResult<DecisionDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAll([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
         {
+            // ملاحظة: يفضل أن يبدأ pageIndex من 1 وليس 0 في الـ Query String
             var query = new GetDecisionsQuery(new PaginationRequest(pageIndex, pageSize));
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+
+            return Success(result, "DataRetrievedSuccessfully");
         }
 
-        // Get decisions by meeting
+        // 6. Get Decisions By Meeting
         [HttpGet("meeting/{meetingId:guid}")]
         [Authorize(Policy = "Permission:Decision.View")]
+        [ProducesResponseType(typeof(Result<List<DecisionDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByMeeting(Guid meetingId)
         {
             var query = new GetDecisionsByMeetingQuery(meetingId);
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+
+            return Success(result, "DataRetrievedSuccessfully");
         }
 
-        // Get single decision by Id
-        [HttpGet("{id:guid}")]
-        [Authorize(Policy = "Permission:Decision.View")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var decision = await _mediator.Send(new GetDecisionByIdQuery(id));
-            if (decision == null) return NotFound();
-            return Ok(decision);
-        }
-
-        // Optional: Add Vote to Decision
+        // 7. Add Vote (Placeholder)
         [HttpPost("{id:guid}/votes")]
         [Authorize(Policy = "Permission:Vote.Create")]
         public async Task<IActionResult> AddVote(Guid id, [FromBody] VoteDto voteDto)
         {
-            // هنا يمكن إرسال أمر AddVoteCommand
-            // مثال: var command = new AddVoteCommand(id, voteDto.MemberId, voteDto.Type);
-            // var result = await _mediator.Send(command);
-            // return Ok(result);
+            // عند تطبيق التصويت، استخدم Success() أيضاً
+            // var command = new AddVoteCommand(id, voteDto);
+            // await Mediator.Send(command);
+            // return Success(_localizer["VoteAddedSuccessfully"]);
 
-            return StatusCode(501, "Voting endpoint not implemented yet.");
+            // حالياً نرمي استثناء "غير مطبق" بشكل قياسي
+            throw new NotImplementedException("Voting feature is coming soon.");
         }
+
     }
 }

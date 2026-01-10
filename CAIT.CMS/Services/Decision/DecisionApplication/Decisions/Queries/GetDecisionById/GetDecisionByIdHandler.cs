@@ -1,5 +1,6 @@
 ﻿namespace DecisionApplication.Decisions.Queries.GetDecisionById
 {
+    using BuildingBlocks.Shared.Exceptions;
     using Microsoft.EntityFrameworkCore;
 
     namespace DecisionApplication.Decisions.Queries.GetDecisionById
@@ -17,7 +18,7 @@
                     .FirstOrDefaultAsync(d => d.Id == decisionId, cancellationToken);
 
                 if (decision == null)
-                    throw new KeyNotFoundException($"Decision with Id {query.Id} not found.");
+                    throw new NotFoundException("Decision", query.Id);
 
                 return decision.ToDecisionDto(); // استخدام امتداد التحويل إلى DTO
             }

@@ -1,6 +1,5 @@
 ﻿using Asp.Versioning.ApiExplorer;
 using BuildingBlocks.Infrastructure;
-using MeetingAPI.Middlewares;
 using MeetingApplication;
 using MeetingInfrastructure;
 using MeetingInfrastructure.Data;
@@ -12,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +21,9 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.Services.AddDbContext<MeetingDbContext>(options =>
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("MeetingConnectionString"))
 //);
+
+
+builder.Services.AddCoreInfrastructure();
 
 // Register Services
 builder.Services.AddApplicationServices()
@@ -32,6 +35,13 @@ builder.Services.AddMemoryCache();
 //builder.Services.AddIdentityServiceClient(builder.Configuration);
 builder.Services.AddCommitteeServiceClient(builder.Configuration);
 
+
+//  إعداد الكنترولر مع تحويل الـ Enums لنصوص
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 //  JWT Authentication
 
@@ -63,7 +73,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 
-builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 //builder.Services.AddEndpointsApiExplorer();
 
@@ -131,7 +140,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 var app = builder.Build();
 
-
+app.UseExceptionHandler();
 // ==========================
 // Apply Migrations & Seed
 // ==========================
@@ -154,7 +163,7 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating or seeding the database.");
-        throw; // يمكن إعادة رفع الاستثناء
+        //throw; // يمكن إعادة رفع الاستثناء
     }
 }
 
@@ -162,7 +171,7 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    //app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
@@ -186,7 +195,6 @@ app.UseRequestLocalization(locOptions);
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UsePermissionMiddleware();  //app.UseMiddleware<ResourceExtractionMiddleware>();

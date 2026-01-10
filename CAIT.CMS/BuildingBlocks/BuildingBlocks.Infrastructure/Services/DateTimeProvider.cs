@@ -1,11 +1,10 @@
-﻿using MeetingApplication.Common.DateTimeProvider;
+﻿using BuildingBlocks.Shared.Services;
 
-namespace MeetingInfrastructure.Services.DateTimeProvider
+namespace BuildingBlocks.Infrastructure.Services
 {
     public class DateTimeProvider : IDateTimeProvider
     {
         public DateTime UtcNow => DateTime.UtcNow;
         public DateTime Now => DateTime.Now;
     }
-
 }

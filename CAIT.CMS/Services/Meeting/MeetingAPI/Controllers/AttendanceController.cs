@@ -1,8 +1,10 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
-using MediatR;
+using BuildingBlocks.Shared.Pagination;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingApplication.Features.Attendances.Queries.Models;
+using MeetingApplication.Features.Attendances.Queries.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,119 +18,94 @@ namespace MeetingAPI.Controllers
     [Authorize]
     public class AttendanceController : BaseApiController
     {
-        #region Fields
-        private readonly IMediator _mediator;
-        private readonly ILogger<AttendanceController> _logger;
-        #endregion
-
-        #region Constructor
-        public AttendanceController(IMediator mediator
-                                   , ILogger<AttendanceController> logger)
-        {
-            _mediator = mediator;
-            _logger = logger;
-        }
-        #endregion
 
         #region Actions
 
         // -------------------------------------------------------------
-        // POST: api/attendance/check-in
+        // POST: Check-In
         // -------------------------------------------------------------
         [HttpPost("check-in")]
         [Authorize(Policy = "Permission:Attendance.CheckIn")]
-        public async Task<ActionResult<Guid>> CheckIn([FromBody] CheckInAttendanceCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CheckIn([FromBody] CheckInAttendanceCommand command)
         {
-            var id = await _mediator.Send(command);
-            return Ok(id);
+            var id = await Mediator.Send(command);
+            return Success(id, "AttendanceCheckedInSuccessfully");
         }
 
-
         // -------------------------------------------------------------
-        // POST: api/attendance/confirm
+        // POST: Confirm
         // -------------------------------------------------------------
         [HttpPost("confirm")]
         [Authorize(Policy = "Permission:Attendance.Confirm")]
-        public async Task<ActionResult<Guid>> Confirm([FromBody] ConfirmAttendanceCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Confirm([FromBody] ConfirmAttendanceCommand command)
         {
-            var id = await _mediator.Send(command);
-            return Ok(id);
+            var id = await Mediator.Send(command);
+            return Success(id, "AttendanceConfirmedSuccessfully");
         }
 
         // -------------------------------------------------------------
-        // POST: api/attendance/bulk/check-in
+        // POST: Bulk Check-In
         // -------------------------------------------------------------
         [HttpPost("bulk/check-in")]
         [Authorize(Policy = "Permission:Attendance.CheckIn")]
-        public async Task<IActionResult> BulkCheckIn([FromBody] BulkCheckInCommand dto)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> BulkCheckIn([FromBody] BulkCheckInCommand command)
         {
-            if (dto.Entries == null || !dto.Entries.Any())
-                return BadRequest("Entries cannot be empty.");
+            // ❌ حذفنا التحقق اليدوي (if null)
+            // ✅ FluentValidation سيقوم بالتحقق من أن القائمة ليست فارغة
 
-            var command = new BulkCheckInCommand
-            {
-                MeetingId = dto.MeetingId,
-                Entries = dto.Entries.Select(x => new BulkCheckInCommand.BulkCheckInEntry
-                {
-                    MemberId = x.MemberId,
-                    Status = x.Status
-                }).ToList()
-            };
-
-            await _mediator.Send(command);
-            return Ok();
+            await Mediator.Send(command);
+            return Success("BulkAttendanceCheckedInSuccessfully");
         }
 
-
         // -------------------------------------------------------------
-        // DELETE: api/attendance/{id}
+        // DELETE: Remove
         // -------------------------------------------------------------
         [HttpDelete("{id:guid}")]
         [Authorize(Policy = "Permission:Attendance.Remove")]
-        public async Task<ActionResult> Remove(Guid id)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Remove(Guid id)
         {
-            await _mediator.Send(new RemoveAttendanceCommand { Id = id });
-            return NoContent();
-        }
-
-
-        // -------------------------------------------------------------
-        // GET: api/attendance/meeting/{meetingId}
-        // -------------------------------------------------------------
-        [HttpGet("meeting/{meetingId}")]
-        [Authorize(Policy = "Permission:Attendance.View")]
-        public async Task<IActionResult> GetAttendanceForMeeting([FromRoute] Guid meetingId)
-        {
-            var query = new GetAttendanceForMeetingQuery
-            {
-                MeetingId = meetingId
-            };
-
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            await Mediator.Send(new RemoveAttendanceCommand(id));
+            return Success("AttendanceRemovedSuccessfully");
         }
 
         // -------------------------------------------------------------
-        // GET: api/attendance/member
+        // GET: By Meeting ID
         // -------------------------------------------------------------
-        [HttpGet("member")]
+        [HttpGet("meeting/{meetingId:guid}")]
         [Authorize(Policy = "Permission:Attendance.View")]
+        [ProducesResponseType(typeof(Result<List<GetAttendanceResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAttendanceForMeeting(Guid meetingId)
+        {
+            var result = await Mediator.Send(new GetAttendanceForMeetingQuery(meetingId));
+            return Success(result);
+        }
+
+        // -------------------------------------------------------------
+        // GET: By Member (Paginated)
+        // -------------------------------------------------------------
+        [HttpGet("member")] // نستخدم Query String للبحث
+        [Authorize(Policy = "Permission:Attendance.View")]
+        [ProducesResponseType(typeof(Result<PaginatedResult<GetAttendanceResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAttendanceForMember([FromQuery] GetAttendanceForMemberQuery query)
         {
-            var result = await _mediator.Send(query);
-            return Ok(result); // PaginatedResult<GetAttendanceResponse>
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
         // -------------------------------------------------------------
-        // GET: api/attendance/validate-quorum/{meetingId}
+        // GET: Validate Quorum
         // -------------------------------------------------------------
-        [HttpGet("validate-quorum/{meetingId}")]
+        [HttpGet("quorum/{meetingId:guid}")] // ✅ اختصار المسار
         [Authorize(Policy = "Permission:Attendance.ValidateQuorum")]
-        public async Task<IActionResult> ValidateQuorum([FromRoute] Guid meetingId)
+        [ProducesResponseType(typeof(Result<QuorumValidationResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ValidateQuorum(Guid meetingId)
         {
-            var query = new ValidateQuorumQuery(meetingId);
-            var result = await _mediator.Send(query);
-            return Ok(result); // QuorumValidationResult
+            var result = await Mediator.Send(new ValidateQuorumQuery(meetingId));
+            return Success(result);
         }
 
 

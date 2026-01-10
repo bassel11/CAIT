@@ -1,7 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Common.CurrentUser;
-using MeetingApplication.Common.DateTimeProvider;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingCore.Entities;
@@ -37,7 +35,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             var meeting = await _meetings.GetByIdAsync(req.MeetingId);
             if (meeting == null)
             {
-                throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
+                throw new NotFoundException(nameof(Meeting), req.MeetingId);
             }
 
             // Business rule: cannot create MoM before meeting ended

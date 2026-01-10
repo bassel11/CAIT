@@ -2,8 +2,5 @@
 
 namespace MeetingApplication.Features.Meetings.Commands.Models
 {
-    public class CompleteMeetingCommand : IRequest<Unit>
-    {
-        public Guid Id { get; set; }
-    }
+    public record CompleteMeetingCommand(Guid Id) : IRequest<Unit>;
 }

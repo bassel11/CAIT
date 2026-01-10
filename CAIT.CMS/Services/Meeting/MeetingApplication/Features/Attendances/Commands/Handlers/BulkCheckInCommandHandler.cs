@@ -1,5 +1,5 @@
-﻿using MediatR;
-using MeetingApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
+using MediatR;
 using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
@@ -21,7 +21,7 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
             // 1️⃣ تحقق من وجود الاجتماع
             bool meetingExists = await _repo.ExistsAsync(req.MeetingId, ct);
             if (!meetingExists)
-                throw new MeetingNotFoundException(nameof(Meeting), req.MeetingId);
+                throw new NotFoundException(nameof(Meeting), req.MeetingId);
 
             var memberIds = req.Entries.Select(e => e.MemberId).ToList();
 

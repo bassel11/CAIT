@@ -12,7 +12,7 @@
         public static AgendaItemId Of(Guid value)
         {
             if (value == Guid.Empty)
-                throw new ArgumentException("AgendaItemId cannot be empty.");
+                throw new DomainException("AgendaItemId cannot be empty.");
 
             return new AgendaItemId(value);
         }
