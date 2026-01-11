@@ -1,8 +1,6 @@
 ﻿using BuildingBlocks.Infrastructure;
-using BuildingBlocks.Infrastructure.EventHandlers;
 using BuildingBlocks.Messaging.MassTransit;
 using MassTransit;
-using MediatR;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
 using MeetingApplication.Wrappers;
@@ -43,7 +41,7 @@ namespace MeetingInfrastructure
             }
 
             // 1. تسجيل Generic Audit Handler (لأن MediatR لا يراه تلقائياً في Assembly آخر)
-            services.AddTransient(typeof(INotificationHandler<>), typeof(AuditDomainEventHandler<>));
+            // services.AddTransient(typeof(INotificationHandler<>), typeof(AuditDomainEventHandler<>));
 
             // 2. تسجيل Interceptor
             services.AddScoped<DispatchDomainEventsInterceptor>();
