@@ -181,6 +181,9 @@ namespace Identity.Infrastructure.Services.Users
 
             // تعطيل المستخدم
             user.IsActive = false;
+
+            await _userManager.UpdateSecurityStampAsync(user);
+
             await _userManager.UpdateAsync(user);
 
             // تسجيل العملية في الـ Audit
