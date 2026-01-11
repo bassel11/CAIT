@@ -13,14 +13,14 @@ namespace MeetingApplication
             // نأخذ الـ Assembly الحالي مرة واحدة لاستخدامه في التسجيل
             var assembly = Assembly.GetExecutingAssembly();
 
-            services.AddAutoMapper(assembly);
+
             // 1. FluentValidation
             // تسجيل كل الـ Validators الموجودة في هذا المشروع تلقائياً
             services.AddValidatorsFromAssembly(assembly);
 
             // 2. AutoMapper
             // نسجل الـ Profiles الموجودة في هذا الـ Assembly
-
+            services.AddAutoMapper(assembly);
 
             // 3. MediatR & Pipeline Behaviors
             services.AddMediatR(cfg =>
