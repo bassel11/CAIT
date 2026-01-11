@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using CommitteeApplication.Common.CurrentUser;
+using BuildingBlocks.Shared.Services;
 using CommitteeApplication.Extensions;
 using CommitteeApplication.Features.Committees.Queries.Models;
 using CommitteeApplication.Features.Committees.Queries.Results;

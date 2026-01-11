@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using BuildingBlocks.Shared.Exceptions;
 using MediatR;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Interfaces;
@@ -14,6 +13,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
     {
         #region Fields
         private readonly IMeetingRepository _meetingRepository;
+        private readonly IIntegrationLogRepository _logRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<CancelMeetingCommandHandler> _logger;
         private readonly ICurrentUserService _currentUserService;
@@ -22,6 +22,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
 
         #region Constructor
         public CancelMeetingCommandHandler(IMeetingRepository meetingRepository
+                                             , IIntegrationLogRepository logRepository
                                              , IMapper mapper
                                              , ILogger<CancelMeetingCommandHandler> logger
                                              , ICurrentUserService currentUserService
@@ -32,6 +33,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             _mapper = mapper;
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
+            _logRepository = logRepository;
         }
 
         #endregion
@@ -62,10 +64,10 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
                 CreatedAt = DateTime.UtcNow
             };
 
-            meeting.IntegrationLogs.Add(log);
+            await _logRepository.AddLogAsync(log);
 
             // سجل التعديل في DbContext فقط
-            await _meetingRepository.UpdateAsync(meeting);
+            // await _meetingRepository.UpdateAsync(meeting);
 
             // التعديلات على meeting + log ستحفظ معًا
             await _unitOfWork.SaveChangesAsync(cancellationToken);

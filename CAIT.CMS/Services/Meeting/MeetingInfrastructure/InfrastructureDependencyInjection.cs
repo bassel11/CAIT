@@ -77,6 +77,7 @@ namespace MeetingInfrastructure
             services.AddScoped<IMoMRepository, MoMRepository>();
             services.AddScoped<IMoMAttachmentRepository, MoMAttachmentRepository>();
             services.AddScoped<IMeetingNotificationRepository, MeetingNotificationRepository>();
+            services.AddScoped<IIntegrationLogRepository, IntegrationLogRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Services

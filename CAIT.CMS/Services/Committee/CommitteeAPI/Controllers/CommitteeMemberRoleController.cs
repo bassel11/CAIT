@@ -1,74 +1,81 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
+using BuildingBlocks.Shared.Wrappers;
 using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Models;
 using CommitteeApplication.Features.CommitteeMemberRoles.Commands.Results;
 using CommitteeApplication.Features.CommitteeMemberRoles.Queries.Models;
 using CommitteeApplication.Features.CommitteeMemberRoles.Queries.Results;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/CommitteeMemberRole")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class CommitteeMemberRoleController : BaseApiController
     {
         #region Fields
-        private readonly IMediator _mediator;
         private readonly ILogger<CommitteeMemberRoleController> _logger;
         #endregion
 
         #region Constructors
-        public CommitteeMemberRoleController(IMediator mediator, ILogger<CommitteeMemberRoleController> logger)
+        public CommitteeMemberRoleController(ILogger<CommitteeMemberRoleController> logger)
         {
-            _mediator = mediator;
             _logger = logger;
         }
         #endregion
 
         #region Actions
 
+        // -------------------------------------------------------
+        // GET Roles By Member Id
+        // -------------------------------------------------------
         [HttpGet("{committeeMemberId}", Name = "GetRolesByMemberId")]
-        [ProducesResponseType(typeof(IEnumerable<GetCommiMembRolesResponse>), (int)HttpStatusCode.OK)]
         [Authorize(Policy = "Permission:CommitteeMemberRole.View")]
-        public async Task<ActionResult<IEnumerable<GetCommiMembRolesResponse>>> GetRolesByMemberId(Guid committeeMemberId)
+        [ProducesResponseType(typeof(Result<IEnumerable<GetCommiMembRolesResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetRolesByMemberId(Guid committeeMemberId)
         {
             var query = new GetCommiMembRolesQuery(committeeMemberId);
-            var data = await _mediator.Send(query);
-            return Ok(data);
+            var data = await Mediator.Send(query);
+            return Success(data);
         }
 
-        [HttpPost("AddMemberRoles")]
+        // -------------------------------------------------------
+        // CREATE (Add Roles)
+        // -------------------------------------------------------
+        [HttpPost(Name = "AddMemberRoles")]
         [Authorize(Policy = "Permission:CommitteeMemberRole.Create")]
-        public async Task<ActionResult<AddCommiMembRolesResult>> AddMemberRoles(
-             [FromBody] AddCommiMembRolesCommand command)
+        [ProducesResponseType(typeof(Result<AddCommiMembRolesResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> AddMemberRoles([FromBody] AddCommiMembRolesCommand command)
         {
-            var result = await _mediator.Send(command);
-
-            return Ok(result);
+            var result = await Mediator.Send(command);
+            return Success(result, "MemberRolesAddedSuccessfully");
         }
 
-        [HttpPut("UpdateMemberRole", Name = "UpdateCommitteeMemberRole")]
+        // -------------------------------------------------------
+        // UPDATE
+        // -------------------------------------------------------
+        [HttpPut(Name = "UpdateCommitteeMemberRole")]
         [Authorize(Policy = "Permission:CommitteeMemberRole.Update")]
-        public async Task<ActionResult<UpdateCommiMembRolesResult>> UpdateMemberRole([FromBody] UpdateCommiMembRolesCommand command)
+        [ProducesResponseType(typeof(Result<UpdateCommiMembRolesResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdateMemberRole([FromBody] UpdateCommiMembRolesCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var result = await Mediator.Send(command);
+            return EditSuccess(result, "MemberRoleUpdatedSuccessfully");
         }
 
-        [HttpDelete("DeleteMemberRole/{id}", Name = "DeleteCommitteeMemberRole")]
+        // -------------------------------------------------------
+        // DELETE
+        // -------------------------------------------------------
+        [HttpDelete("{id}", Name = "DeleteCommitteeMemberRole")]
         [Authorize(Policy = "Permission:CommitteeMemberRole.Delete")]
-        public async Task<ActionResult<DeleteCommiMembRolesResult>> DeleteMemberRole(Guid id)
+        [ProducesResponseType(typeof(Result<DeleteCommiMembRolesResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteMemberRole(Guid id)
         {
             var command = new DeleteCommiMembRolesCommand { Id = id };
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var result = await Mediator.Send(command);
+            return Success(result, "MemberRoleDeletedSuccessfully");
         }
         #endregion
     }

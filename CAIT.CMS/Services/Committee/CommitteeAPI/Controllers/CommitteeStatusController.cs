@@ -1,54 +1,52 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
+using BuildingBlocks.Shared.Wrappers;
 using CommitteeApplication.Features.CommitteeStatuses.Queries.Models;
 using CommitteeApplication.Features.CommitteeStatuses.Queries.Results;
 using CommitteeApplication.Wrappers;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/CommitteeStatus")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class CommitteeStatusController : BaseApiController
     {
-        #region Fields
-        private readonly IMediator _mediator;
-        #endregion
+
 
         #region Constructor
-        public CommitteeStatusController(IMediator mediator)
+        public CommitteeStatusController()
         {
-            _mediator = mediator;
         }
         #endregion
 
         #region Actions
 
+        // -------------------------------------------------------
+        // GET ALL
+        // -------------------------------------------------------
         [HttpGet(Name = "GetAllCommitteeStatuses")]
-        [ProducesResponseType(typeof(IEnumerable<GetCommitteeStatusResponse>), (int)HttpStatusCode.OK)]
         [Authorize(Policy = "Permission:CommitteeStatus.View")]
-        public async Task<ActionResult<IEnumerable<GetCommitteeStatusResponse>>> GetAll()
+        [ProducesResponseType(typeof(Result<IEnumerable<GetCommitteeStatusResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAll()
         {
             var query = new GetCommitteeStatusesQuery();
-            var data = await _mediator.Send(query);
-            return Ok(data);
+            var data = await Mediator.Send(query);
+            return Success(data);
         }
 
-
+        // -------------------------------------------------------
+        // GET Filtered (Pagination)
+        // -------------------------------------------------------
         [HttpPost("filtered", Name = "GetFilteredCommitteeStatuses")]
-        [ProducesResponseType(typeof(PaginatedResult<GetCommitteeStatusResponse>), (int)HttpStatusCode.OK)]
         [Authorize(Policy = "Permission:CommitteeStatus.View")]
-        public async Task<ActionResult<PaginatedResult<GetCommitteeStatusResponse>>> GetFilteredCommitStatuses([FromBody] GetCommitStatFilterdQuery query)
+        [ProducesResponseType(typeof(Result<PaginatedResult<GetCommitteeStatusResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFiltered([FromBody] GetCommitStatFilterdQuery query)
         {
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
         #endregion

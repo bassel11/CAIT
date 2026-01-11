@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using CommitteeApplication.Exceptions;
+using BuildingBlocks.Shared.Exceptions;
 using CommitteeApplication.Features.Committees.Commands.Models;
 using CommitteeCore.Entities;
 using CommitteeCore.Repositories;
@@ -25,7 +25,7 @@ namespace CommitteeApplication.Features.Committees.Commands.Handlers
             var committeeToUpdate = await _committeeRepository.GetByIdAsync(request.Id);
             if (committeeToUpdate == null)
             {
-                throw new CommitteeNotFoundException(nameof(Committee), request.Id);
+                throw new NotFoundException(nameof(Committee), request.Id);
             }
             _mapper.Map(request, committeeToUpdate, typeof(UpdateCommitteeCommand), typeof(Committee));
             await _committeeRepository.UpdateAsync(committeeToUpdate);

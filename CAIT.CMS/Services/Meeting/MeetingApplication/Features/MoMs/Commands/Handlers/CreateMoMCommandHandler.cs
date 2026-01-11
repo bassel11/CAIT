@@ -1,10 +1,8 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using MediatR;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
-using MeetingCore.Events;
 using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
@@ -83,7 +81,6 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _repo.SaveChangesAsync(ct);
 
             // publish domain event
-            await _bus.PublishAsync(new MoMDraftCreatedEvent(mom.Id, req.MeetingId, mom.CreatedBy, mom.CreatedAt), ct);
 
             return mom.Id;
         }

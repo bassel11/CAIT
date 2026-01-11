@@ -3,7 +3,6 @@ using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
-using MeetingCore.Events;
 using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
@@ -58,7 +57,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _repo.UpdateAsync(mom);
             await _repo.SaveChangesAsync(ct);
 
-            await _eventBus.PublishAsync(new MoMDraftUpdatedEvent(mom.Id, mom.MeetingId, note.CreatedBy, note.CreatedAt), ct);
+            //await _eventBus.PublishAsync(new MoMDraftUpdatedEvent(mom.Id, mom.MeetingId, note.CreatedBy, note.CreatedAt), ct);
 
             return mom.Id;
         }

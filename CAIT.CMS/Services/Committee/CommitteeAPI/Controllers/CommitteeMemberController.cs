@@ -1,135 +1,141 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
+using BuildingBlocks.Shared.Wrappers;
 using CommitteeApplication.Features.CommitteeMembers.Commands.Models;
 using CommitteeApplication.Features.CommitteeMembers.Commands.Results;
 using CommitteeApplication.Features.CommitteeMembers.Queries.Models;
 using CommitteeApplication.Features.CommitteeMembers.Queries.Results;
 using CommitteeApplication.Wrappers;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/CommitteeMember")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class CommitteeMemberController : BaseApiController
     {
         #region Fields
-        private readonly IMediator _mediator;
         private readonly ILogger<CommitteeMemberController> _logger;
         #endregion
 
         #region Constructor
-        public CommitteeMemberController(IMediator mediator, ILogger<CommitteeMemberController> logger)
+        public CommitteeMemberController(ILogger<CommitteeMemberController> logger)
         {
-            _mediator = mediator;
             _logger = logger;
         }
         #endregion
 
         #region Actions
 
-        [HttpGet("{committeeId}", Name = "GetCommitteeMembersById")]
-        [ProducesResponseType(typeof(IEnumerable<CommitteeMemberResponse>), (int)HttpStatusCode.OK)]
+        // -------------------------------------------------------
+        // GET List By CommitteeId
+        // -------------------------------------------------------
+        [HttpGet("{committeeId}", Name = "GetCommitteeMembersByCommitteeId")]
         [Authorize(Policy = "Permission:CommitteeMember.View")]
-        public async Task<ActionResult<IEnumerable<CommitteeMemberResponse>>> GetCommitteeMembersById(Guid committeeId)
+        [ProducesResponseType(typeof(Result<IEnumerable<CommitteeMemberResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetByCommitteeId(Guid committeeId)
         {
             var query = new GetComMembersListQuery(committeeId);
-            var orders = await _mediator.Send(query);
-            return Ok(orders);
+            var result = await Mediator.Send(query);
+
+            return Success(result);
         }
-        //Just for testing 
-        [HttpPost(Name = "AddCommitteeMember")]
-        [ProducesResponseType((int)HttpStatusCode.OK)]
+
+        // -------------------------------------------------------
+        // CREATE (Single)
+        // -------------------------------------------------------
+        [HttpPost(Name = "CreateCommitteeMember")]
         [Authorize(Policy = "Permission:CommitteeMember.Create")]
-        public async Task<ActionResult<int>> AddCommitteeMember([FromBody] AddCommitteeMemberCommand command)
+        [ProducesResponseType(typeof(Result<int>), StatusCodes.Status200OK)] // استخدمنا 200 لعدم وجود GetById
+        public async Task<IActionResult> Create([FromBody] AddCommitteeMemberCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var result = await Mediator.Send(command);
+
+            // ⚠️ ملاحظة: نستخدم Success بدلاً من CreatedSuccess 
+            // لأنه لا توجد دالة "GetMemberById" لنقوم بالتوجيه إليها في الـ Header.
+            return Success(result, "CommitteeMemberCreatedSuccessfully");
         }
+
+        // -------------------------------------------------------
+        // UPDATE
+        // -------------------------------------------------------
         [HttpPut(Name = "UpdateCommitteeMember")]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Authorize(Policy = "Permission:CommitteeMember.Update")]
-        public async Task<ActionResult<int>> UpdateCommitteeMember([FromBody] UpdateCommitteeMemberCommand command)
+        [ProducesResponseType(typeof(Result<int>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Update([FromBody] UpdateCommitteeMemberCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(new
-            {
-                message = "Committee Member updated successfully"
-            });
+            var result = await Mediator.Send(command);
+
+            // ✅ استخدام EditSuccess المضافة حديثاً
+            return EditSuccess(result, "CommitteeMemberUpdatedSuccessfully");
         }
+
+        // -------------------------------------------------------
+        // DELETE
+        // -------------------------------------------------------
         [HttpDelete("{id}", Name = "DeleteCommitteeMember")]
         [Authorize(Policy = "Permission:CommitteeMember.Delete")]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> DeleteCommitteeMember(Guid id)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Delete(Guid id)
         {
             var cmd = new DeleteCommitteeMemberCommand() { Id = id };
-            await _mediator.Send(cmd);
-            return Ok(new
-            {
-                message = "Committee Member Deleted successfully"
-            });
+            await Mediator.Send(cmd);
+
+            return Success("CommitteeMemberDeletedSuccessfully");
         }
 
 
-        [HttpPost("AssignMultipleCommitteeMembers", Name = "AssignCommitteeMembers")]
-        [ProducesResponseType(typeof(AssignCommitteeMembersResult), (int)HttpStatusCode.OK)]
+        // -------------------------------------------------------
+        // ASSIGN Multiple Members
+        // -------------------------------------------------------
+        [HttpPost("assign-multiple", Name = "AssignCommitteeMembers")]
         [Authorize(Policy = "Permission:CommitteeMember.Create")]
-        public async Task<ActionResult<AssignCommitteeMembersResult>> AssignCommitteeMembers([FromBody] AssignCommitteeMembersCommand command)
+        [ProducesResponseType(typeof(Result<AssignCommitteeMembersResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> AssignMultiple([FromBody] AssignCommitteeMembersCommand command)
         {
-            var result = await _mediator.Send(command);
+            var result = await Mediator.Send(command);
 
-            //if (result.AddedMemberIds == null || !result.AddedMemberIds.Any())
-            //    return BadRequest("No new members were added. They might already exist in the committee.");
-
-            return Ok(result);
+            // يمكن التحقق هنا إذا كانت القائمة فارغة لإرجاع رسالة مختلفة، 
+            // لكن يفضل ترك المنطق للـ Handler وإرجاع النتيجة كما هي
+            return Success(result, "MembersAssignedSuccessfully");
         }
 
-
-
-        [HttpPost("RemoveCommitteeMembers", Name = "RemoveCommitteeMembers")]
-        [ProducesResponseType(typeof(RemoveCommitteeMembersResult), (int)HttpStatusCode.OK)]
+        // -------------------------------------------------------
+        // REMOVE Multiple Members
+        // -------------------------------------------------------
+        [HttpPost("remove-multiple", Name = "RemoveCommitteeMembers")]
         [Authorize(Policy = "Permission:CommitteeMember.Delete")]
-        public async Task<ActionResult<RemoveCommitteeMembersResult>> RemoveCommitteeMembers([FromBody] RemoveCommitteeMembersCommand command)
+        [ProducesResponseType(typeof(Result<RemoveCommitteeMembersResult>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> RemoveMultiple([FromBody] RemoveCommitteeMembersCommand command)
         {
-            //if (command.MembersIds == null || !command.MembersIds.Any())
-            //    return BadRequest("No member IDs provided for removal.");
-
-            var result = await _mediator.Send(command);
-
-            //if (!result.RemovedMemberIds.Any() && result.NotFoundMemberIds.Any())
-            //    return NotFound(new
-            //    {
-            //        message = "No members were removed. All provided IDs were not found in the committee.",
-            //        notFoundMemberIds = result.NotFoundMemberIds
-            //    });
-
-            return Ok(result);
+            var result = await Mediator.Send(command);
+            return Success(result, "MembersRemovedSuccessfully");
         }
 
+        // -------------------------------------------------------
+        // GET Filtered (Pagination)
+        // -------------------------------------------------------
         [HttpPost("filtered", Name = "GetFilteredCommitteeMembers")]
-        [ProducesResponseType(typeof(PaginatedResult<CommitMembsFilterResponse>), (int)HttpStatusCode.OK)]
         [Authorize(Policy = "Permission:Committee.View")]
-        public async Task<ActionResult<PaginatedResult<CommitMembsFilterResponse>>> GetFilteredCommittees([FromBody] GetComitMembsFilteredQuery query)
+        [ProducesResponseType(typeof(Result<PaginatedResult<CommitMembsFilterResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFiltered([FromBody] GetComitMembsFilteredQuery query)
         {
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
-
-        [HttpGet("{committeeId:guid}/members/count")]
-        [ProducesResponseType(typeof(MemberCountResponse), StatusCodes.Status200OK)]
+        // -------------------------------------------------------
+        // GET Count
+        // -------------------------------------------------------
+        [HttpGet("{committeeId:guid}/count", Name = "GetMemberCount")]
         [Authorize(Policy = "Permission:CommitteeMember.View")]
-        public async Task<IActionResult> GetMemberCount(Guid committeeId, CancellationToken ct)
+        [ProducesResponseType(typeof(Result<MemberCountResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCount(Guid committeeId, CancellationToken ct)
         {
-            var result = await _mediator.Send(new MemberCountQuery(committeeId), ct);
-            return Ok(result);
+            var result = await Mediator.Send(new MemberCountQuery(committeeId), ct);
+            return Success(result);
         }
 
 

@@ -1,4 +1,4 @@
-﻿using CommitteeApplication.Exceptions;
+﻿using BuildingBlocks.Shared.Exceptions;
 using CommitteeApplication.Features.CommitteeMembers.Commands.Models;
 using CommitteeCore.Entities;
 using CommitteeCore.Repositories;
@@ -34,7 +34,7 @@ namespace CommitteeApplication.Features.CommitteeMembers.Commands.Handlers
             var committeeMemberToDelete = await _committeeMemberRepository.GetByIdAsync(request.Id);
             if (committeeMemberToDelete == null)
             {
-                throw new CommitteeMemberNotFoundException(nameof(CommitteeMember), request.Id);
+                throw new NotFoundException(nameof(CommitteeMember), request.Id);
             }
             await _committeeMemberRepository.DeleteAsync(committeeMemberToDelete);
             _logger.LogInformation($"Committee Member with {request.Id} is deleted successfully.");

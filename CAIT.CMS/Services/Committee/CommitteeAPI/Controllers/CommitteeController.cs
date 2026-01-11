@@ -1,93 +1,106 @@
 ﻿using Asp.Versioning;
 using BuildingBlocks.Shared.Controllers;
+using BuildingBlocks.Shared.Wrappers;
 using CommitteeApplication.Features.Committees.Commands.Models;
 using CommitteeApplication.Features.Committees.Queries.Models;
 using CommitteeApplication.Features.Committees.Queries.Results;
 using CommitteeApplication.Wrappers;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
 
 namespace CommitteeAPI.Controllers
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/Committee")]
-
-    //[Route("api/[controller]")]
-    //[ApiController]
     [Authorize]
     public class CommitteeController : BaseApiController
     {
         #region Fields
-        private readonly IMediator _mediator;
         private readonly ILogger<CommitteeController> _logger;
         #endregion
 
         #region Constructor
-        public CommitteeController(IMediator mediator
-                                   , ILogger<CommitteeController> logger)
+        public CommitteeController(ILogger<CommitteeController> logger)
         {
-            _mediator = mediator;
             _logger = logger;
         }
         #endregion
 
         #region Actions
 
-        [HttpGet("{id}", Name = "GetCommitteesById")]
-        [ProducesResponseType(typeof(IEnumerable<GetCommitteeByIdResponse>), (int)HttpStatusCode.OK)]
+        // -------------------------------------------------------
+        // GET By ID
+        // -------------------------------------------------------
+        [HttpGet("{id}", Name = "GetCommitteeById")]
         [Authorize(Policy = "Permission:Committee.View")]
-        public async Task<ActionResult<IEnumerable<GetCommitteeByIdResponse>>> GetCommitteesById(Guid id)
+        [ProducesResponseType(typeof(Result<GetCommitteeByIdResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetById(Guid id)
         {
             var query = new GetCommitteeByIdQuery(id);
-            var orders = await _mediator.Send(query);
-            return Ok(orders);
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
 
-        [HttpPost(Name = "AddCommittee")]
-        [ProducesResponseType((int)HttpStatusCode.OK)]
+        // -------------------------------------------------------
+        // CREATE
+        // -------------------------------------------------------
+        [HttpPost(Name = "CreateCommittee")]
         [Authorize(Policy = "Permission:Committee.Create")]
-        public async Task<ActionResult<int>> AddCommittee([FromBody] AddCommitteeCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Create([FromBody] AddCommitteeCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(result);
+            var id = await Mediator.Send(command);
+            return CreatedSuccess(
+                nameof(GetById),
+                new { id = id },
+                id,
+                "CommitteeCreatedSuccessfully");
         }
-        [HttpPut(Name = "UpdateCommittee")]
-        //[ProducesResponseType(StatusCodes.Status204NoContent)]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
+
+
+        // -------------------------------------------------------
+        // UPDATE
+        // -------------------------------------------------------
+        [HttpPut(Name = "UpdateCommittee")] // يفضل عادة [HttpPut("{id}")] لكن سنبقيها كما طلبت
         [Authorize(Policy = "Permission:Committee.Update")]
-        public async Task<ActionResult<int>> UpdateOrder([FromBody] UpdateCommitteeCommand command)
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Update([FromBody] UpdateCommitteeCommand command)
         {
-            var result = await _mediator.Send(command);
-            return Ok(new
-            {
-                message = "Committee updated successfully"
-            });
+            var result = await Mediator.Send(command);
+
+            // ✅ استخدام EditSuccess
+            return EditSuccess(result, "CommitteeUpdatedSuccessfully");
         }
+
+
+        // -------------------------------------------------------
+        // DELETE
+        // -------------------------------------------------------
         [HttpDelete("{id}", Name = "DeleteCommittee")]
         [Authorize(Policy = "Permission:Committee.Delete")]
-        //[ProducesResponseType(StatusCodes.Status204NoContent)]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> DeleteCommittee(Guid id)
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Delete(Guid id)
         {
             var cmd = new DeleteCommitteeCommand() { Id = id };
-            await _mediator.Send(cmd);
-            return Ok(new
-            {
-                message = "Committee deleted successfully"
-            });
+            await Mediator.Send(cmd);
+
+            // ✅ استخدام Success بدلاً من كائن مجهول
+            return Success<string>(null, "CommitteeDeletedSuccessfully");
         }
 
 
+        // -------------------------------------------------------
+        // GET Filtered (Pagination)
+        // -------------------------------------------------------
         [HttpPost("filtered", Name = "GetFilteredCommittees")]
-        [ProducesResponseType(typeof(PaginatedResult<GetComitsFilteredResponse>), (int)HttpStatusCode.OK)]
         [Authorize(Policy = "Permission:Committee.View")]
-        public async Task<ActionResult<PaginatedResult<GetComitsFilteredResponse>>> GetFilteredCommittees([FromBody] GetComitsFilteredQuery query)
+        [ProducesResponseType(typeof(Result<PaginatedResult<GetComitsFilteredResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFiltered([FromBody] GetComitsFilteredQuery query)
         {
-            var result = await _mediator.Send(query);
-            return Ok(result);
+            var result = await Mediator.Send(query);
+            return Success(result);
         }
 
         #endregion

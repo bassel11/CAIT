@@ -25,6 +25,9 @@ namespace CommitteeApplication.Features.Committees.Commands.Validators
                 .NotEmpty()
                 .NotNull()
                 .WithMessage("{Scope} is required");
+            RuleFor(x => x.StatusId)
+            .GreaterThan(0)
+            .WithMessage("StatusId must be greater than 0.");
         }
     }
 }

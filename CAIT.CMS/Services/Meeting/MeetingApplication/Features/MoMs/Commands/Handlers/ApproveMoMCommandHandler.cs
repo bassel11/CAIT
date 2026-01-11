@@ -1,7 +1,6 @@
 ﻿using BuildingBlocks.Contracts.Integration;
 using BuildingBlocks.Contracts.Notifications;
 using BuildingBlocks.Contracts.Outlook;
-using BuildingBlocks.Shared.Exceptions;
 using MassTransit;
 using MediatR;
 using MeetingApplication.Features.MoMs.Commands.Models;
@@ -69,7 +68,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _momAttachmentRepository.AddMoMAttachmentAsync(attachment);
             mom.MoMAttachments.Add(attachment);
 
-            await _momRepo.UpdateMoMAsync(mom);
+            //await _momRepo.UpdateMoMAsync(mom);
 
             // نشر الأحداث باستخدام MassTransit domain events
             // داخل ApproveMoMCommandHandler.Handle بعد mom.Events موجودة و قبل ClearEvents()
@@ -107,7 +106,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
 
             await _publishEndpoint.Publish(new MoMApprovedIntegrationEvent(mom.Id, mom.MeetingId), ct);
 
-
+            await _uow.SaveChangesAsync(ct);
             //mom.ClearEvents();
 
             return Unit.Value;

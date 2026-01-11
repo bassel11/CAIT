@@ -1,6 +1,5 @@
 ﻿using Asp.Versioning.ApiExplorer;
 using BuildingBlocks.Infrastructure;
-using CommitteeAPI.Middlewares;
 using CommitteeApplication;
 using CommitteeInfrastructure;
 using CommitteeInfrastructure.Configurations;
@@ -20,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.Services.AddDbContext<CommitteeContext>(options =>
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("CommitteeConnectionString"))
 //);
-
+builder.Services.AddCoreInfrastructure();
 // ==========================
 // Register Services of All Layers
 // ==========================
@@ -145,7 +144,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 var app = builder.Build();
 
-
+app.UseExceptionHandler();
 // Apply Migrations & Seed
 // ==========================
 using (var scope = app.Services.CreateScope())
@@ -177,7 +176,7 @@ using (var scope = app.Services.CreateScope())
 // ==========================
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    //app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
@@ -201,7 +200,7 @@ app.UseRequestLocalization(locOptions);
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+// app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Authentication must come before Authorization
 app.UseAuthentication();

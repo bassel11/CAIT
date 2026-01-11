@@ -1,10 +1,7 @@
-﻿using CommitteeApplication.Behaviour;
-using CommitteeApplication.Common.CurrentUser;
-using CommitteeApplication.Features.StatusHistories.Commands.Handlers;
-using CommitteeApplication.Features.StatusHistories.Commands.Validators;
+﻿using BuildingBlocks.Shared.Behaviors;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace CommitteeApplication
 {
@@ -12,20 +9,39 @@ namespace CommitteeApplication
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            // FluentValidation
-            services.AddValidatorsFromAssembly(typeof(AddCommitStatusHistoryCommandValidator).Assembly);
+            // تحديد الـ Assembly الحالي مرة واحدة لاستخدامه
+            var assembly = Assembly.GetExecutingAssembly();
 
-            // MediatR
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AddCommitStatusHistoryCommandHandler).Assembly));
+            // 1. FluentValidation
+            // تسجيل كل الـ Validators تلقائياً
+            services.AddValidatorsFromAssembly(assembly);
 
-            // AutoMapper
-            services.AddAutoMapper(typeof(AddCommitStatusHistoryCommandValidator).Assembly); // أو أي Mapping Profile موجود في Application Layer
+            // 2. AutoMapper
+            // تسجيل كل الـ Profiles تلقائياً
+            services.AddAutoMapper(assembly);
 
-            // Pipeline Behaviours
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
-            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
+            // 3. MediatR & Pipeline Behaviors
+            services.AddMediatR(cfg =>
+            {
+                // تسجيل الـ Handlers (Commands/Queries)
+                cfg.RegisterServicesFromAssembly(assembly);
 
-            services.AddScoped<ICurrentUserService, CurrentUserService>();
+                // ✅ تسجيل السلوكيات المشتركة (من BuildingBlocks)
+
+                // أ) التحقق (Validation): يرمي ValidationException الموحد (يمنع دخول البيانات الخاطئة للـ Handler)
+                cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+
+                // ب) التسجيل (Logging): يسجل تفاصيل الطلب والأداء (اختياري ولكنه مفضل)
+                cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+
+                // ج) التعامل مع الاستثناءات غير المعالجة (إذا كنت تستخدمه كـ Behavior وليس Middleware)
+                // cfg.AddOpenBehavior(typeof(UnhandledExceptionBehavior<,>));
+            });
+
+            // ❌ تم الحذف: services.AddScoped<ICurrentUserService, CurrentUserService>();
+            // السبب: يجب نقل تسجيل هذه الخدمة إلى CommitteeInfrastructure
+
+            return services;
 
             return services;
         }

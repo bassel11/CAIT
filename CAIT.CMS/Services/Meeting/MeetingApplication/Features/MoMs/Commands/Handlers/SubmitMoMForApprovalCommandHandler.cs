@@ -1,11 +1,9 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using MediatR;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces.Committee;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
-using MeetingCore.Events;
 using MeetingCore.Repositories;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
@@ -64,7 +62,7 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
             await _momRepo.UpdateAsync(mom);
             await _momRepo.SaveChangesAsync(ct);
 
-            await _bus.PublishAsync(new MoMSubmittedForApprovalEvent(mom.Id, mom.MeetingId, _user.UserId == Guid.Empty ? Guid.Empty : _user.UserId, _clock.UtcNow), ct);
+            // await _bus.PublishAsync(new MoMSubmittedForApprovalEvent(mom.Id, mom.MeetingId, _user.UserId == Guid.Empty ? Guid.Empty : _user.UserId, _clock.UtcNow), ct);
 
             // Queue notification to Chairman via NotificationService or EventBus downstream (not shown)
             return Unit.Value;

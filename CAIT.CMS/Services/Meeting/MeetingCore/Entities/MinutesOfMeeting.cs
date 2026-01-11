@@ -1,4 +1,5 @@
-﻿using BuildingBlocks.Contracts.Common;
+﻿
+using BuildingBlocks.Shared.Abstractions;
 using MeetingCore.Enums;
 using MeetingCore.Events;
 using System.ComponentModel.DataAnnotations;
