@@ -1,6 +1,6 @@
-﻿using BuildingBlocks.Shared.Services;
+﻿using BuildingBlocks.Contracts.Audit;
+using BuildingBlocks.Shared.Services;
 using MediatR;
-using MeetingCore.Events.Audit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json;

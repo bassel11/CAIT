@@ -1,7 +1,8 @@
 ﻿using BuildingBlocks.Shared.Authorization;
-using BuildingBlocks.Shared.Services;
+using BuildingBlocks.Shared.Services; // تأكد من الـ Namespaces
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging; // ضروري للـ Logger
 
 namespace BuildingBlocks.Infrastructure.Security
 {
@@ -10,15 +11,19 @@ namespace BuildingBlocks.Infrastructure.Security
         private readonly IPermissionService _permissionService;
         private readonly ICurrentUserService _currentUser;
         private readonly IHttpContextAccessor _contextAccessor;
+        // يفضل إضافة Logger لتتبع الأخطاء
+        private readonly ILogger<PermissionHandler> _logger;
 
         public PermissionHandler(
             IPermissionService permissionService,
             ICurrentUserService currentUser,
-            IHttpContextAccessor contextAccessor)
+            IHttpContextAccessor contextAccessor,
+            ILogger<PermissionHandler> logger)
         {
             _permissionService = permissionService;
             _currentUser = currentUser;
             _contextAccessor = contextAccessor;
+            _logger = logger;
         }
 
         protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
@@ -29,7 +34,6 @@ namespace BuildingBlocks.Infrastructure.Security
                 return;
             }
 
-            // السوبر أدمن يتجاوز كل الفحوصات
             if (_currentUser.IsSuperAdmin)
             {
                 context.Succeed(requirement);
@@ -38,23 +42,15 @@ namespace BuildingBlocks.Infrastructure.Security
 
             var http = _contextAccessor.HttpContext;
 
-            // 1. استخراج ResourceId من الـ Items (التي عبأها Middleware)
+            // استخراج ResourceId & ParentResourceId
             Guid? resourceId = null;
-            if (http?.Items.TryGetValue("ResourceId", out var r) == true && r is Guid g)
-            {
-                resourceId = g;
-            }
+            if (http?.Items.TryGetValue("ResourceId", out var r) == true && r is Guid g) resourceId = g;
 
-            // 2. استخراج ParentResourceId (الجديد) ✅
             Guid? parentResourceId = null;
-            if (http?.Items.TryGetValue("ParentResourceId", out var pr) == true && pr is Guid pg)
-            {
-                parentResourceId = pg;
-            }
+            if (http?.Items.TryGetValue("ParentResourceId", out var pr) == true && pr is Guid pg) parentResourceId = pg;
 
             try
             {
-                // تمرير القيمتين للخدمة
                 bool hasPermission = await _permissionService.HasPermissionAsync(
                     _currentUser.UserId,
                     requirement.PermissionName,
@@ -62,17 +58,20 @@ namespace BuildingBlocks.Infrastructure.Security
                     parentResourceId
                 );
 
-                if (hasPermission)
-                {
-                    context.Succeed(requirement);
-                }
-                else
-                {
-                    context.Fail();
-                }
+                if (hasPermission) context.Succeed(requirement);
+                else context.Fail();
             }
-            catch
+            // 🔥 هذا هو التعديل المطلوب: التقاط خاص لـ UnauthorizedAccessException
+            catch (UnauthorizedAccessException)
             {
+                // نترك الاستثناء يصعد للأعلى لكي يمسكه الـ GlobalExceptionHandler
+                // هذا سيوقف الـ Pipeline ويسمح بإرجاع 401
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // الأخطاء الأخرى نعتبرها فشل في الصلاحية (403) أو خطأ في السيرفر
+                _logger.LogError(ex, "Error checking permission");
                 context.Fail();
             }
         }

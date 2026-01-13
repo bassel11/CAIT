@@ -1,8 +1,8 @@
-﻿using BuildingBlocks.Shared.Services;
+﻿using BuildingBlocks.Contracts.Audit;
+using BuildingBlocks.Shared.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json;
-using TaskCore.Events.Audit;
 
 namespace TaskInfrastructure.Data.Interceptors
 {

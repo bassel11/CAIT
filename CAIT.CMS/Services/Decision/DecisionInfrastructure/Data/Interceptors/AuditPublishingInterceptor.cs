@@ -1,5 +1,5 @@
-﻿using BuildingBlocks.Shared.Services; // ✅ ضروري للوصول لخدمة المستخدم
-using DecisionCore.Events.Audit;
+﻿using BuildingBlocks.Contracts.Audit;
+using BuildingBlocks.Shared.Services; // ✅ ضروري للوصول لخدمة المستخدم
 using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json;

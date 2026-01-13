@@ -1,5 +1,5 @@
-﻿using BuildingBlocks.Shared.Services;
-using CommitteeCore.Events.Audit;
+﻿using BuildingBlocks.Contracts.Audit;
+using BuildingBlocks.Shared.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

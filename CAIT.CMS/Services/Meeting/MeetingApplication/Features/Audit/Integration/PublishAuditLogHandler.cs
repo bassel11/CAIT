@@ -1,7 +1,6 @@
 ﻿using BuildingBlocks.Contracts.Audit;
 using MassTransit;
 using MediatR;
-using MeetingCore.Events.Audit;
 using Microsoft.Extensions.Logging;
 
 namespace MeetingApplication.Features.Audit.Integration

@@ -1,5 +1,4 @@
 ﻿using BuildingBlocks.Contracts.Audit;
-using DecisionCore.Events.Audit;
 using MassTransit;
 
 namespace DecisionApplication.Decisions.EventHandlers.Integration

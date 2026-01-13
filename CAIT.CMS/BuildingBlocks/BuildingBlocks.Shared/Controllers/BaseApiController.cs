@@ -69,7 +69,7 @@ namespace BuildingBlocks.Shared.Controllers
         }
 
         // ----------------------------------------------------------------
-        // 3. EditSuccess (PUT / PATCH) - ✅ تمت الإضافة هنا
+        // 3. EditSuccess (PUT / PATCH)
         // ----------------------------------------------------------------
         protected IActionResult EditSuccess<T>(T data, string message = "Resource updated successfully.")
         {

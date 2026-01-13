@@ -2,7 +2,6 @@
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using TaskCore.Events.Audit;
 
 namespace TaskApplication.Features.Tasks.EventHandlers.Integration
 {

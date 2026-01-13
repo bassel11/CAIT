@@ -27,7 +27,8 @@ namespace Identity.Infrastructure.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email ?? user.UserName),
                 new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
                 new Claim("uid", user.Id.ToString()),
-                new Claim("auth_type", user.AuthType.ToString())
+                new Claim("auth_type", user.AuthType.ToString()),
+                new Claim("AspNet.Identity.SecurityStamp", user.SecurityStamp ?? string.Empty)
             };
 
             // Add roles
@@ -44,7 +45,6 @@ namespace Identity.Infrastructure.Services
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
             var expiry = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:DurationInMinutes"]));
 
 

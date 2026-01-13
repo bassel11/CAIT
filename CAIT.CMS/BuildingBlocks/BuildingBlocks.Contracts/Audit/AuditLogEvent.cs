@@ -1,6 +1,7 @@
-﻿namespace DecisionCore.Events.Audit
+﻿using MediatR;
+
+namespace BuildingBlocks.Contracts.Audit
 {
-    // هذا الحدث داخلي فقط، لن يخرج خارج الخدمة
     public record AuditLogEvent(
         string EntityName,
         string PrimaryKey,

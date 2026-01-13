@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Identity.API.Controllers.Base;
 using Identity.Application.DTOs.Permissions;
+using Identity.Application.Exceptions;
 using Identity.Application.Interfaces.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -100,14 +101,30 @@ namespace Identity.API.Controllers
 
 
         [HttpGet("snapshot")]
-        [AllowAnonymous] // للسماح بالاتصال الداخلي بين الخدمات (يفضل استخدام Client Credentials لاحقاً)
-        public async Task<ActionResult<PermissionSnapshot>> Snapshot([FromQuery] Guid userId)
+        [AllowAnonymous]
+        public async Task<ActionResult<PermissionSnapshot>> Snapshot(
+    [FromQuery] Guid userId,
+    [FromQuery] string? securityStamp) // 👈 استقبال البصمة
         {
             if (userId == Guid.Empty)
                 return BadRequest("UserId is required");
 
-            var snapshot = await _snapshotService.BuildSnapshotAsync(userId);
-            return Ok(snapshot);
+            try
+            {
+                // يجب تحديث BuildSnapshotAsync في السيرفس لتقبل المعامل الثاني
+                var snapshot = await _snapshotService.BuildSnapshotAsync(userId, securityStamp);
+
+                return Ok(snapshot);
+            }
+            catch (UserSessionExpiredException ex)
+            {
+                // عند عدم تطابق البصمة أو انتهاء الجلسة نرجع 401
+                return Unauthorized(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Internal Server Error" });
+            }
         }
 
 

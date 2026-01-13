@@ -1,6 +1,8 @@
 ﻿using BuildingBlocks.Shared.Authorization;
 using BuildingBlocks.Shared.Exceptions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.Net; // 👈 ضروري للوصول إلى HttpStatusCode
 using System.Net.Http.Json;
 
 namespace BuildingBlocks.Infrastructure.Services
@@ -9,11 +11,15 @@ namespace BuildingBlocks.Infrastructure.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<HttpPermissionFetcher> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public HttpPermissionFetcher(HttpClient httpClient, ILogger<HttpPermissionFetcher> logger)
+        public HttpPermissionFetcher(HttpClient httpClient,
+                                    ILogger<HttpPermissionFetcher> logger,
+                                    IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<PermissionSnapshot> FetchAsync(
@@ -21,29 +27,41 @@ namespace BuildingBlocks.Infrastructure.Services
             string serviceName,
             Guid? resourceId,
             Guid? parentResourceId)
-
         {
+            var securityStamp = _httpContextAccessor.HttpContext?.User?
+                .FindFirst("AspNet.Identity.SecurityStamp")?.Value;
+
             var url = $"api/permission/snapshot?userId={userId}&service={serviceName}";
+
+            // 🔥 6. إضافة البصمة للرابط (فقط إذا وجدت)
+            // نستخدم WebUtility.UrlEncode لضمان عدم وجود رموز تكسر الرابط
+            if (!string.IsNullOrEmpty(securityStamp))
+            {
+                url += $"&securityStamp={WebUtility.UrlEncode(securityStamp)}";
+            }
 
             try
             {
-                // 1. استخدام GetAsync بدلاً من GetFromJsonAsync للتحقق من الحالة أولاً
                 var response = await _httpClient.GetAsync(url);
 
-                // 2. التحقق الصارم من النجاح
+                // 🔥 التعديل الجوهري هنا: التحقق من 401 قبل أي شيء
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    _logger.LogWarning($"⛔ Identity Service returned 401 Unauthorized for user {userId}. Session expired.");
+
+                    // نرمي هذا الاستثناء تحديداً ليصعد للأعلى ويتحول لـ 401
+                    throw new UnauthorizedAccessException("User session has expired or is invalid.");
+                }
+
+                // التحقق من باقي الأخطاء (500, 404, 400)
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-
-                    // تسجيل الخطأ للإدارة
                     _logger.LogError($"❌ Identity Service returned {response.StatusCode} for user {userId}. Details: {errorContent}");
 
-                    // ⚠️ هنا التغيير الجوهري: نرمي خطأ ولا نعيد كائن فارغ
-                    // هذا سيوقف الكود ولن يسمح لخدمة Redis بتخزين نتيجة خاطئة
-                    throw new IdentityServiceUnavailableException($"Identity Service is unavailable or returned an error. Status: {response.StatusCode}");
+                    throw new IdentityServiceUnavailableException($"Identity Service error. Status: {response.StatusCode}");
                 }
 
-                // 3. قراءة البيانات
                 var snapshot = await response.Content.ReadFromJsonAsync<PermissionSnapshot>();
 
                 if (snapshot == null)
@@ -56,11 +74,10 @@ namespace BuildingBlocks.Infrastructure.Services
             }
             catch (HttpRequestException ex)
             {
-                // هذا الخطأ يحدث عند انقطاع الشبكة تماماً (Connection Refused)
                 _logger.LogError(ex, $"Network Error: Could not connect to Identity Service for user {userId}");
                 throw new IdentityServiceUnavailableException("Could not reach Identity Service.", ex);
             }
-            // ملاحظة: لا تلتقط IdentityServiceUnavailableException هنا، دعها تصعد للأعلى
+            // ملاحظة: لا تقم بعمل catch لـ UnauthorizedAccessException هنا، دعها تصعد
         }
     }
 }

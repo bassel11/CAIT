@@ -1,6 +1,6 @@
-﻿using BuildingBlocks.Shared.Services;
+﻿using BuildingBlocks.Contracts.Audit;
+using BuildingBlocks.Shared.Services;
 using Identity.Core.Entities;
-using Identity.Core.Events.Audit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

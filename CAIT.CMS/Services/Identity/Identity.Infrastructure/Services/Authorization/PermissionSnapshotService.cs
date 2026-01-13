@@ -12,16 +12,16 @@ namespace Identity.Infrastructure.Services.Authorization
             _query = query;
         }
 
-        public async Task<PermissionSnapshot> BuildSnapshotAsync(Guid userId)
+        public async Task<PermissionSnapshot> BuildSnapshotAsync(Guid userId, string? securityStamp = null)
         {
-            // 1️⃣ جلب البيانات (النوع + القائمة)
-            var data = await _query.GetSnapshotsAsync(userId);
+            // 1️⃣ جلب البيانات (تمرير الـ securityStamp للطبقة الأدنى)
+            // سيتم التحقق من البصمة داخل GetSnapshotsAsync
+            var data = await _query.GetSnapshotsAsync(userId, securityStamp);
 
-            // 2️⃣ تجهيز الحاوية النهائية
+            // 2️⃣ تجهيز الحاوية النهائية (باقي الكود كما هو تماماً)
             var snapshot = new PermissionSnapshot
             {
                 UserId = userId,
-                // ✅ نقل نوع الامتياز للكلاينت
                 UserPrivilageType = (int)data.UserPrivilageType,
                 GeneratedAt = DateTime.UtcNow
             };

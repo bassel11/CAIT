@@ -1,4 +1,5 @@
 ﻿using Identity.Application.DTOs.Snapshot;
+using Identity.Application.Exceptions;
 using Identity.Application.Interfaces.Authorization;
 using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
@@ -15,44 +16,53 @@ namespace Identity.Infrastructure.Services.Authorization
             _context = context;
         }
 
-        public async Task<SnapshotData> GetSnapshotsAsync(Guid userId)
+        public async Task<SnapshotData> GetSnapshotsAsync(Guid userId, string? requestSecurityStamp = null)
         {
-            // 1. جلب معلومات المستخدم الأساسية أولاً لتحديد النوع
+            // 1. جلب المستخدم مع SecurityStamp
             var user = await _context.Users
                 .AsNoTracking()
-                .Select(u => new { u.Id, u.IsActive, u.PrivilageType })
+                .Select(u => new { u.Id, u.IsActive, u.PrivilageType, u.SecurityStamp }) // 👈 هام جداً
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
-            // إذا لم يوجد مستخدم، نعيد النوع None وقائمة فارغة
             if (user == null)
             {
-                return new SnapshotData
-                {
-                    UserPrivilageType = PrivilageType.None,
-                    Permissions = Array.Empty<FullUserPermission>()
-                };
+                throw new UserSessionExpiredException("User not found or inactive.");
             }
 
-            // 2. جلب الصلاحيات بناءً على النوع
+            // 🔥 2. التحقق من تطابق البصمة (Security Stamp Check)
+            // إذا أرسل الكلاينت بصمة، يجب أن تطابق البصمة الحالية في قاعدة البيانات
+            if (!string.IsNullOrEmpty(requestSecurityStamp) &&
+                user.SecurityStamp != requestSecurityStamp)
+            {
+                // إذا اختلفا، فهذا يعني أن المستخدم سجل خروج أو غير كلمة مروره
+                // وبالتالي التوكن القديم يجب رفضه فوراً
+                throw new UserSessionExpiredException("Security stamp mismatch. Token invalidated.");
+            }
+
+            // 3. التحقق من وجود جلسة نشطة (طبقة حماية إضافية)
+            bool hasActiveSession = await _context.RefreshTokens
+                    .AnyAsync(t => t.UserId == userId && !t.Revoked && t.ExpiryDate > DateTime.UtcNow);
+
+            if (!hasActiveSession)
+            {
+                throw new UserSessionExpiredException("Session expired or user logged out.");
+            }
+
+            // 4. جلب الصلاحيات (باقي الكود كما هو)
             IReadOnlyList<FullUserPermission> permissions = user.PrivilageType switch
             {
                 PrivilageType.None => Array.Empty<FullUserPermission>(),
-
                 PrivilageType.PredifinedRoles => await GetPredefinedRoleSnapshots(userId),
-
                 PrivilageType.CustomRolesAndPermission => await GetCustomPermissionSnapshots(userId),
-
                 _ => Array.Empty<FullUserPermission>()
             };
 
-            // 3. إرجاع النتيجة المجمعة
             return new SnapshotData
             {
                 UserPrivilageType = user.PrivilageType,
                 Permissions = permissions
             };
         }
-
         private async Task<IReadOnlyList<FullUserPermission>> GetPredefinedRoleSnapshots(Guid userId)
         {
             return await _context.UserRoles

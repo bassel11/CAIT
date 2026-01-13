@@ -1,5 +1,4 @@
 ﻿using BuildingBlocks.Contracts.Audit;
-using CommitteeCore.Events.Audit;
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;

@@ -113,28 +113,50 @@ namespace Identity.API.Controllers
             });
         }
 
-        // ------------------- Unified Refresh Token -------------------
+
+
         [HttpPost("refresh-token")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto dto)
         {
-            // نفترض أن نوع المصادقة يتم إرساله في DTO أيضًا
-            // يمكنك تعديله حسب حاجتك
             if (dto.AuthType == (int)ApplicationUser.AuthenticationType.OnPremAD)
             {
                 var ldapResult = await _ldapAuthService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
                 if (!ldapResult.Success)
-                    return Unauthorized(ldapResult.Error);
+                    return Unauthorized(new { Error = ldapResult.Error });
                 return Ok(ldapResult.Response);
             }
             else if (dto.AuthType == (int)ApplicationUser.AuthenticationType.Database)
             {
                 var dbResult = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
                 if (!dbResult.Success)
-                    return Unauthorized(dbResult.Error);
+                    return Unauthorized(new { Error = dbResult.Error });
                 return Ok(dbResult.Response);
             }
 
             return BadRequest("Unsupported authentication type");
+        }
+
+        // ------------------- Logout -------------------
+        // ✅ Endpoint جديد وفق أفضل الممارسات
+        [HttpPost("logout")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Logout([FromBody] LogoutDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.RefreshToken))
+            {
+                return BadRequest(new { Message = "Refresh Token is required." });
+            }
+
+            var result = await _authService.LogoutAsync(dto.RefreshToken);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { Error = result.Error });
+            }
+
+            return Ok(new { Message = "Logged out successfully." });
         }
 
 
@@ -205,31 +227,6 @@ namespace Identity.API.Controllers
         }
 
 
-        //[Authorize(Policy = "CreateMeeting", AuthenticationSchemes = "BearerPolicy")]
-        [Authorize(Policy = "Permission:Meeting.Create", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("CraeteCommittee")]
-        public IActionResult CreateMeeting() //Guid committeeId, [FromBody] CreateMeetingDto dto
-        {
-            // authorized users only
-            return Ok("helllo new meeting");
-        }
 
-        [Authorize(Policy = "Permission:Meeting.Create", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("CraeteCommitteeWithResource")]
-        public IActionResult CreateMeetingwithResourceId([FromQuery] Guid? resourceId) //Guid committeeId, [FromBody] CreateMeetingDto dto
-        {
-            // authorized users only
-            return Ok("helllo new Committee with ResourceId");
-        }
-
-        [Authorize(Policy = "Permission:Meeting.Create", AuthenticationSchemes = "BearerPolicy")]
-        [HttpPost("CraeteCommitteeWithResourceAndParent")]
-        public IActionResult CreateMeetingwithResourceIdandParent(
-                                                                  [FromQuery] Guid? resourceId,
-                                                                  [FromQuery] Guid? parentResourceId)
-        {
-            // authorized users only
-            return Ok("helllo new meeting with ResourceId and ParentResourceId");
-        }
     }
 }

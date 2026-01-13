@@ -1,9 +1,11 @@
-﻿using Identity.Application.DTOs;
+﻿using BuildingBlocks.Contracts.SecurityEvents;
+using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Application.Security;
 using Identity.Core.Entities;
 using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
+using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +25,7 @@ namespace Identity.Infrastructure.Services
         private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly ILoginSecurityService _loginSecurityService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public AuthService(UserManager<ApplicationUser> userManager,
                            ApplicationDbContext dbContext,
@@ -31,7 +34,8 @@ namespace Identity.Infrastructure.Services
                            IEmailService emailService,
                            RoleManager<ApplicationRole> roleManager,
                            ILoginSecurityService loginSecurityService,
-                           IHttpContextAccessor httpContextAccessor)
+                           IHttpContextAccessor httpContextAccessor,
+                           IPublishEndpoint publishEndpoint)
         {
             _userManager = userManager;
             _dbContext = dbContext;
@@ -41,6 +45,7 @@ namespace Identity.Infrastructure.Services
             _roleManager = roleManager;
             _loginSecurityService = loginSecurityService;
             _httpContextAccessor = httpContextAccessor;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<(bool Success, LoginResponseDto? Response, IEnumerable<string>? Errors)> RegisterAsync(RegisterDto dto)
@@ -174,31 +179,85 @@ namespace Identity.Infrastructure.Services
             }, null, null); // user.Id.ToString()  لارجاع UserId
         }
 
-        public async Task<(bool Success, LoginResponseDto? Response, string? Error)> RefreshTokenAsync(string token, string refreshToken)
+        // ... (بنفس الـ Constructor والحقول السابقة)
+
+        public async Task<(bool Success, LoginResponseDto? Response, string? Error)> RefreshTokenAsync(string expiredToken, string refreshToken)
         {
-            var storedToken = await _dbContext.RefreshTokens
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.Token == refreshToken && !r.Revoked);
+            // 1. استخراج الـ UserId من التوكن المنتهي (دون التحقق من الوقت)
+            // ملاحظة: تأكد أن JwtTokenService لديك يحتوي على دالة GetPrincipalFromExpiredToken
+            // أو يمكنك الاعتماد على الـ UserId المرتبط بالـ RefreshToken في الداتابيس (أكثر أماناً)
 
-            if (storedToken == null || storedToken.ExpiryDate < DateTime.UtcNow)
-                return (false, null, "Invalid or expired refresh token");
+            // هنا سنبحث عن الـ Refresh Token أولاً لنعرف المستخدم
+            var storedTokenEntity = await _dbContext.RefreshTokens
+                 .Include(r => r.User)
+                 .FirstOrDefaultAsync(r => r.Token == refreshToken);
 
-            var user = storedToken.User;
-            var jwtResultNew = await _jwtTokenService.GenerateJwtTokenAsync(user);
-            var newRefreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user);
+            if (storedTokenEntity == null) return (false, null, "Invalid Token");
 
-            // Revoke old refresh token
-            storedToken.Revoked = true;
-            await _dbContext.SaveChangesAsync();
+            var user = storedTokenEntity.User;
+
+            // 2. استدعاء خدمة التدوير الآمنة
+            var rotationResult = await _refreshTokenService.RotateRefreshTokenAsync(refreshToken, user);
+
+            if (!rotationResult.Success)
+                return (false, null, rotationResult.Error);
+
+            // 3. توليد Access Token جديد
+            var newJwt = await _jwtTokenService.GenerateJwtTokenAsync(user);
 
             return (true, new LoginResponseDto
             {
-                Token = jwtResultNew.Token,
-                RefreshToken = newRefreshToken,
-                TokenExpiry = jwtResultNew.Expiry
+                Token = newJwt.Token,
+                RefreshToken = rotationResult.NewToken!, // التوكن الجديد
+                TokenExpiry = newJwt.Expiry
             }, null);
         }
 
+        public async Task<(bool Success, string? Error)> LogoutAsync(string refreshToken)
+        {
+            // 1. العثور على التوكن
+            var storedToken = await _dbContext.RefreshTokens
+                .FirstOrDefaultAsync(r => r.Token == refreshToken);
+
+            if (storedToken == null) return (true, null);
+
+            var userId = storedToken.UserId;
+
+            // 2. إبطال كافة التوكنات (تنظيف الجلسات)
+            var userTokens = await _dbContext.RefreshTokens
+                .Where(t => t.UserId == userId && !t.Revoked)
+                .ToListAsync();
+
+            foreach (var token in userTokens)
+            {
+                token.Revoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+                token.ReasonRevoked = "User Logout (All Sessions)";
+                token.RevokedByIp = GetIp();
+            }
+            _dbContext.RefreshTokens.UpdateRange(userTokens);
+
+            // 🔥 3. تدوير بصمة الأمان (Security Stamp)
+            // هذا يجعل التوكنات القديمة (Access Tokens) غير صالحة فوراً حتى لو لم تنتهِ مدتها
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user != null)
+            {
+                await _userManager.UpdateSecurityStampAsync(user);
+            }
+
+            // 4. نشر الحدث لحذف الكاش في الخدمات الأخرى
+            await _publishEndpoint.Publish(new UserLoggedOutEvent
+            {
+                UserId = userId,
+                Timestamp = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            return (true, null);
+        }
+
+        // ... (باقي الدوال Register, Login, ChangePassword كما هي)
 
         // Change User Pasword
         public async Task<(bool Success, string? Error)> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
