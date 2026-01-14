@@ -50,12 +50,21 @@ namespace Identity.Infrastructure.Services
 
         public async Task<(bool Success, LoginResponseDto? Response, IEnumerable<string>? Errors)> RegisterAsync(RegisterDto dto)
         {
+
+            if (dto.UserType != UserType.InternalEmployee && dto.UserType != UserType.SystemAccount)
+            {
+                return (false, null, new[] {
+            "Invalid User Type. Registration via this endpoint is restricted to 'InternalEmployee' or 'SystemAccount' only."
+             });
+            }
+
             var user = new ApplicationUser
             {
                 UserName = dto.Email,
                 Email = dto.Email,
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
+                UserType = dto.UserType,
                 AuthType = AuthenticationType.Database,
                 MFAEnabled = false,
                 EmailConfirmed = true,

@@ -34,6 +34,7 @@ namespace CommitteeAPI.Controllers
         [HttpGet("{id}", Name = "GetCommitteeById")]
         [Authorize(Policy = "Permission:Committee.View")]
         [ProducesResponseType(typeof(Result<GetCommitteeByIdResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(Guid id)
         {
             var query = new GetCommitteeByIdQuery(id);
@@ -56,7 +57,7 @@ namespace CommitteeAPI.Controllers
                 nameof(GetById),
                 new { id = id },
                 id,
-                "CommitteeCreatedSuccessfully");
+                "Committee Created Successfully");
         }
 
 
@@ -66,11 +67,11 @@ namespace CommitteeAPI.Controllers
         [HttpPut(Name = "UpdateCommittee")] // يفضل عادة [HttpPut("{id}")] لكن سنبقيها كما طلبت
         [Authorize(Policy = "Permission:Committee.Update")]
         [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Update([FromBody] UpdateCommitteeCommand command)
         {
             var result = await Mediator.Send(command);
-
-            // ✅ استخدام EditSuccess
             return EditSuccess(result, "CommitteeUpdatedSuccessfully");
         }
 
@@ -81,13 +82,12 @@ namespace CommitteeAPI.Controllers
         [HttpDelete("{id}", Name = "DeleteCommittee")]
         [Authorize(Policy = "Permission:Committee.Delete")]
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var cmd = new DeleteCommitteeCommand() { Id = id };
             await Mediator.Send(cmd);
-
-            // ✅ استخدام Success بدلاً من كائن مجهول
-            return Success<string>(null, "CommitteeDeletedSuccessfully");
+            return Success<string>(null, "Committee Deleted Successfully");
         }
 
 

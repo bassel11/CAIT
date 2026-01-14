@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using CommitteeApplication.Features.CommitteeQuorumRules.Commands.Models;
+using CommitteeCore.Enums;
 using CommitteeCore.Repositories;
 using MediatR;
 
@@ -31,6 +32,18 @@ namespace CommitteeApplication.Features.CommitteeQuorumRules.Commands.Handlers
 
             // تطبيق التحديث باستخدام AutoMapper
             _mapper.Map(cmd, rule);
+
+            if (rule.Type == QuorumType.AbsoluteNumber)
+            {
+                // إذا تحول إلى عدد ثابت، نحذف النسبة المئوية وخيار +1
+                rule.ThresholdPercent = null;
+                rule.UsePlusOne = false;
+            }
+            else // Percentage OR PercentagePlusOne
+            {
+                // إذا تحول إلى نسبة، نحذف العدد الثابت
+                rule.AbsoluteCount = null;
+            }
 
             await _repo.UpdateAsync(rule);
 

@@ -32,6 +32,26 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 });
 
 
+var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
+
+// ب) التحقق لضمان عدم حدوث خطأ إذا نسي المطور إضافة الإعدادات
+if (allowedOrigins == null || allowedOrigins.Length == 0)
+{
+    // قيمة افتراضية للبيئة المحلية فقط لتجنب توقف التطبيق
+    allowedOrigins = new[] { "http://localhost:5173" };
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();  // فعّلها فقط إذا كنت تحتاج الكوكيز
+    });
+});
+
 // Database 
 //builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //{
@@ -318,6 +338,8 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ErrorHandlerMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseMiddleware<ResourceExtractionMiddleware>();

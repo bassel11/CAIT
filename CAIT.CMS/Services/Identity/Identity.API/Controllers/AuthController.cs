@@ -32,9 +32,13 @@ namespace Identity.API.Controllers
         // register
         [HttpPost("register")]
         [Authorize(Roles = "SuperAdmin", Policy = "Permission:User.Register", AuthenticationSchemes = "BearerPolicy")]
-        public async Task<IActionResult> Register(RegisterDto dto)
+        public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var result = await _authService.RegisterAsync(dto);
+
             if (!result.Success)
                 return BadRequest(result.Errors);
 
@@ -44,8 +48,11 @@ namespace Identity.API.Controllers
         // ------------------- Unified Login -------------------
         [HttpPost("login")]
 
-        public async Task<IActionResult> Login(LoginDto dto)
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             (bool Success, LoginResponseDto? Response, string? Error, string? UserId) result;
 
             var authtype = (ApplicationUser.AuthenticationType)dto.AuthType;

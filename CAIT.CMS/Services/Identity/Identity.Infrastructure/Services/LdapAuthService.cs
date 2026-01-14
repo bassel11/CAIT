@@ -1,6 +1,7 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -130,6 +131,7 @@ namespace Identity.Infrastructure.Services
                         Email = email,
                         FirstName = firstName,
                         LastName = lastName,
+                        UserType = UserType.InternalEmployee,
                         AuthType = ApplicationUser.AuthenticationType.OnPremAD,
                         AdAccount = username,
                         AdDomain = domain,

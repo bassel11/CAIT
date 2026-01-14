@@ -28,6 +28,11 @@ namespace CommitteeApplication.Features.Committees.Commands.Validators
                 .NotEmpty()
                 .NotNull()
                 .WithMessage("{Scope} is required");
+
+            RuleFor(x => x.EndDate)
+                .GreaterThan(x => x.StartDate)
+                .When(x => x.EndDate.HasValue)
+                .WithMessage("End Date must be after Start Date.");
         }
     }
 }

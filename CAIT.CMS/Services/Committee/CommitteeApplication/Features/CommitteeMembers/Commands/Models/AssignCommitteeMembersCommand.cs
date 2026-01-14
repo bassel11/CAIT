@@ -14,6 +14,9 @@ namespace CommitteeApplication.Features.CommitteeMembers.Commands.Models
         public Guid UserId { get; set; }
         public string Affiliation { get; set; }
         public string ContactDetails { get; set; }
-        public List<Guid> RoleIds { get; set; } = new();
+        public DateTime? JoinDate { get; set; }
+        public DateTime? LeaveDate { get; set; }
+        public bool IsActive { get; set; } = true;
+        // public List<Guid> RoleIds { get; set; } = new();
     }
 }

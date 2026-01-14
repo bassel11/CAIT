@@ -83,9 +83,8 @@ namespace CommitteeApplication.Features.CommitteeMembers.Queries.Handlers
 
                 if (dict.TryGetValue(m.UserId, out var user))
                 {
-                    dto.FirstName = user.FirstName;
-                    dto.LastName = user.LastName;
-                    dto.Email = user.Email;
+                    dto.FullNAME = user.FirstName;
+                    dto.UserEmail = user.Email;
                 }
 
                 return dto;

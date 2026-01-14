@@ -28,6 +28,11 @@ namespace CommitteeApplication.Features.Committees.Commands.Validators
             RuleFor(x => x.StatusId)
             .GreaterThan(0)
             .WithMessage("StatusId must be greater than 0.");
+
+            RuleFor(x => x.EndDate)
+                .GreaterThan(x => x.StartDate)
+                .When(x => x.EndDate.HasValue)
+                .WithMessage("End Date must be after Start Date.");
         }
     }
 }

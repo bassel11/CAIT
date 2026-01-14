@@ -10,12 +10,12 @@ namespace CommitteeApplication.Features.Committees.Commands.Models
         public string Purpose { get; set; }
         public string Scope { get; set; }
         public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public CommitteeType Type { get; set; }
-        public int StatusId { get; set; }
         public decimal? Budget { get; set; }
-        public string CreationDecisionText { get; set; }
-        public string UpdatedDecisionText { get; set; }
+        public string CreationDecisionText { get; set; } = string.Empty;
+        public string? CreationDecisionDocumentUrl { get; set; }
+        public string UpdatedDecisionText { get; set; } = string.Empty;
 
         //// يمكن استخدام Count فقط لتقليل حجم الاستجابة
         //public int MembersCount { get; set; }

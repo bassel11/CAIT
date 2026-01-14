@@ -1,6 +1,7 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
 using Identity.Core.Entities;
+using Identity.Core.Enums;
 using Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -128,6 +129,7 @@ namespace Identity.Infrastructure.Services
                     FirstName = firstName,
                     Email = email,
                     AuthType = ApplicationUser.AuthenticationType.B2BGuest,
+                    UserType = UserType.Guest,
                     AzureObjectId = objectId,
                     AzureTenantId = tenantId,
                     ExternalId = objectId.ToString(),

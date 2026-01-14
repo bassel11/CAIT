@@ -37,9 +37,9 @@ namespace CommitteeApplication.Features.CommitteeMembers.Commands.Validators
             RuleFor(x => x.Affiliation)
                 .NotEmpty().WithMessage("Affiliation is required.");
 
-            RuleFor(x => x.RoleIds)
-                .NotNull().WithMessage("RoleIds list is required.")
-                .NotEmpty().WithMessage("At least one role must be assigned to the member.");
+            //RuleFor(x => x.RoleIds)
+            //    .NotNull().WithMessage("RoleIds list is required.")
+            //    .NotEmpty().WithMessage("At least one role must be assigned to the member.");
 
             // ContactDetails optional → no validation
         }

@@ -16,7 +16,8 @@
         public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
 
         // Linked decision
-        public string DecisionText { get; set; } = string.Empty!;
+        public string DecisionText { get; set; } = string.Empty;
+        public Guid ChangedByUserId { get; set; } // من قام بالتغيير
         public string DecisionDocumentUrl { get; set; }
     }
 }

@@ -18,8 +18,7 @@ namespace CommitteeCore.Entities
         [Required]
         public DateTime StartDate { get; set; }
 
-        [Required]
-        public DateTime EndDate { get; set; }
+        public DateTime? EndDate { get; set; }
 
         [Required]
         public CommitteeType Type { get; set; }
@@ -29,6 +28,7 @@ namespace CommitteeCore.Entities
 
         [Required]
         public string CreationDecisionText { get; set; } // Official decision text
+        public string? CreationDecisionDocumentUrl { get; set; }
         public string UpdatedDecisionText { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -9,5 +9,7 @@ namespace CommitteeApplication.Features.CommitteeMembers.Commands.Models
         public Guid UserId { get; set; }                 // Reference to User Service
         public string Affiliation { get; set; }          // CAIT department or external entity
         public string ContactDetails { get; set; }
+        public DateTime? JoinDate { get; set; }
+        public DateTime? LeaveDate { get; set; }
     }
 }

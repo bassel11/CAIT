@@ -15,10 +15,10 @@ namespace Identity.Core.Entities
 
         // ---------- User Identity ----------
         public string FirstName { get; set; } = string.Empty;
+        public string MiddleName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-
-        public DateTime? ExpirationDate { get; set; } // تاريخ انتهاء صلاحية الحساب
-        // مصدر المصادقة
+        public string FullName => $"{FirstName} {MiddleName} {FirstName}".Trim();
+        public UserType UserType { get; set; } = UserType.InternalEmployee;
         public AuthenticationType AuthType { get; set; } = AuthenticationType.Database;
 
         // ---------- Active Directory Fields ----------
@@ -32,7 +32,11 @@ namespace Identity.Core.Entities
         // حقل عام للمعرّف الخارجي (للتوافق)
         public string? ExternalId { get; set; }
 
-        // ---------- Security & Status ----------
+        public bool IsActive { get; set; } = true;
+
+        public DateTime? ExpirationDate { get; set; } // تاريخ انتهاء صلاحية الحساب
+                                                      // مصدر المصادقة
+                                                      // ---------- Security & Status ----------
         public bool MFAEnabled { get; set; } = false;
 
         public MFAMethod MFAMethod { get; set; } = MFAMethod.None;
@@ -43,7 +47,7 @@ namespace Identity.Core.Entities
 
         public string? MFACodeHash { get; set; }  //  الكود المؤقت المشفر
         public DateTime? MFACodeExpiry { get; set; }  // انتهاء صلاحية الكود
-        public bool IsActive { get; set; } = true;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         public DateTime? ExpiresAt { get; set; } // حساب مؤقت (مثلاً للموردين)
@@ -57,7 +61,5 @@ namespace Identity.Core.Entities
         public PrivilageType PrivilageType { get; set; } = PrivilageType.None;
         #endregion
 
-        // ---------- Utility ----------
-        public string FullName => $"{FirstName} {LastName}".Trim();
     }
 }
