@@ -72,6 +72,7 @@ namespace CommitteeInfrastructure
 
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICommitteeRepository, CommitteeRepository>();
             services.AddScoped<ICommitteeMemberRepository, CommitteeMemberRepository>();
             services.AddScoped<ICommitteeMemberRoleRepository, CommitteeMemberRoleRepository>();

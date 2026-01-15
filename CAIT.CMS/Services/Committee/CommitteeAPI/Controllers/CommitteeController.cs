@@ -103,6 +103,18 @@ namespace CommitteeAPI.Controllers
             return Success(result);
         }
 
+        // -------------------------------------------------------
+        // CHANGE STATUS
+        // -------------------------------------------------------
+        [HttpPost("change-status", Name = "ChangeCommitteeStatus")]
+        [Authorize(Policy = "Permission:Committee.ChangeStatus")] // صلاحية خاصة
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ChangeStatus([FromBody] ChangeCommitteeStatusCommand command)
+        {
+            await Mediator.Send(command);
+            return Success("Committee Status Changed Successfully");
+        }
+
         #endregion
 
     }
