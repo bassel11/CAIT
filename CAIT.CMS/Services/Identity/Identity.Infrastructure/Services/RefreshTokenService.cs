@@ -105,7 +105,11 @@ namespace Identity.Infrastructure.Services
             var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(x => x.Token == token);
 
             // إذا لم يوجد أو كان غير فعال، نعتبر العملية ناجحة (Idempotent)
-            if (storedToken == null || !storedToken.IsActive)
+            //if (storedToken == null || !storedToken.IsActive)
+            //    return true;
+
+            // إذا لم يوجد أو انتهت صلاحيته، العملية تعتبر ناجحة
+            if (storedToken == null || storedToken.Revoked || storedToken.ExpiryDate <= DateTime.UtcNow)
                 return true;
 
             storedToken.Revoked = true;
@@ -122,8 +126,12 @@ namespace Identity.Infrastructure.Services
         // --- Helpers ---
         private async Task RevokeAllTokensForUserAsync(Guid userId, string reason)
         {
+            //var tokens = await _context.RefreshTokens
+            //    .Where(t => t.UserId == userId && t.IsActive) // فقط الفعالة
+            //    .ToListAsync();
+
             var tokens = await _context.RefreshTokens
-                .Where(t => t.UserId == userId && t.IsActive) // فقط الفعالة
+                .Where(t => t.UserId == userId && !t.Revoked && t.ExpiryDate > DateTime.UtcNow)
                 .ToListAsync();
 
             foreach (var t in tokens)
