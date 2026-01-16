@@ -38,9 +38,11 @@ namespace Identity.API.Controllers
         }
 
         // Get Custom Permissions
-        [HttpGet("GetCustomPermissions")]
+        [HttpGet("GetCustomPermissions/{userId}")]
         [Authorize(Policy = "Permission:CustomPermission.View")]
-        public async Task<IActionResult> GetCustomPermissions([FromRoute] Guid userId, [FromQuery] CustomPermFilterDto? filter = null)
+        public async Task<IActionResult> GetCustomPermissions(
+            [FromRoute] Guid userId,
+            [FromQuery] CustomPermFilterDto? filter = null)
         {
             var perms = await _usrRolPermResService.GetCustomPermsAsync(userId, filter);
             return Ok(perms);

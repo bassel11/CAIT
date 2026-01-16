@@ -109,17 +109,20 @@ namespace Identity.Infrastructure.Services.UsrRolPermRes
 
         }
 
-        public async Task<IEnumerable<CustomPermsDetailsDto>> GetCustomPermsAsync(Guid UserId, CustomPermFilterDto? filter = null)
+        public async Task<IEnumerable<CustomPermsDetailsDto>> GetCustomPermsAsync(
+            Guid UserId,
+            CustomPermFilterDto? filter = null)
         {
             var user = await _userManager.FindByIdAsync(UserId.ToString());
             if (user == null || user.PrivilageType != PrivilageType.CustomRolesAndPermission)
                 throw new KeyNotFoundException($"User {UserId} not found or belongs to PredifinedRoles");
 
             var query = _context.UserRolePermResos
-                                .Include(x => x.Role)
-                                .Include(x => x.Permission)
-                                .Where(x => x.UserId == UserId)
-                                .AsQueryable();
+                            .AsNoTracking() // 👈 هام للأداء في عمليات الـ GET
+                            .Include(x => x.Role)
+                            .Include(x => x.Permission)
+                            .Where(x => x.UserId == UserId)
+                            .AsQueryable();
             // Filters
             if (filter != null)
             {
@@ -129,23 +132,34 @@ namespace Identity.Infrastructure.Services.UsrRolPermRes
                     var s = filter.Search.Trim().ToLower();
                     query = query.Where(x =>
                         x.Permission.Name.ToLower().Contains(s) ||
-                        x.Role.Name!.ToLower().Contains(s));
+                        (x.Role.Name != null && x.Role.Name.ToLower().Contains(s)));
                 }
 
                 // RoleId
-                if (filter.RoleId != Guid.Empty)
-                    query = query.Where(x => x.RoleId == filter.RoleId);
+                if (filter.RoleId.HasValue && filter.RoleId.Value != Guid.Empty)
+                {
+                    query = query.Where(x => x.RoleId == filter.RoleId.Value);
+                }
 
                 // PermissionId
-                if (filter.PermissionId != Guid.Empty)
-                    query = query.Where(x => x.PermissionId == filter.PermissionId);
+                if (filter.PermissionId.HasValue && filter.PermissionId.Value != Guid.Empty)
+                {
+                    query = query.Where(x => x.PermissionId == filter.PermissionId.Value);
+                }
 
                 // Scope
-                if (filter.Scope != ScopeType.Global)
-                    query = query.Where(x => x.Scope == filter.Scope);
+                if (filter.Scope.HasValue)
+                {
+                    query = query.Where(x => x.Scope == filter.Scope.Value);
+                }
+
+                if (filter.Allow.HasValue)
+                {
+                    query = query.Where(x => x.Allow == filter.Allow.Value);
+                }
 
                 // السماح Allow
-                query = query.Where(x => x.Allow == filter.Allow);
+                // query = query.Where(x => x.Allow == filter.Allow);
 
                 //  الترتيب 
                 var sortMap = new Dictionary<string, Expression<Func<UserRolePermReso, object>>>
@@ -157,7 +171,7 @@ namespace Identity.Infrastructure.Services.UsrRolPermRes
                     ["allow"] = x => x.Allow
                 };
 
-                query = query.ApplySorting(filter.SortBy!, filter.SortDir, sortMap);
+                query = query.ApplySorting(filter.SortBy!, filter.SortDir ?? "asc", sortMap);
 
                 // التصفح Pagination
                 query = query.ApplyPaging(filter);

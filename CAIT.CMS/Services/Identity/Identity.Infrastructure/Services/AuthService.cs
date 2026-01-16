@@ -275,21 +275,21 @@ namespace Identity.Infrastructure.Services
             if (user == null || user.AuthType != ApplicationUser.AuthenticationType.Database)
                 return (false, "User not found or invalid authentication type");
 
-            //  التحقق من كلمة المرور الحالية
+            // 1. التحقق من كلمة المرور الحالية
             var isCurrentValid = await _userManager.CheckPasswordAsync(user, currentPassword);
             if (!isCurrentValid)
                 return (false, "Current password is incorrect");
 
-            //  التحقق من أن الجديدة ليست نفس الحالية
+            // 2. التحقق من أن الجديدة ليست نفس الحالية
             if (await _userManager.CheckPasswordAsync(user, newPassword))
                 return (false, "New password cannot be the same as the current password");
 
-            //  التحقق من أن كلمة المرور الجديدة لم تُستخدم مسبقاً
+            // 3. التحقق من سجل كلمات المرور (Prevent Reuse)
             var passwordHasher = new PasswordHasher<ApplicationUser>();
             var previousPasswords = await _dbContext.UserPasswordHistories
                 .Where(h => h.UserId == user.Id)
                 .OrderByDescending(h => h.CreatedAt)
-                .Take(5) // 👈 التحقق من آخر 5 كلمات مرور
+                .Take(5)
                 .ToListAsync();
 
             foreach (var oldPassword in previousPasswords)
@@ -299,12 +299,14 @@ namespace Identity.Infrastructure.Services
                     return (false, "You cannot reuse a previously used password");
             }
 
-            //  إذا اجتاز التحقق، غيّر كلمة المرور
+            // 4. تغيير كلمة المرور فعلياً
+            // (تقوم تلقائياً بتحديث SecurityStamp مما يقتل الـ Access Tokens)
             var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
             if (!result.Succeeded)
                 return (false, string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            //  حفظ كلمة المرور الجديدة في سجل التاريخ
+            // 5. حفظ في السجل (Password History)
             var newHistory = new UserPasswordHistory
             {
                 UserId = user.Id,
@@ -313,18 +315,35 @@ namespace Identity.Infrastructure.Services
             };
             _dbContext.UserPasswordHistories.Add(newHistory);
 
-            //  الإبقاء على آخر 5 فقط
+            // تنظيف السجل القديم (Retention Policy)
+            // نستخدم RemoveRange لضمان حذف أي عدد زائد (أفضل من حذف واحد فقط)
             if (previousPasswords.Count >= 5)
             {
-                var toRemove = previousPasswords.Skip(4); // احتفظ بـ 5 فقط
-                _dbContext.UserPasswordHistories.RemoveRange(toRemove);
+                var toRemove = previousPasswords.Skip(4).ToList(); // نحتفظ بأحدث 4 + الجديد الذي أضفناه = 5
+                if (toRemove.Any())
+                {
+                    _dbContext.UserPasswordHistories.RemoveRange(toRemove);
+                }
             }
 
+            //  حرق كافة الجلسات (Refresh Tokens) 
+
+            var activeRefreshTokens = await _dbContext.RefreshTokens
+                .Where(t => t.UserId == user.Id && !t.Revoked)
+                .ToListAsync();
+
+            foreach (var token in activeRefreshTokens)
+            {
+                token.Revoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+                token.ReasonRevoked = "Password Changed";
+            }
+
+            // 7. حفظ التغييرات دفعة واحدة (History + Tokens)
             await _dbContext.SaveChangesAsync();
 
             return (true, null);
         }
-
         private string HashCode(string code, string salt)
         {
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(salt));

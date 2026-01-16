@@ -5,13 +5,13 @@ namespace Identity.Application.DTOs.Pre.Custom
 {
     public class CustomPermFilterDto : BaseFilterDto
     {
-        public Guid RoleId { get; set; }
-        public Guid PermissionId { get; set; }
-        public ScopeType Scope { get; set; } = ScopeType.Global;
-        public ResourceType ResourceType { get; set; } = ResourceType.None;
+        public Guid? RoleId { get; set; }
+        public Guid? PermissionId { get; set; }
+        public ScopeType? Scope { get; set; }
+        public ResourceType? ResourceType { get; set; }
         public Guid? ResourceId { get; set; }
-        public ResourceType ParentResourceType { get; set; } = ResourceType.None;
+        public ResourceType? ParentResourceType { get; set; }
         public Guid? ParentResourceId { get; set; }
-        public bool Allow { get; set; }
+        public bool? Allow { get; set; }
     }
 }

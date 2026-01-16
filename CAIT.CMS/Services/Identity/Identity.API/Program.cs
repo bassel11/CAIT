@@ -78,6 +78,8 @@ var azureB2BConfig = builder.Configuration.GetSection("AzureB2B");
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = "BearerPolicy";
+    options.DefaultChallengeScheme = "BearerPolicy";
+
 })
 .AddJwtBearer("LocalJwt", options =>
 {
@@ -94,7 +96,8 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig["Key"])),
 
         RoleClaimType = ClaimTypes.Role, //  ضروري لقراءة الأدوار بشكل صحيح
-        NameClaimType = ClaimTypes.Name //  لتحديد اسم المستخدم من التوكن
+        NameClaimType = ClaimTypes.Name, //  لتحديد اسم المستخدم من التوكن
+        ClockSkew = TimeSpan.Zero
 
     };
     options.Events = new JwtBearerEvents
@@ -129,6 +132,43 @@ builder.Services.AddAuthentication(options =>
             };
 
             return context.Response.WriteAsync(JsonSerializer.Serialize(error));
+        },
+        // 🔥🔥 الإضافة الجوهرية: التحقق من Security Stamp 🔥🔥
+        // هذا الكود يمنع استخدام التوكنات القديمة بعد الـ Logout
+        OnTokenValidated = async context =>
+        {
+            // 1. الوصول للخدمات
+            var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+            var claimsPrincipal = context.Principal;
+
+            // 2. استخراج البيانات من التوكن
+            // تأكد أن "uid" يطابق ما وضعته في JwtTokenService
+            var userId = claimsPrincipal?.FindFirst("uid")?.Value;
+            var tokenSecurityStamp = claimsPrincipal?.FindFirst("AspNet.Identity.SecurityStamp")?.Value;
+
+            // 3. إذا كان التوكن لا يحتوي على هذه البيانات، نرفضه
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(tokenSecurityStamp))
+            {
+                context.Fail("Token is missing essential claims.");
+                return;
+            }
+
+            // 4. جلب المستخدم من الداتابيز
+            var user = await userManager.FindByIdAsync(userId);
+
+            // 5. التحقق من حالة المستخدم
+            if (user == null || !user.IsActive)
+            {
+                context.Fail("User not found or inactive.");
+                return;
+            }
+
+            // 6. 🛑 المقارنة: هل بصمة التوكن تطابق بصمة الداتابيز؟
+            if (user.SecurityStamp != tokenSecurityStamp)
+            {
+                // إذا اختلفا، فهذا يعني أن المستخدم سجل خروج أو غير كلمة المرور
+                context.Fail("Invalid Token: Security Stamp mismatch.");
+            }
         }
     };
 
@@ -197,9 +237,14 @@ builder.Services.AddAuthentication(options =>
         var token = authHeader.Substring("Bearer ".Length).Trim();
         try
         {
-            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-            if (jwt.Issuer?.Contains("login.microsoftonline.com") == true)
-                return "AzureAD";
+            var jwtHandler = new JwtSecurityTokenHandler();
+            if (jwtHandler.CanReadToken(token))
+            {
+                var jwt = jwtHandler.ReadJwtToken(token);
+                // إذا كان المُصدر هو مايكروسوفت، نستخدم AzureAD Scheme
+                if (jwt.Issuer?.Contains("login.microsoftonline.com") == true)
+                    return "AzureAD";
+            }
         }
         catch { }
         return "LocalJwt";
