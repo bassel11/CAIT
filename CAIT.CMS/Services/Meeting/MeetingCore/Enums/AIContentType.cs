@@ -2,8 +2,8 @@
 {
     public enum AIContentType
     {
-        AgendaDraft,
-        MoMDraft,
-        Other
+        AgendaDraft = 1,
+        MoMDraft = 2,
+        Other = 3
     }
 }

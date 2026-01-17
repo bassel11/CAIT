@@ -1,5 +1,4 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using MediatR;
 using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingCore.Entities;
 using MeetingCore.Enums;
@@ -49,7 +48,7 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
                         MeetingId = req.MeetingId,
                         MemberId = entry.MemberId,
                         AttendanceStatus = entry.Status,
-                        RSVP = RSVPStatus.Yes,
+                        RSVP = RSVPStatus.Accepted,
                         Timestamp = now
                     });
                 }

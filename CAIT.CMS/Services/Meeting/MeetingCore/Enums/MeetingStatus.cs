@@ -2,10 +2,11 @@
 {
     public enum MeetingStatus
     {
-        Scheduled,
-        Rescheduled,
-        Cancelled,
-        Completed,
-        Draft
+        Draft = 1,
+        Scheduled = 2,
+        Rescheduled = 3,
+        Cancelled = 4,
+        Completed = 5
+
     }
 }
