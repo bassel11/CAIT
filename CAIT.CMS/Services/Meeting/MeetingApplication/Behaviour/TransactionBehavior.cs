@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.Abstractions;
+using MediatR;
 using MeetingApplication.Interfaces;
 
 namespace MeetingApplication.Behaviour

@@ -1,6 +1,8 @@
 ﻿using BuildingBlocks.Infrastructure;
 using BuildingBlocks.Messaging.MassTransit;
+using BuildingBlocks.Shared.Abstractions;
 using MassTransit;
+using MeetingApplication.Data;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
 using MeetingApplication.Wrappers;
@@ -67,20 +69,22 @@ namespace MeetingInfrastructure
                        .AddInterceptors(interceptor, auditInterceptor);
             });
 
+
+            services.AddScoped<IMeetingDbContext>(provider => provider.GetRequiredService<MeetingDbContext>());
+
+
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
             services.AddScoped<IMeetingRepository, MeetingRepository>();
-            services.AddScoped<IAgendaRepository, AgendaRepository>();
-            services.AddScoped<IAttendanceRepository, AttendanceRepository>();
-            services.AddScoped<IMoMRepository, MoMRepository>();
-            services.AddScoped<IMoMAttachmentRepository, MoMAttachmentRepository>();
-            services.AddScoped<IMeetingNotificationRepository, MeetingNotificationRepository>();
-            services.AddScoped<IIntegrationLogRepository, IntegrationLogRepository>();
+            services.AddScoped<IMinutesRepository, MinutesRepository>();
+            services.AddScoped<IAgendaGeneratorService, AgendaGeneratorService>();
+            //services.AddScoped<IMeetingNotificationRepository, MeetingNotificationRepository>();
+            //services.AddScoped<IIntegrationLogRepository, IntegrationLogRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IMinutesAIService, MinutesAIService>();
 
             // Services
             services.AddScoped<IAIService, AIService>();
-            services.AddScoped<IEventBus, EventBus>(); // e.g., MassTransit or custom
             services.AddScoped<IPaginationService, PaginationService>();
 
             // PDF & Storage
@@ -95,8 +99,6 @@ namespace MeetingInfrastructure
 
 
             // Other integrations
-            services.AddScoped<IOutlookService, OutlookService>();
-            services.AddScoped<ITeamsService, TeamsService>();
             services.AddScoped<IAuditService, AuditService>();
 
 

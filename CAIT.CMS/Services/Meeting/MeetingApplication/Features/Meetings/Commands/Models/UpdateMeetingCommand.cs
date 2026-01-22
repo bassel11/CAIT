@@ -1,20 +1,17 @@
-﻿using MediatR;
-using MeetingApplication.Features.Meetings.Commands.Results;
-using System.ComponentModel.DataAnnotations;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.Meetings.Commands.Models
 {
-    public class UpdateMeetingCommand : IRequest<UpdateMeetingResponse>
-    {
-        [Required]
-        public Guid Id { get; set; }
-        public Guid CommitteeId { get; set; }
-        public string Title { get; set; } = null!;
-        public string? Description { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public bool IsRecurring { get; set; }
-        public string RecurrenceType { get; set; } = "None";
-        public Guid CreatedBy { get; set; }
-    }
+    public record UpdateMeetingCommand(
+        Guid Id,
+        string Title,
+        string? Description,
+        // Location Info
+        int LocationType,
+        string? LocationRoom,
+        string? LocationAddress,
+        string? LocationOnlineUrl
+    // Guid UpdatedBy
+    ) : ICommand<Result<Guid>>;
 }

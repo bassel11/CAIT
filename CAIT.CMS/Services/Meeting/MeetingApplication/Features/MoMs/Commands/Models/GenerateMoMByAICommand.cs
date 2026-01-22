@@ -1,10 +1,8 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class GenerateMoMByAICommand : IRequest<Guid> // returns MoMId
-    {
-        public Guid MeetingId { get; set; }
-        public bool FromTranscript { get; set; } = true;
-    }
+    public record GenerateMoMByAICommand(Guid MeetingId, string Transcript)
+        : ICommand<Result<string>>;
 }

@@ -25,17 +25,11 @@
 
   <ItemGroup>
     <Folder Include="Features\AgendaItems\Commands\Results\" />
+    <Folder Include="Features\AgendaItems\EventHandlers\Domain\" />
     <Folder Include="Features\Attendances\Commands\Results\" />
     <Folder Include="Features\MoMAttachments\Commands\Results\" />
-    <Folder Include="Features\MoMAttachments\Queries\Handlers\" />
-    <Folder Include="Features\MoMAttachments\Queries\Models\" />
     <Folder Include="Features\MoMs\Commands\Results\" />
-    <Folder Include="Features\MoMVersions\Commands\Handlers\" />
-    <Folder Include="Features\MoMVersions\Commands\Models\" />
-    <Folder Include="Features\MoMVersions\Commands\Results\" />
-    <Folder Include="Features\MoMVersions\Commands\Validators\" />
-    <Folder Include="Features\MoMVersions\Queries\Handlers\" />
-    <Folder Include="Features\MoMVersions\Queries\Models\" />
+    <Folder Include="Mappers\" />
   </ItemGroup>
 
 </Project>

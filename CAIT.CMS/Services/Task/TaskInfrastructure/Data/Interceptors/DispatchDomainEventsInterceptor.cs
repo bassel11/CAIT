@@ -29,16 +29,21 @@ namespace TaskInfrastructure.Data.Interceptors
             if (context == null) return;
 
 
-            var aggregates = context.ChangeTracker
-                .Entries<IAggregate>()
-                .Where(a => a.Entity.DomainEvents.Any())
-                .Select(a => a.Entity);
+            //var aggregates = context.ChangeTracker
+            //    .Entries<IAggregate>()
+            //    .Where(a => a.Entity.DomainEvents.Any())
+            //    .Select(a => a.Entity);
 
-            var domainEvents = aggregates
+            var entitiesWithEvents = context.ChangeTracker
+                .Entries<IHasDomainEvents>() // كان سابقاً IAggregate
+                .Where(x => x.Entity.DomainEvents.Any())
+                .Select(x => x.Entity);
+
+            var domainEvents = entitiesWithEvents
                 .SelectMany(a => a.DomainEvents)
                 .ToList();
 
-            aggregates.ToList().ForEach(a => a.ClearDomainEvents());
+            entitiesWithEvents.ToList().ForEach(a => a.ClearDomainEvents());
 
             foreach (var domainEvent in domainEvents)
             {

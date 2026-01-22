@@ -1,60 +1,43 @@
-﻿using AutoMapper;
-using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingApplication.Interfaces;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
-using Microsoft.Extensions.Logging;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
 {
-    public class CompleteMeetingCommandHandler : IRequestHandler<CompleteMeetingCommand, Unit>
+    public class CompleteMeetingCommandHandler : ICommandHandler<CompleteMeetingCommand, Result>
     {
-        #region Fields
         private readonly IMeetingRepository _meetingRepository;
-        private readonly IMapper _mapper;
-        private readonly ILogger<CancelMeetingCommandHandler> _logger;
         private readonly ICurrentUserService _currentUserService;
-        private readonly IUnitOfWork _unitOfWork;
-        #endregion
 
-        #region Constructor
-        public CompleteMeetingCommandHandler(IMeetingRepository meetingRepository
-                                             , IMapper mapper
-                                             , ILogger<CancelMeetingCommandHandler> logger
-                                             , ICurrentUserService currentUserService
-                                             , IUnitOfWork unitOfWork)
+        public CompleteMeetingCommandHandler(
+            IMeetingRepository meetingRepository,
+            ICurrentUserService currentUserService)
         {
-            _logger = logger;
             _meetingRepository = meetingRepository;
-            _mapper = mapper;
             _currentUserService = currentUserService;
-            _unitOfWork = unitOfWork;
         }
-        #endregion
 
-        #region Actions
-        public async Task<Unit> Handle(CompleteMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(CompleteMeetingCommand request, CancellationToken cancellationToken)
         {
-            var meetingCompleted = await _meetingRepository.GetByIdAsync(request.Id);
-            if (meetingCompleted == null) throw new NotFoundException(nameof(Meeting), request.Id);
+            // 1. جلب الاجتماع (استخدام GetByIdAsync الخفيفة يكفي هنا)
+            var meetingId = MeetingId.Of(request.Id);
+            var meeting = await _meetingRepository.GetByIdAsync(meetingId, cancellationToken);
 
-            if (meetingCompleted.Status == MeetingStatus.Completed)
-                throw new DomainException("Meeting already completed");
+            if (meeting == null)
+                return Result.Failure("Meeting not found.");
 
-            meetingCompleted.Status = MeetingStatus.Completed;
-            meetingCompleted.UpdatedAt = DateTime.UtcNow;
-            meetingCompleted.UpdatedBy = _currentUserService.UserId;
+            // 2. تنفيذ السلوك (Domain Logic)
+            // هذا السطر يقوم بكل العمل الشاق: التحقق، تغيير الحالة، وإضافة الحدث
+            meeting.Complete(_currentUserService.UserId.ToString());
 
-            await _meetingRepository.UpdateAsync(meetingCompleted);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            // 3. الحفظ (Commit)
+            // سيتم حفظ الحالة الجديدة + إرسال الحدث MeetingCompletedEvent للـ Outbox
+            await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
 
-            return Unit.Value;
+            return Result.Success("Meeting completed successfully.");
+
         }
-        #endregion
-
-
     }
 }

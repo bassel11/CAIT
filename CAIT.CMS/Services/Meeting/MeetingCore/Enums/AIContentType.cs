@@ -4,6 +4,6 @@
     {
         AgendaDraft = 1,
         MoMDraft = 2,
-        Other = 3
+        ActionItemsExtraction = 3
     }
 }

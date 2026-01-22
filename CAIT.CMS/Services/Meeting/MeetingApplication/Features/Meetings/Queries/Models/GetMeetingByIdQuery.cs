@@ -1,16 +1,8 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Queries.Results;
-using MeetingApplication.Responses;
 
 namespace MeetingApplication.Features.Meetings.Queries.Models
 {
-    public class GetMeetingByIdQuery : IRequest<Response<GetMeetingResponse>>
-    {
-        public Guid Id { get; set; }
-
-        public GetMeetingByIdQuery(Guid id)
-        {
-            Id = id;
-        }
-    }
+    public record GetMeetingByIdQuery(Guid Id) : IQuery<Result<GetMeetingResponse>>;
 }

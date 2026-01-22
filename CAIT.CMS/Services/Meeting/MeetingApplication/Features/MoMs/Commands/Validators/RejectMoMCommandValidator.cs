@@ -7,8 +7,12 @@ namespace MeetingApplication.Features.MoMs.Commands.Validators
     {
         public RejectMoMCommandValidator()
         {
-            RuleFor(x => x.Id).NotEmpty();
-            RuleFor(x => x.Reason).NotEmpty().MaximumLength(1000);
+            RuleFor(x => x.MeetingId).NotEmpty();
+
+            RuleFor(x => x.Reason)
+                .NotEmpty().WithMessage("Rejection reason is required.")
+                .MinimumLength(5).WithMessage("Rejection reason must be at least 5 characters.")
+                .MaximumLength(500).WithMessage("Rejection reason cannot exceed 500 characters.");
         }
     }
 }

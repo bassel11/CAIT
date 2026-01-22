@@ -1,12 +1,13 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.MoMAttachments.Commands.Models
 {
-    public class AddMoMAttachmentCommand : IRequest<Guid>
-    {
-        public Guid MoMId { get; set; }
-        public byte[] Content { get; set; }
-        public string FileName { get; set; }
-        public string ContentType { get; set; }
-    }
+    public record AddMoMAttachmentCommand(
+        Guid MeetingId,
+        string FileName,
+        string ContentType,
+        long SizeInBytes,
+        string StoragePath
+    ) : ICommand<Result<Guid>>;
 }

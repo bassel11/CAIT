@@ -1,12 +1,10 @@
-﻿using MediatR;
-using MeetingApplication.Common;
+﻿using BuildingBlocks.Shared.CQRS;
 using MeetingApplication.Features.Attendances.Queries.Results;
-using MeetingApplication.Wrappers;
 
 namespace MeetingApplication.Features.Attendances.Queries.Models
 {
     public class GetAttendanceForMemberQuery
-        : PaginationRequest, IRequest<PaginatedResult<GetAttendanceResponse>>
+        : PaginationRequest, IQuery<PaginatedResult<AttendanceResponse>>
     {
     }
 }

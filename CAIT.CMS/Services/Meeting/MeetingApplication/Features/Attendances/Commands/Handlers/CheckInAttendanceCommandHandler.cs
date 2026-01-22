@@ -1,57 +1,36 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Attendances.Commands.Models;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.AttendanceVO;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Attendances.Commands.Handlers
 {
-    public class CheckInAttendanceCommandHandler : IRequestHandler<CheckInAttendanceCommand, Guid>
+    public class CheckInAttendeeCommandHandler : ICommandHandler<CheckInAttendeeCommand, Result>
     {
-        private readonly IAttendanceRepository _repo;
-        private readonly IMeetingRepository _meetings;
+        private readonly IMeetingRepository _meetingRepository;
 
-        public CheckInAttendanceCommandHandler(IAttendanceRepository repo, IMeetingRepository meetings)
+        public CheckInAttendeeCommandHandler(IMeetingRepository meetingRepository)
         {
-            _repo = repo;
-            _meetings = meetings;
+            _meetingRepository = meetingRepository;
         }
 
-        public async Task<Guid> Handle(CheckInAttendanceCommand req, CancellationToken ct)
+        public async Task<Result> Handle(CheckInAttendeeCommand request, CancellationToken cancellationToken)
         {
-            var meeting = await _meetings.GetByIdAsync(req.MeetingId);
+            var meeting = await _meetingRepository.GetWithAttendeesAsync(MeetingId.Of(request.MeetingId), cancellationToken);
+            if (meeting == null) return Result.Failure("Meeting not found.");
 
-            if (meeting == null)
+            try
             {
-                throw new NotFoundException(nameof(Meeting), req.MeetingId);
+                meeting.CheckInAttendee(UserId.Of(request.UserId), request.IsRemote);
+                await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+                return Result.Success("Checked in successfully.");
             }
-
-            // optionally: only allow check-in during [StartDate - X .. EndDate + Y] window. (Business rule)
-            // find existing record
-            var existing = await _repo.GetByMeetingAndMemberAsync(req.MeetingId, req.MemberId, ct);
-
-            if (existing != null)
+            catch (DomainException ex)
             {
-                existing.AttendanceStatus = req.AttendanceStatus;
-                existing.Timestamp = DateTime.UtcNow;
-                await _repo.UpdateAsync(existing);
-                await _repo.SaveChangesAsync(ct);
-                return existing.Id;
+                return Result.Failure(ex.Message);
             }
-
-            var rec = new Attendance
-            {
-                Id = Guid.NewGuid(),
-                MeetingId = req.MeetingId,
-                MemberId = req.MemberId,
-                RSVP = RSVPStatus.Accepted, // default to yes if checking-in
-                AttendanceStatus = req.AttendanceStatus,
-                Timestamp = DateTime.UtcNow
-            };
-
-            await _repo.AddAsync(rec);
-            await _repo.SaveChangesAsync(ct);
-            return rec.Id;
         }
     }
 }

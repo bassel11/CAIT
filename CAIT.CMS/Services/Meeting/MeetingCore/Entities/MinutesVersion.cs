@@ -1,16 +1,39 @@
-﻿namespace MeetingCore.Entities
+﻿using MeetingCore.ValueObjects.AttendanceVO;
+using MeetingCore.ValueObjects.MinutesVersionVO;
+using MeetingCore.ValueObjects.MinutesVO;
+
+namespace MeetingCore.Entities
 {
-    public class MinutesVersion
+    public class MinutesVersion : Entity<MinutesVersionId>
     {
-        public Guid Id { get; set; }
+        public MoMId MoMId { get; private set; } = default!;
+        public string Content { get; private set; } = default!;
+        public int VersionNumber { get; private set; }
 
-        public Guid MoMId { get; set; }
-        public MinutesOfMeeting MoM { get; set; } = default!;
+        // استخدام UserId بدلاً من Guid
+        public UserId ModifiedBy { get; private set; } = default!;
+        public DateTime ModifiedAt { get; private set; }
 
-        public string Content { get; set; } = default!;
-        public int VersionNumber { get; set; }
+        private MinutesVersion() { }
 
-        public Guid CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; }
+        // Internal Constructor
+        // يتم الإنشاء فقط عند قيام MinutesOfMeeting بعمل UpdateContent
+        internal MinutesVersion(
+            MoMId momId,
+            string content,
+            int versionNumber,
+            UserId modifiedBy)
+        {
+            Id = MinutesVersionId.Of(Guid.NewGuid());
+            MoMId = momId;
+            Content = content;
+            VersionNumber = versionNumber;
+            ModifiedBy = modifiedBy;
+            ModifiedAt = DateTime.UtcNow;
+
+            // تعبئة بيانات الـ Entity Base Audit
+            CreatedBy = modifiedBy.Value.ToString();
+            CreatedAt = DateTime.UtcNow;
+        }
     }
 }

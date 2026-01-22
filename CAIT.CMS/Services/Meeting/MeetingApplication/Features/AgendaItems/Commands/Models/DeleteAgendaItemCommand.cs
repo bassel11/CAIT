@@ -1,9 +1,8 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.AgendaItems.Commands.Models
 {
-    public class DeleteAgendaItemCommand : IRequest<Unit>
-    {
-        public Guid Id { get; set; }
-    }
+    public record DeleteAgendaItemCommand(Guid MeetingId, Guid AgendaItemId)
+        : ICommand<Result>;
 }

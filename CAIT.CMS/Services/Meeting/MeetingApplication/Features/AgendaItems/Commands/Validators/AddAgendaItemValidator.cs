@@ -8,9 +8,9 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Validators
         public AddAgendaItemValidator()
         {
             RuleFor(x => x.MeetingId).NotEmpty();
-            //RuleFor(x => x.Title).NotEmpty().MaximumLength(500);
-            //RuleFor(x => x.Description).MaximumLength(4000);
-            RuleFor(x => x.SortOrder).GreaterThanOrEqualTo(1);
+            RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
+            RuleFor(x => x.SortOrder).GreaterThan(0);
+            RuleFor(x => x.DurationMinutes).GreaterThan(0).When(x => x.DurationMinutes.HasValue);
         }
     }
 }

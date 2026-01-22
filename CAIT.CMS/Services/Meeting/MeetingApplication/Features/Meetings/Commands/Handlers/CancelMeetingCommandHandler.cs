@@ -1,86 +1,35 @@
-﻿using AutoMapper;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingApplication.Interfaces;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
-using Microsoft.Extensions.Logging;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
 {
-    public class CancelMeetingCommandHandler : IRequestHandler<CancelMeetingCommand, Unit>
+    public class CancelMeetingCommandHandler : ICommandHandler<CancelMeetingCommand, Result>
     {
-        #region Fields
-        private readonly IMeetingRepository _meetingRepository;
-        private readonly IIntegrationLogRepository _logRepository;
-        private readonly IMapper _mapper;
-        private readonly ILogger<CancelMeetingCommandHandler> _logger;
+        private readonly IMeetingRepository _repository;
         private readonly ICurrentUserService _currentUserService;
-        private readonly IUnitOfWork _unitOfWork;
-        #endregion
 
-        #region Constructor
-        public CancelMeetingCommandHandler(IMeetingRepository meetingRepository
-                                             , IIntegrationLogRepository logRepository
-                                             , IMapper mapper
-                                             , ILogger<CancelMeetingCommandHandler> logger
-                                             , ICurrentUserService currentUserService
-                                             , IUnitOfWork unitOfWork)
+        public CancelMeetingCommandHandler(
+            IMeetingRepository repository,
+            ICurrentUserService currentUserService)
         {
-            _logger = logger;
-            _meetingRepository = meetingRepository;
-            _mapper = mapper;
+            _repository = repository;
             _currentUserService = currentUserService;
-            _unitOfWork = unitOfWork;
-            _logRepository = logRepository;
         }
 
-        #endregion
-
-        #region Actions
-
-        public async Task<Unit> Handle(CancelMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(CancelMeetingCommand request, CancellationToken cancellationToken)
         {
-            var meeting = await _meetingRepository.GetByIdAsync(request.Id);
+            var meeting = await _repository.GetByIdAsync(MeetingId.Of(request.Id), cancellationToken);
+            if (meeting == null) return Result.Failure("Meeting not found.");
 
-            if (meeting == null)
-                throw new NotFoundException(nameof(Meeting), request.Id);
+            // استدعاء السلوك
+            meeting.Cancel(request.Reason, _currentUserService.UserId.ToString());
 
-            if (meeting.Status == MeetingStatus.Cancelled)
-                throw new DomainException("Meeting already cancelled");
-
-            meeting.Status = MeetingStatus.Cancelled;
-            meeting.UpdatedAt = DateTime.UtcNow;
-            meeting.UpdatedBy = _currentUserService.UserId;
-
-            var log = new MeetingIntegrationLog
-            {
-                Id = Guid.NewGuid(),
-                MeetingId = meeting.Id,
-                IntegrationType = IntegrationType.OutlookCancel,
-                Success = true,
-                ErrorMessage = $"Cancelled: {request.Reason}",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _logRepository.AddLogAsync(log);
-
-            // سجل التعديل في DbContext فقط
-            // await _meetingRepository.UpdateAsync(meeting);
-
-            // التعديلات على meeting + log ستحفظ معًا
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            return Unit.Value;
-
-
+            await _repository.UnitOfWork.SaveChangesAsync(cancellationToken);
+            return Result.Success("Meeting cancelled successfully.");
 
         }
-
-        #endregion
-
-
-
     }
 }

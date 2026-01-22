@@ -1,12 +1,11 @@
-﻿using MediatR;
-using MeetingCore.Enums;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
+using MeetingCore.Enums.AttendanceEnums;
 
 namespace MeetingApplication.Features.Attendances.Commands.Models
 {
-    public class ConfirmAttendanceCommand : IRequest<Guid>
-    {
-        public Guid MeetingId { get; set; }
-        public Guid MemberId { get; set; } // from Committee service
-        public RSVPStatus RSVP { get; set; } // Yes / No / Maybe
-    }
+    public record ConfirmAttendanceCommand(
+        Guid MeetingId,
+        RSVPStatus Status // ✅ أفضل ممارسة: استخدام الـ Enum مباشرة
+    ) : ICommand<Result>;
 }

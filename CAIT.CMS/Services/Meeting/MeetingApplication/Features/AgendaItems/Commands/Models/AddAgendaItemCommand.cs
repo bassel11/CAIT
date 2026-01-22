@@ -1,12 +1,14 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.AgendaItems.Commands.Models
 {
-    public class AddAgendaItemCommand : IRequest<Guid>
-    {
-        public Guid MeetingId { get; set; }
-        public string Title { get; set; }
-        public string? Description { get; set; }
-        public int SortOrder { get; set; }
-    }
+    public record AddAgendaItemCommand(
+    Guid MeetingId,
+    string Title,
+    string? Description,
+    int SortOrder,
+    int? DurationMinutes,
+    Guid? PresenterId
+) : ICommand<Result<Guid>>;
 }

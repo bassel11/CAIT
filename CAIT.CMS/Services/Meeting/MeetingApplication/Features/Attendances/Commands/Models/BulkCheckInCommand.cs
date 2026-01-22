@@ -1,18 +1,13 @@
-﻿using MediatR;
-using MeetingCore.Enums;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
+using MeetingCore.Enums.AttendanceEnums;
 
 namespace MeetingApplication.Features.Attendances.Commands.Models
 {
-    public class BulkCheckInCommand : IRequest<Unit>
-    {
-        public Guid MeetingId { get; set; }
-        public List<BulkCheckInEntry> Entries { get; set; }
+    public record BulkCheckInItemDto(Guid UserId, AttendanceStatus Status);
 
-        public class BulkCheckInEntry
-        {
-            public Guid MemberId { get; set; }
-            public AttendanceStatus Status { get; set; }
-        }
-    }
-
+    public record BulkCheckInCommand(
+        Guid MeetingId,
+        List<BulkCheckInItemDto> Items // ✅ استخدام DTO يحتوي على Enum
+    ) : ICommand<Result>;
 }

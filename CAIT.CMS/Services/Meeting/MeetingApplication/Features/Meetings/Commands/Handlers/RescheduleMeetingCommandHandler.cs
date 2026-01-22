@@ -1,62 +1,42 @@
-﻿using AutoMapper;
-using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
-using Microsoft.Extensions.Logging;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
 {
-    public class RescheduleMeetingCommandHandler : IRequestHandler<RescheduleMeetingCommand, Unit>
+    public class RescheduleMeetingCommandHandler : ICommandHandler<RescheduleMeetingCommand, Result>
     {
-        #region Fields
-        private readonly IMeetingRepository _meetingRepository;
-        private readonly IMapper _mapper;
-        private readonly ILogger<CreateMeetingCommandHandler> _logger;
+        private readonly IMeetingRepository _repository;
         private readonly ICurrentUserService _currentUserService;
-        #endregion
 
-        #region Constructor
-        public RescheduleMeetingCommandHandler(IMeetingRepository meetingRepository
-                                             , IMapper mapper
-                                             , ILogger<CreateMeetingCommandHandler> logger
-                                             , ICurrentUserService currentUserService)
+        public RescheduleMeetingCommandHandler(
+            IMeetingRepository repository,
+            ICurrentUserService currentUserService)
         {
-            _logger = logger;
-            _meetingRepository = meetingRepository;
-            _mapper = mapper;
+            _repository = repository;
             _currentUserService = currentUserService;
         }
-        #endregion
 
-        #region Actions
-        public async Task<Unit> Handle(RescheduleMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(RescheduleMeetingCommand request, CancellationToken cancellationToken)
         {
-            var rescheduledMeeting = await _meetingRepository.GetByIdAsync(request.Id);
-            if (rescheduledMeeting == null)
-            {
-                throw new NotFoundException(nameof(Meeting), request.Id);
-            }
+            var meetingId = MeetingId.Of(request.Id);
+            var meeting = await _repository.GetByIdAsync(meetingId, cancellationToken);
 
-            if (rescheduledMeeting.Status == MeetingStatus.Cancelled || rescheduledMeeting.Status == MeetingStatus.Completed)
-                throw new DomainException("Cannot reschedule a cancelled or completed meeting");
+            if (meeting == null) return Result.Failure("Meeting not found.");
 
-            // Update
-            rescheduledMeeting.StartDate = request.StartDate.ToUniversalTime();
-            rescheduledMeeting.EndDate = request.EndDate.ToUniversalTime();
-            rescheduledMeeting.Status = MeetingStatus.Rescheduled;
-            rescheduledMeeting.UpdatedAt = DateTime.UtcNow;
-            rescheduledMeeting.UpdatedBy = _currentUserService.UserId;
 
-            await _meetingRepository.UpdateAsync(rescheduledMeeting);
+            // استدعاء السلوك الموجود مسبقاً في Meeting.cs
+            meeting.Reschedule(
+                request.NewStartDate,
+                request.NewEndDate,
+                _currentUserService.UserId.ToString()
+            );
 
-            // Optionally: create integration/outbox notification for reschedule
-            return Unit.Value;
+            await _repository.UnitOfWork.SaveChangesAsync(cancellationToken);
+            return Result.Success("Meeting rescheduled successfully.");
 
         }
-
-        #endregion
     }
 }

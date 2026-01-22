@@ -4,6 +4,7 @@ using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
 using MeetingApplication.Features.AgendaItems.Queries.Models;
 using MeetingApplication.Features.AgendaItems.Queries.Results;
+using MeetingApplication.Wrappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,74 +34,70 @@ namespace MeetingAPI.Controllers
         // -------------------------------------------------------
         // CREATE AgendaItem
         // -------------------------------------------------------
-        [HttpPost(Name = "CreateAgendaItem")]
+        [HttpPost()]
         [Authorize(Policy = "Permission:AgendaItem.Create")]
         [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] AddAgendaItemCommand command)
         {
-            var id = await Mediator.Send(command);
-
-            return Success(id, "AgendaItemCreatedSuccessfully");
+            var result = await Mediator.Send(command);
+            return Success(result, "AgendaItemCreatedSuccessfully");
         }
 
 
         // -------------------------------------------------------
         // UPDATE AgendaItem
         // -------------------------------------------------------
-        [HttpPut("{id}", Name = "UpdateAgendaItem")]
+        [HttpPut("{id:guid}", Name = "UpdateAgendaItem")]
         [Authorize(Policy = "Permission:AgendaItem.Update")]
         [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Update([FromBody] UpdateAgendaItemCommand command)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAgendaItemCommand command)
         {
-            var updatedId = await Mediator.Send(command);
+            if (id != command.AgendaItemId)
+                return BadRequest("ID mismatch");
 
-            // ✅ استخدام EditSuccess أو Success
-            return Success(updatedId, "AgendaItemUpdatedSuccessfully");
+            var result = await Mediator.Send(command);
+            return Success(result, "Agenda Item Updated Successfully");
         }
 
 
         // -------------------------------------------------------
         // Delete AgendaItem
         // -------------------------------------------------------
-        [HttpDelete("{id}", Name = "DeleteAgendaItem")]
+        [HttpDelete("{meetingId:guid}/{id:guid}")] // نحتاج MeetingId للوصول للـ Aggregate
         [Authorize(Policy = "Permission:AgendaItem.Delete")]
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
-        public async Task<IActionResult> DeleteAgendaItem(Guid id)
+        public async Task<IActionResult> Delete(Guid meetingId, Guid id)
         {
-            await Mediator.Send(new DeleteAgendaItemCommand { Id = id });
-
-            // ✅ استخدام Success بدلاً من الرد بكائن مجهول
-            return Success<string>(null, "AgendaItemDeletedSuccessfully");
+            await Mediator.Send(new DeleteAgendaItemCommand(meetingId, id));
+            return Success("Agenda Item Deleted Successfully");
         }
 
 
         // -------------------------------------------------------
-        // Generate AgendaItem AI
+        // Generate Agenda Suggestions (AI)
         // -------------------------------------------------------
-        [HttpPost("generate-ai", Name = "GenerateAgendaItem")]
+        [HttpPost("generate-ai")]
         [Authorize(Policy = "Permission:AgendaItem.Generate")]
-        [ProducesResponseType(typeof(Result<List<GetAgendaItemResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result<List<AgendaItemResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GenerateAgendaByAI([FromBody] GenerateAgendaByAICommand command)
         {
             var result = await Mediator.Send(command);
 
-            // ✅ تغليف القائمة بـ Success Result
-            return Success(result, "AgendaItemsGeneratedSuccessfully");
+            // نستخدم Success لأنها Result<T>
+            return Success(result);
         }
 
 
         // -------------------------------------------------------
-        // Get AgendaItem
+        // GET (Paginated)
         // -------------------------------------------------------
-        [HttpGet("GetAgendaItems")]
+        [HttpPost("search")] // Post for complex search criteria
         [Authorize(Policy = "Permission:AgendaItem.View")]
-        [ProducesResponseType(typeof(Result<List<GetAgendaItemResponse>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAgendaItems([FromQuery] Guid meetingId)
+        [ProducesResponseType(typeof(Result<PaginatedResult<AgendaItemResponse>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAgendaItems([FromBody] GetAgendaItemsQuery query)
         {
-            var result = await Mediator.Send(new GetAgendaItemsQuery { MeetingId = meetingId });
-
-            // ✅ تغليف النتيجة
+            var result = await Mediator.Send(query);
             return Success(result);
         }
 

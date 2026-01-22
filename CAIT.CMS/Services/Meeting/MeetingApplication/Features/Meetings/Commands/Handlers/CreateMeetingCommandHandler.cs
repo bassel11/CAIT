@@ -1,57 +1,93 @@
-﻿using AutoMapper;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingApplication.Features.Meetings.Commands.Results;
 using MeetingCore.Entities;
 using MeetingCore.Repositories;
-using Microsoft.Extensions.Logging;
+using MeetingCore.ValueObjects;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
 {
-    public class CreateMeetingCommandHandler : IRequestHandler<CreateMeetingCommand, CreateMeetingResponse>
+    public class CreateMeetingCommandHandler : ICommandHandler<CreateMeetingCommand, Result<Guid>>
     {
-        #region Fields
-
         private readonly IMeetingRepository _meetingRepository;
-        private readonly IMapper _mapper;
-        private readonly ILogger<CreateMeetingCommandHandler> _logger;
         private readonly ICurrentUserService _currentUserService;
 
-        #endregion
-
-        #region Constructor
-
-        public CreateMeetingCommandHandler(IMeetingRepository meetingRepository
-                                         , IMapper mapper
-                                         , ILogger<CreateMeetingCommandHandler> logger
-                                         , ICurrentUserService currentUserService)
+        public CreateMeetingCommandHandler(
+            IMeetingRepository meetingRepository,
+            ICurrentUserService currentUserService)
         {
             _meetingRepository = meetingRepository;
-            _mapper = mapper;
-            _logger = logger;
             _currentUserService = currentUserService;
         }
 
-        #endregion
-
-        #region Actions
-        public async Task<CreateMeetingResponse> Handle(CreateMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(CreateMeetingCommand request, CancellationToken cancellationToken)
         {
-            if (request.EndDate <= request.StartDate)
-                throw new DomainException("EndDate must be greater than StartDate");
 
-            // تحويل الـ Command إلى كيان (Entity)
-            var meetingEntity = _mapper.Map<Meeting>(request);
+            // =========================================================
+            // 1. تحويل Primitives إلى Value Objects (Domain Validation)
+            // =========================================================
+            var currentUserId = _currentUserService.UserId.ToString();
+            var meetingId = MeetingId.Of(Guid.NewGuid());
+            var committeeId = CommitteeId.Of(request.CommitteeId);
+            var title = MeetingTitle.Of(request.Title);
 
-            // حفظ الكيان في قاعدة البيانات باستخدام Repository
-            var createdMeeting = await _meetingRepository.AddAsync(meetingEntity);
+            // التحقق من المنطقة الزمنية
+            TimeZoneId timeZone;
+            timeZone = TimeZoneId.Of(request.TimeZone);
 
-            _logger.LogInformation($"Meeting with Id {createdMeeting.Id} Successfully Created");
 
-            // تحويل الكيان المحفوظ إلى Response
-            var meetingResponse = _mapper.Map<CreateMeetingResponse>(createdMeeting);
-            return meetingResponse;
+            // بناء كائن الموقع
+            var location = MeetingLocation.Create(
+                request.LocationType,
+                request.LocationRoom,
+                request.LocationAddress,
+                request.LocationOnlineUrl
+            );
+
+            // بناء كائن التكرار
+            RecurrencePattern recurrence = RecurrencePattern.None;
+            if (request.IsRecurring)
+            {
+                if (!string.IsNullOrWhiteSpace(request.RecurrenceRule))
+                {
+                    recurrence = RecurrencePattern.WithRule(request.RecurrenceRule);
+                }
+                else if (request.RecurrenceType.HasValue)
+                {
+                    recurrence = RecurrencePattern.Simple(request.RecurrenceType.Value);
+                }
+            }
+
+            // =========================================================
+            // 2. إنشاء الـ Aggregate Root باستخدام الـ Factory
+            // =========================================================
+
+            var meeting = Meeting.Create(
+                meetingId,
+                committeeId,
+                title,
+                request.Description,
+                request.StartDate,
+                request.EndDate,
+                timeZone,
+                location,
+                recurrence,
+                currentUserId // Audit User
+            );
+
+            // =========================================================
+            // 3. الحفظ وضمان الـ Transactionality
+            // =========================================================
+
+            // إضافة للذاكرة
+            await _meetingRepository.AddAsync(meeting, cancellationToken);
+
+            // الحفظ النهائي (مع Outbox Messages)
+            await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+            return Result<Guid>.Success(meeting.Id.Value, "Meeting created successfully.");
+
         }
-        #endregion
     }
 }

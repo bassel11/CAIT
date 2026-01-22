@@ -1,65 +1,36 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingApplication.Integrations;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.AttendanceVO;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
 {
-    public class RejectMoMCommandHandler : IRequestHandler<RejectMoMCommand, Guid>
+    public class RejectMoMCommandHandler :
+    ICommandHandler<RejectMoMCommand, Result>
     {
-        private readonly IMoMRepository _repo;
+        private readonly IMinutesRepository _repo;
         private readonly ICurrentUserService _user;
-        private readonly IDateTimeProvider _clock;
-        private readonly IEventBus _eventBus;
 
-        public RejectMoMCommandHandler(IMoMRepository repo, ICurrentUserService user, IDateTimeProvider clock, IEventBus eventBus)
+        public RejectMoMCommandHandler(IMinutesRepository repo, ICurrentUserService user)
         {
             _repo = repo;
             _user = user;
-            _clock = clock;
-            _eventBus = eventBus;
         }
 
-        public async Task<Guid> Handle(RejectMoMCommand req, CancellationToken ct)
+        public async Task<Result> Handle(RejectMoMCommand req, CancellationToken ct)
         {
-            var mom = await _repo.GetByIdAsync(req.Id);
-            if (mom == null)
+            var mom = await _repo.GetByMeetingIdSimpleAsync(MeetingId.Of(req.MeetingId), ct);
+            if (mom == null) return Result.Failure("Minutes not found.");
+            try
             {
-                throw new NotFoundException(nameof(MinutesOfMeeting), req.Id);
+                mom.Reject(req.Reason, UserId.Of(_user.UserId));
+                await _repo.UnitOfWork.SaveChangesAsync(ct);
+                return Result.Success("Rejected successfully.");
             }
-
-            if (mom.Status == MoMStatus.Approved)
-                throw new DomainException("Cannot reject an approved MoM");
-
-            if (mom.Status != MoMStatus.PendingApproval)
-                throw new DomainException("Only pending MoMs can be rejected.");
-
-            mom.Status = MoMStatus.Rejected;
-            mom.ApprovedAt = _clock.UtcNow;
-            mom.ApprovedBy = _user.UserId;
-
-            var note = new MinutesVersion
-            {
-                Id = Guid.NewGuid(),
-                MoMId = mom.Id,
-                Content = $"[Rejection Reason by {_user.UserId} at {_clock.UtcNow}] {req.Reason}",
-                VersionNumber = mom.VersionNumber + 1,
-                CreatedAt = _clock.UtcNow,
-                CreatedBy = _user.UserId
-            };
-
-            mom.Versions.Add(note);
-            mom.VersionNumber += 1;
-
-            await _repo.AddVersionAsync(note, ct);
-            await _repo.UpdateAsync(mom);
-            await _repo.SaveChangesAsync(ct);
-
-            //await _eventBus.PublishAsync(new MoMDraftUpdatedEvent(mom.Id, mom.MeetingId, note.CreatedBy, note.CreatedAt), ct);
-
-            return mom.Id;
+            catch (DomainException ex) { return Result.Failure(ex.Message); }
         }
     }
+
 }

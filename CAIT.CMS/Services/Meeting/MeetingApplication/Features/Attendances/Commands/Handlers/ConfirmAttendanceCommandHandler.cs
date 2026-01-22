@@ -1,61 +1,51 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Attendances.Commands.Models;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.AttendanceVO;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Attendances.Commands.Handlers
 {
-    public class ConfirmAttendanceCommandHandler : IRequestHandler<ConfirmAttendanceCommand, Guid>
+    public class ConfirmAttendanceCommandHandler : ICommandHandler<ConfirmAttendanceCommand, Result>
     {
-        private readonly IAttendanceRepository _repo;
-        private readonly IMeetingRepository _meetings;
-        //private readonly IDateTimeProvider _clock;
+        private readonly IMeetingRepository _meetingRepository;
+        private readonly ICurrentUserService _currentUserService;
 
         public ConfirmAttendanceCommandHandler(
-            IAttendanceRepository repo,
-            IMeetingRepository meetings)
+            IMeetingRepository meetingRepository,
+            ICurrentUserService currentUserService)
         {
-            _repo = repo;
-            _meetings = meetings;
+            _meetingRepository = meetingRepository;
+            _currentUserService = currentUserService;
         }
 
-        public async Task<Guid> Handle(ConfirmAttendanceCommand req, CancellationToken ct)
+        public async Task<Result> Handle(ConfirmAttendanceCommand request, CancellationToken cancellationToken)
         {
-            var meeting = await _meetings.GetByIdAsync(req.MeetingId);
+            // 1. Load Meeting with Attendees
+            // نحتاج Attendees لنتأكد أن هذا المستخدم مدعو بالفعل
+            var meeting = await _meetingRepository.GetWithAttendeesAsync(MeetingId.Of(request.MeetingId), cancellationToken);
 
             if (meeting == null)
+                return Result.Failure("Meeting not found.");
+
+            try
             {
-                throw new NotFoundException(nameof(Meeting), req.MeetingId);
+                // 2. Domain Behavior
+                // ✅ استخدام المعرف من التوكن (Service) هو قمة الأمان
+                meeting.ConfirmRSVP(
+                    UserId.Of(_currentUserService.UserId),
+                    request.Status // لا حاجة للتحويل هنا
+                );
+
+                // 3. Save
+                await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+                return Result.Success("RSVP confirmed successfully.");
             }
-
-            // check existing RSVP record for member
-            var existing = await _repo.GetByMeetingAndMemberAsync(req.MeetingId, req.MemberId, ct);
-
-
-            if (existing != null)
+            catch (DomainException ex)
             {
-                existing.RSVP = req.RSVP;
-                existing.Timestamp = DateTime.UtcNow;
-                await _repo.UpdateAsync(existing);
-                await _repo.SaveChangesAsync(ct);
-                return existing.Id;
+                return Result.Failure(ex.Message);
             }
-
-            var rec = new Attendance
-            {
-                Id = Guid.NewGuid(),
-                MeetingId = req.MeetingId,
-                MemberId = req.MemberId,
-                RSVP = req.RSVP,
-                AttendanceStatus = AttendanceStatus.None,
-                Timestamp = DateTime.UtcNow
-            };
-
-            await _repo.AddAsync(rec);
-            await _repo.SaveChangesAsync(ct);
-            return rec.Id;
         }
     }
 }

@@ -1,9 +1,8 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class PublishMoMCommand : IRequest<string>
-    {
-        public Guid MoMId { get; set; }
-    }
+    public record PublishMoMCommand(Guid MeetingId)
+        : ICommand<Result>;
 }

@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.Abstractions;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -27,22 +28,20 @@ namespace MeetingInfrastructure.Interceptors
             if (context == null) return;
 
             // تحديد الكيانات التي لديها أحداث
-            var entities = context.ChangeTracker
-                .Entries<MeetingCore.Entities.MinutesOfMeeting>() // أو BaseEntity
-                .Where(e => e.Entity.Events.Any())
-                .Select(e => e.Entity)
+            var entitiesWithEvents = context.ChangeTracker
+                .Entries<IHasDomainEvents>() // كان سابقاً IAggregate
+                .Where(x => x.Entity.DomainEvents.Any())
+                .Select(x => x.Entity);
+
+            var domainEvents = entitiesWithEvents
+                .SelectMany(a => a.DomainEvents)
                 .ToList();
 
-            if (!entities.Any()) return;
+            entitiesWithEvents.ToList().ForEach(a => a.ClearDomainEvents());
 
-            var domainEvents = entities.SelectMany(e => e.Events).ToList();
-
-            entities.ForEach(e => e.ClearEvents());
-
-            // نشر الأحداث محلياً لـ Handlers (Audit, Integration)
             foreach (var domainEvent in domainEvents)
             {
-                await _mediator.Publish(domainEvent, ct);
+                await _mediator.Publish(domainEvent);
             }
         }
     }

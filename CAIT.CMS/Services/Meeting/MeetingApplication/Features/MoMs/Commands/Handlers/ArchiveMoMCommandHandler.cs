@@ -1,29 +1,40 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
 {
-    public class ArchiveMoMCommandHandler : IRequestHandler<ArchiveMoMCommand, Unit>
+    public class ArchiveMoMCommandHandler : ICommandHandler<ArchiveMoMCommand, Result>
     {
-        private readonly IMoMRepository _momRepo;
-        private readonly IDateTimeProvider _clock;
-        public ArchiveMoMCommandHandler(IMoMRepository momRepo, IDateTimeProvider clock) { _momRepo = momRepo; _clock = clock; }
-        public async Task<Unit> Handle(ArchiveMoMCommand req, CancellationToken ct)
+        private readonly IMinutesRepository _repo;
+        private readonly ICurrentUserService _user;
+
+        public ArchiveMoMCommandHandler(IMinutesRepository repo, ICurrentUserService user)
         {
-            var mom = await _momRepo.GetByIdAsync(req.MoMId);
-            if (mom == null)
+            _repo = repo;
+            _user = user;
+        }
+
+        public async Task<Result> Handle(ArchiveMoMCommand req, CancellationToken ct)
+        {
+            // استخدام الاستعلام الخفيف
+            var mom = await _repo.GetByMeetingIdSimpleAsync(MeetingId.Of(req.MeetingId), ct);
+
+            if (mom == null) return Result.Failure("Minutes not found.");
+
+            try
             {
-                throw new NotFoundException(nameof(MinutesOfMeeting), req.MoMId);
+                // الدالة التي أضفناها للكيان
+                mom.Archive();
+                await _repo.UnitOfWork.SaveChangesAsync(ct);
+                return Result.Success("Minutes archived successfully.");
             }
-            mom.Status = MoMStatus.Archived;
-            //mom.UpdatedAt = _clock.UtcNow;
-            await _momRepo.UpdateAsync(mom);
-            await _momRepo.SaveChangesAsync(ct);
-            return Unit.Value;
+            catch (DomainException ex)
+            {
+                return Result.Failure(ex.Message);
+            }
         }
     }
 }

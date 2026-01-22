@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.Abstractions;
+using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DecisionInfrastructure.Data.Interceptors
@@ -28,16 +29,16 @@ namespace DecisionInfrastructure.Data.Interceptors
             if (context == null) return;
 
 
-            var aggregates = context.ChangeTracker
-                .Entries<IAggregate>()
-                .Where(a => a.Entity.DomainEvents.Any())
-                .Select(a => a.Entity);
+            var entitiesWithEvents = context.ChangeTracker
+                .Entries<IHasDomainEvents>() // كان سابقاً IAggregate
+                .Where(x => x.Entity.DomainEvents.Any())
+                .Select(x => x.Entity);
 
-            var domainEvents = aggregates
+            var domainEvents = entitiesWithEvents
                 .SelectMany(a => a.DomainEvents)
                 .ToList();
 
-            aggregates.ToList().ForEach(a => a.ClearDomainEvents());
+            entitiesWithEvents.ToList().ForEach(a => a.ClearDomainEvents());
 
             foreach (var domainEvent in domainEvents)
             {

@@ -7,7 +7,7 @@
         public int PresentCount { get; set; }               // attendees counted as Present or Remote
         public int RequiredCount { get; set; }              // required by rule
         public bool QuorumMet { get; set; }
-        public string? RuleDescription { get; set; }        // human readable
-        public string? Note { get; set; }
+        public string RuleDescription { get; set; } = default!;      // human readable
+        public string StatusMessage { get; set; } = default!;
     }
 }

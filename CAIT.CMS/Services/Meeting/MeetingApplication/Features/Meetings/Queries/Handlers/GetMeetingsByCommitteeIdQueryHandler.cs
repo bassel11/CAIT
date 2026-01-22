@@ -1,49 +1,44 @@
-﻿using AutoMapper;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
+using MeetingApplication.Data;
 using MeetingApplication.Features.Meetings.Queries.Models;
 using MeetingApplication.Features.Meetings.Queries.Results;
-using MeetingApplication.Resources;
-using MeetingApplication.Responses;
-using MeetingCore.Repositories;
-using Microsoft.Extensions.Localization;
+using MeetingCore.ValueObjects;
 
 namespace MeetingApplication.Features.Meetings.Queries.Handlers
 {
-    public class GetMeetingsByCommitteeIdQueryHandler
-        : ResponseHandler,
-          IRequestHandler<GetMeetingsByCommitteeIdQuery, Response<IEnumerable<GetMeetingResponse>>>
+    public class GetMeetingsByCommitteeIdQueryHandler : IQueryHandler<GetMeetingsByCommitteeIdQuery, Result<List<GetMeetingResponse>>>
     {
-        private readonly IMeetingRepository _meetingRepository;
-        private readonly IMapper _mapper;
-        private readonly IStringLocalizer<SharedResources> _stringlocalizer;
+        private readonly IMeetingDbContext _dbContext;
 
-        public GetMeetingsByCommitteeIdQueryHandler(
-              IMeetingRepository meetingRepository,
-              IMapper mapper,
-              IStringLocalizer<SharedResources> stringlocalizer)
-            : base(stringlocalizer)
+        public GetMeetingsByCommitteeIdQueryHandler(IMeetingDbContext dbContext)
         {
-            _meetingRepository = meetingRepository;
-            _mapper = mapper;
-            _stringlocalizer = stringlocalizer;
+            _dbContext = dbContext;
         }
 
-        public async Task<Response<IEnumerable<GetMeetingResponse>>> Handle(
-             GetMeetingsByCommitteeIdQuery request,
-             CancellationToken cancellationToken)
+        public async Task<Result<List<GetMeetingResponse>>> Handle(GetMeetingsByCommitteeIdQuery request, CancellationToken cancellationToken)
         {
-            var meetings = await _meetingRepository.GetByCommitteeIdAsync(
-                request.CommitteeId,
-                cancellationToken
-            );
+            var committeeId = CommitteeId.Of(request.CommitteeId);
 
-            if (!meetings.Any())
-                return NotFound<IEnumerable<GetMeetingResponse>>(_stringlocalizer[SharedResourcesKeys.NotFound]);
+            // استعلام مباشر وسريع جداً يعيد قائمة خفيفة
+            var list = await _dbContext.Meetings
+                .AsNoTracking()
+                .Where(m => m.CommitteeId == committeeId)
+                .OrderByDescending(m => m.StartDate)
+                .Select(m => new GetMeetingResponse
+                {
+                    Id = m.Id.Value,
+                    Title = m.Title.Value,
+                    StartDate = m.StartDate,
+                    EndDate = m.EndDate,
+                    Status = m.Status.ToString(),
+                    LocationType = m.Location.Type.ToString(),
+                    AttendeesCount = m.Attendances.Count
+                    // لا نجلب الوصف الطويل أو الروابط هنا لتخفيف حجم البيانات
+                })
+                .ToListAsync(cancellationToken);
 
-            var result = _mapper.Map<IEnumerable<GetMeetingResponse>>(meetings);
-
-            return Success(result);
+            return Result<List<GetMeetingResponse>>.Success(list);
         }
-
     }
 }

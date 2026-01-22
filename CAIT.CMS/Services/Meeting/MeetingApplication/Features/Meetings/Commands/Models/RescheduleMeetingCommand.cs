@@ -1,11 +1,12 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.Meetings.Commands.Models
 {
-    public class RescheduleMeetingCommand : IRequest<Unit>
-    {
-        public Guid Id { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-    }
+    public record RescheduleMeetingCommand(
+    Guid Id,
+    DateTime NewStartDate,
+    DateTime NewEndDate
+    // Guid ModifiedBy
+) : ICommand<Result>;
 }

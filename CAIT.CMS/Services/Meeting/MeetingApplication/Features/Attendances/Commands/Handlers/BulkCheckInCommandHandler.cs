@@ -1,70 +1,49 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Attendances.Commands.Models;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.AttendanceVO;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Attendances.Commands.Handlers
 {
-    public class BulkCheckInCommandHandler : IRequestHandler<BulkCheckInCommand, Unit>
+    public class BulkCheckInCommandHandler : ICommandHandler<BulkCheckInCommand, Result>
     {
-        private readonly IAttendanceRepository _repo;
+        private readonly IMeetingRepository _meetingRepository;
 
-        public BulkCheckInCommandHandler(IAttendanceRepository repo)
+        public BulkCheckInCommandHandler(IMeetingRepository meetingRepository)
         {
-            _repo = repo;
+            _meetingRepository = meetingRepository;
         }
 
-        public async Task<Unit> Handle(BulkCheckInCommand req, CancellationToken ct)
+        public async Task<Result> Handle(BulkCheckInCommand request, CancellationToken cancellationToken)
         {
-            // 1️⃣ تحقق من وجود الاجتماع
-            bool meetingExists = await _repo.ExistsAsync(req.MeetingId, ct);
-            if (!meetingExists)
-                throw new NotFoundException(nameof(Meeting), req.MeetingId);
+            // 1. Load Aggregate
+            var meeting = await _meetingRepository.GetWithAttendeesAsync(MeetingId.Of(request.MeetingId), cancellationToken);
 
-            var memberIds = req.Entries.Select(e => e.MemberId).ToList();
+            if (meeting == null)
+                return Result.Failure("Meeting not found.");
 
-            // 2️⃣ جلب الحضور الحالي فقط للأعضاء المطلوبين
-            var existingAttendances = await _repo.GetByMeetingAndMembersAsync(req.MeetingId, memberIds, ct);
-
-            var now = DateTime.UtcNow;
-            var toAdd = new List<Attendance>();
-            var toUpdate = new List<Attendance>();
-
-            foreach (var entry in req.Entries)
+            try
             {
-                var exist = existingAttendances.FirstOrDefault(x => x.MemberId == entry.MemberId);
-                if (exist != null)
-                {
-                    exist.AttendanceStatus = entry.Status;
-                    exist.Timestamp = now;
-                    toUpdate.Add(exist);
-                }
-                else
-                {
-                    toAdd.Add(new Attendance
-                    {
-                        Id = Guid.NewGuid(),
-                        MeetingId = req.MeetingId,
-                        MemberId = entry.MemberId,
-                        AttendanceStatus = entry.Status,
-                        RSVP = RSVPStatus.Accepted,
-                        Timestamp = now
-                    });
-                }
+                // 2. Map Command DTOs to Domain Types (Value Objects & Enums)
+                // تحويل القائمة القادمة من الخارج إلى الشكل الذي يفهمه الدومين (Tuples)
+                var domainEntries = request.Items
+                    .Select(x => (UserId.Of(x.UserId), x.Status)) // ✅ لا حاجة للـ Casting هنا
+                    .ToList();
+
+                // 3. Execute Domain Logic
+                meeting.BulkCheckIn(domainEntries);
+
+                // 4. Save
+                await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+                return Result.Success("Bulk check-in completed successfully.");
             }
-
-            // 3️⃣ نفذ Bulk Update و Add
-            if (toUpdate.Any())
-                _repo.BulkUpdate(toUpdate);
-
-            if (toAdd.Any())
-                await _repo.BulkAddAsync(toAdd, ct);
-
-            // 4️⃣ حفظ التغييرات مرة واحدة
-            await _repo.SaveChangesAsync(ct);
-
-            return Unit.Value;
+            catch (DomainException ex)
+            {
+                return Result.Failure(ex.Message);
+            }
         }
     }
 }

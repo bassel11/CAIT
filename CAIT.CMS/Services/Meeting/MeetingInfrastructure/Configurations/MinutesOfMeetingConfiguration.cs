@@ -1,4 +1,7 @@
 ﻿using MeetingCore.Entities;
+using MeetingCore.Enums.MoMEnums;
+using MeetingCore.ValueObjects.MeetingVO;
+using MeetingCore.ValueObjects.MinutesVO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -6,32 +9,85 @@ namespace MeetingInfrastructure.Configurations
 {
     public class MinutesOfMeetingConfiguration : IEntityTypeConfiguration<MinutesOfMeeting>
     {
-        public void Configure(EntityTypeBuilder<MinutesOfMeeting> b)
+        public void Configure(EntityTypeBuilder<MinutesOfMeeting> builder)
         {
-            b.ToTable("MinutesOfMeetings");
-            b.HasKey(x => x.Id);
+            builder.ToTable("MinutesOfMeetings");
 
-            b.Property(x => x.Status)
-                .HasConversion<string>()
+            // 1. Keys & IDs
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id)
+                .HasConversion(id => id.Value, value => MoMId.Of(value));
+
+            builder.Property(x => x.MeetingId)
+                .HasConversion(id => id.Value, value => MeetingId.Of(value))
+                .IsRequired();
+
+            // 2. Properties
+            builder.Property(x => x.Status)
+                .HasConversion(
+                    s => s.ToString(),
+                    v => (MoMStatus)Enum.Parse(typeof(MoMStatus), v))
                 .HasMaxLength(50)
                 .IsRequired();
 
-            b.Property(x => x.AttendanceSummary).HasMaxLength(4000);
-            b.Property(x => x.AgendaSummary).HasMaxLength(4000);
-            b.Property(x => x.DecisionsSummary).HasMaxLength(4000);
+            // المحتوى HTML قد يكون كبيراً جداً
+            builder.Property(x => x.FullContentHtml)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired();
 
-            b.Property(x => x.ActionItemsJson).HasColumnType("nvarchar(max)");
+            builder.Property(x => x.VersionNumber)
+                .IsRequired();
 
-            b.Property(x => x.VersionNumber).IsRequired();
+            // Audit & Approvals
+            builder.Property(x => x.ApprovedBy); // Nullable Guid
+            builder.Property(x => x.ApprovedAt); // Nullable DateTime
 
-            b.Property(x => x.CreatedBy).IsRequired();
-            b.Property(x => x.CreatedAt).IsRequired();
+            builder.Property(x => x.CreatedBy).IsRequired().HasMaxLength(100);
+            builder.Property(x => x.CreatedAt).IsRequired();
 
-            b.HasIndex(x => x.MeetingId);
-            b.HasIndex(x => new { x.MeetingId, x.VersionNumber });
+            builder.Property(x => x.RowVersion).IsRowVersion();
 
-            b.Property(x => x.RowVersion).IsRowVersion();
+            // 3. Relationships & Backing Fields (CRITICAL)
 
+            // Decisions Drafts
+            builder.HasMany(x => x.Decisions)
+                .WithOne()
+                .HasForeignKey("MoMId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.Decisions))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+            // Action Items Drafts
+            builder.HasMany(x => x.ActionItems)
+                .WithOne()
+                .HasForeignKey("MoMId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.ActionItems))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+            // Attachments
+            builder.HasMany(x => x.Attachments)
+                .WithOne()
+                .HasForeignKey("MoMId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.Attachments))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+            // Versions
+            builder.HasMany(x => x.Versions)
+                .WithOne()
+                .HasForeignKey("MoMId") // أو x.MoMId إذا كان معرفاً في Version
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.Versions))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+            // 4. Indexes
+            builder.HasIndex(x => x.MeetingId).IsUnique(); // محضر واحد لكل اجتماع
+            builder.HasIndex(x => x.Status);
         }
     }
 }

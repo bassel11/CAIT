@@ -5,6 +5,9 @@ namespace MeetingApplication.Features.MoMs.Commands.Validators
 {
     public class ApproveMoMCommandValidator : AbstractValidator<ApproveMoMCommand>
     {
-        public ApproveMoMCommandValidator() => RuleFor(x => x.MoMId).NotEmpty();
+        public ApproveMoMCommandValidator()
+        {
+            RuleFor(x => x.MeetingId).NotEmpty();
+        }
     }
 }

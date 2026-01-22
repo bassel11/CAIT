@@ -1,88 +1,53 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.MoMs.Commands.Models;
-using MeetingApplication.Integrations;
 using MeetingCore.Entities;
-using MeetingCore.Enums;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.MoMs.Commands.Handlers
 {
-    public class CreateMoMCommandHandler : IRequestHandler<CreateMoMCommand, Guid>
+    public class CreateMoMCommandHandler : ICommandHandler<CreateMoMCommand, Result<Guid>>
     {
-        private readonly IMoMRepository _repo;
-        private readonly IMeetingRepository _meetings;
-        private readonly IDateTimeProvider _clock;
+        private readonly IMinutesRepository _momRepo;
+        private readonly IMeetingRepository _meetingRepo;
         private readonly ICurrentUserService _user;
-        private readonly IEventBus _bus;
 
-        public CreateMoMCommandHandler(IMoMRepository repo
-                                     , IMeetingRepository meetings
-                                     , IDateTimeProvider clock
-                                     , ICurrentUserService user
-                                     , IEventBus bus)
+        public CreateMoMCommandHandler(
+            IMinutesRepository momRepo,
+            IMeetingRepository meetingRepo,
+            ICurrentUserService user)
         {
-            _repo = repo;
-            _meetings = meetings;
-            _clock = clock;
+            _momRepo = momRepo;
+            _meetingRepo = meetingRepo;
             _user = user;
-            _bus = bus;
         }
 
-        public async Task<Guid> Handle(CreateMoMCommand req, CancellationToken ct)
+        public async Task<Result<Guid>> Handle(CreateMoMCommand req, CancellationToken ct)
         {
-            var meeting = await _meetings.GetByIdAsync(req.MeetingId);
+            var meetingId = MeetingId.Of(req.MeetingId);
+
+            // 1. التحقق من وجود الاجتماع
+            var meeting = await _meetingRepo.GetByIdAsync(meetingId, ct);
             if (meeting == null)
-            {
-                throw new NotFoundException(nameof(Meeting), req.MeetingId);
-            }
+                return Result<Guid>.Failure("Meeting not found.");
 
-            // Business rule: cannot create MoM before meeting ended
-            if (meeting.EndDate > _clock.UtcNow)
-                throw new DomainException("Cannot create MoM before meeting ends.");
+            // 2. التحقق من عدم وجود محضر سابق
+            if (await _momRepo.ExistsForMeetingAsync(meetingId, ct))
+                return Result<Guid>.Failure("Minutes already exist for this meeting.");
 
-            // Optional: prevent multiple MoM if one exists
-            var existingMoM = await _repo.GetByMeetingIdAsync(req.MeetingId, ct);
-            if (existingMoM != null)
-                throw new DomainException("MoM already exists for this meeting");
+            // 3. الإنشاء
+            var mom = new MinutesOfMeeting(
+                meetingId,
+                req.InitialContent,
+                _user.UserId.ToString()
+            );
 
-            int nextVersion = existingMoM?.VersionNumber + 1 ?? 1;
+            // 4. الحفظ
+            await _momRepo.AddAsync(mom, ct);
+            await _momRepo.UnitOfWork.SaveChangesAsync(ct);
 
-
-            var mom = new MinutesOfMeeting
-            {
-                Id = Guid.NewGuid(),
-                MeetingId = req.MeetingId,
-                Status = MoMStatus.Draft,
-                AttendanceSummary = req.AttendanceSummary,
-                AgendaSummary = req.AgendaSummary,
-                DecisionsSummary = req.DecisionsSummary,
-                ActionItemsJson = req.ActionItemsJson,
-                VersionNumber = nextVersion,
-                CreatedAt = _clock.UtcNow,
-                CreatedBy = _user.UserId == Guid.Empty ? Guid.Empty : _user.UserId
-            };
-
-            // initial content as first version
-            if (!string.IsNullOrWhiteSpace(req.InitialContent))
-            {
-                var ver = new MinutesVersion
-                {
-                    Id = Guid.NewGuid(),
-                    MoMId = mom.Id,
-                    Content = req.InitialContent!,
-                    VersionNumber = nextVersion,
-                    CreatedAt = _clock.UtcNow,
-                    CreatedBy = mom.CreatedBy
-                };
-                mom.Versions.Add(ver);
-            }
-
-            await _repo.AddAsync(mom);
-            await _repo.SaveChangesAsync(ct);
-
-            // publish domain event
-
-            return mom.Id;
+            return Result<Guid>.Success(mom.Id.Value, "Minutes draft created successfully.");
         }
     }
 }

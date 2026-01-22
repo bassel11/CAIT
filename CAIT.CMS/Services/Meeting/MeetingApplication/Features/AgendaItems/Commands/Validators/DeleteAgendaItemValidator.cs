@@ -7,7 +7,8 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Validators
     {
         public DeleteAgendaItemValidator()
         {
-            RuleFor(x => x.Id).NotEmpty();
+            RuleFor(x => x.MeetingId).NotEmpty().WithMessage("MeetingId is required.");
+            RuleFor(x => x.AgendaItemId).NotEmpty().WithMessage("AgendaItemId is required.");
         }
     }
 }

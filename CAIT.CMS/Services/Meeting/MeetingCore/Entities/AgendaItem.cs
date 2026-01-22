@@ -1,17 +1,48 @@
-﻿namespace MeetingCore.Entities
+﻿using MeetingCore.ValueObjects.AgendaItemVO;
+using MeetingCore.ValueObjects.MeetingVO;
+
+namespace MeetingCore.Entities
 {
-    public class AgendaItem
+    public class AgendaItem : Entity<AgendaItemId>
     {
-        public Guid Id { get; set; }
-
-        public Guid MeetingId { get; set; }
-        public Meeting Meeting { get; set; } = default!;
-
-        public string Title { get; set; } = default!;
+        public MeetingId MeetingId { get; private set; } = default!;
+        public AgendaItemTitle Title { get; set; } = default!;
         public string? Description { get; set; }
+        public Duration? AllocatedTime { get; private set; }
+        public SortOrder SortOrder { get; private set; } = default!;
+        public PresenterId? PresenterId { get; private set; }
 
-        public int SortOrder { get; set; }
+        private AgendaItem() { } // EF Core
 
-        public DateTime CreatedAt { get; set; }
+        internal AgendaItem(
+            MeetingId meetingId,
+            AgendaItemTitle title,
+            Duration? allocatedTime,
+            SortOrder sortOrder,
+            PresenterId? presenterId,
+            string? description = null)
+        {
+            Id = AgendaItemId.Of(Guid.NewGuid());
+            MeetingId = meetingId ?? throw new DomainException("MeetingId is required.");
+            Title = title ?? throw new DomainException("Title is required.");
+            AllocatedTime = allocatedTime;
+            SortOrder = sortOrder ?? throw new DomainException("SortOrder is required.");
+            PresenterId = presenterId;
+            Description = description;
+        }
+
+        internal void Update(
+            AgendaItemTitle title,
+            string? description,
+            SortOrder sortOrder,
+            Duration? duration,
+            PresenterId? presenterId)
+        {
+            Title = title;
+            Description = description;
+            SortOrder = sortOrder;
+            AllocatedTime = duration;
+            PresenterId = presenterId;
+        }
     }
 }

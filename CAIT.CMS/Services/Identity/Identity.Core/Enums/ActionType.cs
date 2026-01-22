@@ -30,5 +30,6 @@
         Reject = 25,           // رفض أو إلغاء
         Submit = 26,           // تأكيد
         Unassign = 27,
+        Schedule = 28,      // جدولة
     }
 }

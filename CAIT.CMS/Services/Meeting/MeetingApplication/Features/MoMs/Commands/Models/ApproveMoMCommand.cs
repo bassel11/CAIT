@@ -1,14 +1,8 @@
-﻿using MediatR;
-using MeetingApplication.Interfaces;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class ApproveMoMCommand : IRequest<Unit>, ITransactionalRequest
-    {
-        public Guid MoMId { get; set; }
-        public ApproveMoMCommand(Guid momId)
-        {
-            MoMId = momId;
-        }
-    }
+    public record ApproveMoMCommand(Guid MeetingId)
+        : ICommand<Result>;
 }

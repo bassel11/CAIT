@@ -389,6 +389,22 @@
     "IsActive": true
   },
   {
+    "Name": "Meeting.Complete",
+    "ResourceType": 4,
+    "Action": 19,
+    "Description": "Complete Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "Meeting.Schedule",
+    "ResourceType": 4,
+    "Action": 28,
+    "Description": "Schedule Meeting",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
     "Name": "Meeting.Reschedule",
     "ResourceType": 4,
     "Action": 20,

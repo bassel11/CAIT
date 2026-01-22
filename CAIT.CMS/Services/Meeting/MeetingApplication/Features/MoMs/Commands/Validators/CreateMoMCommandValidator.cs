@@ -7,11 +7,12 @@ namespace MeetingApplication.Features.MoMs.Commands.Validators
     {
         public CreateMoMCommandValidator()
         {
-            RuleFor(x => x.MeetingId).NotEmpty();
-            RuleFor(x => x.AttendanceSummary).MaximumLength(4000);
-            RuleFor(x => x.AgendaSummary).MaximumLength(4000);
-            RuleFor(x => x.DecisionsSummary).MaximumLength(4000);
-            RuleFor(x => x.ActionItemsJson).MaximumLength(4000);
+            RuleFor(x => x.MeetingId)
+                .NotEmpty().WithMessage("MeetingId is required.");
+
+            RuleFor(x => x.InitialContent)
+                .NotEmpty().WithMessage("Initial content cannot be empty.")
+                .MaximumLength(1000000).WithMessage("Content is too long."); // تحديد سقف للحماية
         }
     }
 }

@@ -1,58 +1,63 @@
-﻿using AutoMapper;
-using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingApplication.Features.Meetings.Commands.Results;
-using MeetingCore.Entities;
-using MeetingCore.Enums;
+using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
-using Microsoft.Extensions.Logging;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
 {
-    public class UpdateMeetingCommandHandler : IRequestHandler<UpdateMeetingCommand, UpdateMeetingResponse>
+    public class UpdateMeetingCommandHandler : ICommandHandler<UpdateMeetingCommand, Result<Guid>>
     {
-        #region Fields
-        private readonly IMeetingRepository _meetingRepository;
-        private readonly IMapper _mapper;
-        private readonly ILogger<UpdateMeetingCommandHandler> _logger;
-        #endregion
+        private readonly IMeetingRepository _repository;
+        private readonly ICurrentUserService _currentUserService;
 
-        #region Constructor
-        public UpdateMeetingCommandHandler(IMeetingRepository meetingRepository
-                                         , IMapper mapper
-                                         , ILogger<UpdateMeetingCommandHandler> logger)
+        public UpdateMeetingCommandHandler(
+            IMeetingRepository repository,
+            ICurrentUserService currentUserService)
         {
-            _meetingRepository = meetingRepository;
-            _mapper = mapper;
-            _logger = logger;
+            _repository = repository;
+            _currentUserService = currentUserService;
         }
-        #endregion
 
-        #region Actions
-
-        public async Task<UpdateMeetingResponse> Handle(UpdateMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(UpdateMeetingCommand request, CancellationToken cancellationToken)
         {
-            var meetingToUpdate = await _meetingRepository.GetByIdAsync(request.Id);
-            if (meetingToUpdate == null)
+            // 1. جلب الاجتماع (استخدام الجلب الخفيف لأننا لا نعدل الأجندة أو الحضور)
+            var meetingId = MeetingId.Of(request.Id);
+            var meeting = await _repository.GetByIdAsync(meetingId, cancellationToken);
+
+            if (meeting == null)
+                return Result<Guid>.Failure("Meeting not found.");
+
+            try
             {
-                throw new NotFoundException(nameof(Meeting), request.Id);
+                // 2. تحويل Primitives إلى Value Objects
+                var title = MeetingTitle.Of(request.Title);
+
+                var location = MeetingLocation.Create(
+                    (LocationType)request.LocationType,
+                    request.LocationRoom,
+                    request.LocationAddress,
+                    request.LocationOnlineUrl
+                );
+
+                // 3. استدعاء السلوك (Behavior) في الدومين
+                meeting.UpdateDetails(
+                    title,
+                    request.Description,
+                    location,
+                    _currentUserService.UserId.ToString()
+                );
+
+                // 4. الحفظ (Transactional via UnitOfWork)
+                await _repository.UnitOfWork.SaveChangesAsync(cancellationToken);
+
+                return Result<Guid>.Success(meeting.Id.Value, "Meeting updated successfully.");
             }
-
-            // Business rule: cannot update cancelled or completed meetings (example)
-            if (meetingToUpdate.Status == MeetingStatus.Cancelled || meetingToUpdate.Status == MeetingStatus.Completed)
-                throw new DomainException("Cannot update a cancelled or completed meeting");
-
-            _mapper.Map(request, meetingToUpdate, typeof(UpdateMeetingCommand), typeof(Meeting));
-            await _meetingRepository.UpdateAsync(meetingToUpdate);
-
-            _logger.LogInformation($"Meeting {meetingToUpdate.Id} is successfully updated");
-
-            // Map updated entity to response
-            var response = _mapper.Map<UpdateMeetingResponse>(meetingToUpdate);
-            return response;
+            catch (DomainException ex)
+            {
+                return Result<Guid>.Failure(ex.Message);
+            }
         }
-
-        #endregion
     }
 }

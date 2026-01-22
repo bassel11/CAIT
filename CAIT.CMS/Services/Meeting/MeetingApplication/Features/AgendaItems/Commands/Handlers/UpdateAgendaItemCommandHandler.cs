@@ -1,45 +1,44 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
-using MeetingCore.Entities;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.AgendaItemVO;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
 {
-    public class UpdateAgendaItemCommandHandler : IRequestHandler<UpdateAgendaItemCommand, Guid>
+    public class UpdateAgendaItemCommandHandler : ICommandHandler<UpdateAgendaItemCommand, Result>
     {
+        private readonly IMeetingRepository _meetingRepository;
 
-        #region Fields
-        private readonly IAgendaRepository _agendaRepository;
-        #endregion
-
-        #region Constructor
-        public UpdateAgendaItemCommandHandler(IAgendaRepository agendaRepository)
+        public UpdateAgendaItemCommandHandler(IMeetingRepository meetingRepository)
         {
-            _agendaRepository = agendaRepository;
+            _meetingRepository = meetingRepository;
         }
 
-        #endregion
-
-        #region  Actions
-        public async Task<Guid> Handle(UpdateAgendaItemCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(UpdateAgendaItemCommand request, CancellationToken cancellationToken)
         {
-            var item = await _agendaRepository.GetByIdAsync(request.Id);
+            var meeting = await _meetingRepository.GetWithAgendaAsync(MeetingId.Of(request.MeetingId), cancellationToken);
+            if (meeting == null) return Result.Failure("Meeting not found.");
 
-            if (item == null)
-                throw new NotFoundException(nameof(AgendaItem), request.Id);
+            try
+            {
+                meeting.UpdateAgendaItem(
+                    AgendaItemId.Of(request.AgendaItemId),
+                    AgendaItemTitle.Of(request.Title),
+                    request.Description,
+                    SortOrder.Of(request.SortOrder),
+                    request.DurationMinutes.HasValue ? Duration.FromMinutes(request.DurationMinutes.Value) : null,
+                    request.PresenterId.HasValue ? PresenterId.Of(request.PresenterId.Value) : null
+                );
 
-            item.Title = request.Title;
-            item.Description = request.Description;
-            item.SortOrder = request.SortOrder;
-
-            await _agendaRepository.UpdateAsync(item);
-
-            return item.Id; // إرجاع الـ Guid
+                await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+                return Result.Success("Agenda Item updated successfully.");
+            }
+            catch (DomainException ex)
+            {
+                return Result.Failure(ex.Message);
+            }
         }
-
-
-        #endregion
-
     }
 }

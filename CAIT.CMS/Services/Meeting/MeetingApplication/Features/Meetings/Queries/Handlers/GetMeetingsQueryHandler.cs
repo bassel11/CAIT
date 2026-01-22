@@ -1,79 +1,77 @@
-﻿using AutoMapper;
-using BuildingBlocks.Shared.Services;
-using MediatR;
-using MeetingApplication.Extensions;
+﻿using BuildingBlocks.Shared.CQRS;
+using MeetingApplication.Data;
 using MeetingApplication.Features.Meetings.Queries.Models;
 using MeetingApplication.Features.Meetings.Queries.Results;
-using MeetingApplication.Resources;
-using MeetingApplication.Responses;
-using MeetingApplication.Wrappers;
-using MeetingCore.Repositories;
-using Microsoft.Extensions.Localization;
+using MeetingCore.Enums.MeetingEnums;
+using MeetingCore.ValueObjects;
 
 namespace MeetingApplication.Features.Meetings.Queries.Handlers
 {
-    public class GetMeetingsQueryHandler : ResponseHandler
-                                         , IRequestHandler<GetMeetingsQuery, PaginatedResult<GetMeetingResponse>>
+    public class GetMeetingsQueryHandler
+        : IQueryHandler<GetMeetingsQuery, PaginatedResult<GetMeetingResponse>>
     {
-        #region Fields
-        private readonly IMeetingRepository _meetingRepository;
-        private readonly IMapper _mapper;
-        private readonly IStringLocalizer<SharedResources> _stringLocalizer;
-        private readonly IPaginationService _paginationService;
-        private readonly ICurrentUserService _currentUser;
-        #endregion
-        #region Constructor
-        public GetMeetingsQueryHandler(IMeetingRepository meetingRepository
-                                    , IMapper mapper
-                                    , IStringLocalizer<SharedResources> stringLocalizer
-                                    , IPaginationService paginationService
-                                    , ICurrentUserService currentUser) : base(stringLocalizer)
+        private readonly IMeetingDbContext _dbContext;
+
+        public GetMeetingsQueryHandler(IMeetingDbContext dbContext)
         {
-            _meetingRepository = meetingRepository;
-            _mapper = mapper;
-            _stringLocalizer = stringLocalizer;
-            _paginationService = paginationService;
-            _currentUser = currentUser;
+            _dbContext = dbContext;
         }
-        #endregion
 
         public async Task<PaginatedResult<GetMeetingResponse>> Handle(GetMeetingsQuery request, CancellationToken cancellationToken)
         {
-            var query = _meetingRepository.Query();
+            // 1. بناء الـ Queryable (لم يتم التنفيذ في DB بعد)
+            var query = _dbContext.Meetings.AsNoTracking().AsQueryable();
 
+            // 2. الفلترة (Filtering)
+            if (request.CommitteeId.HasValue)
+            {
+                var commId = CommitteeId.Of(request.CommitteeId.Value);
+                query = query.Where(m => m.CommitteeId == commId);
+            }
 
-            // 2) Search
-            // ---------------------------------------------------------
+            // 3. البحث (Search)
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
-                query = query.ApplySearch(request.Search, c =>
-                    (c.Title != null && c.Title.Contains(request.Search)) ||
-                    (c.Description != null && c.Description.Contains(request.Search))
+                var search = request.Search.Trim();
+                // EF Core يترجم الوصول للـ Value Object Property بشكل صحيح
+                query = query.Where(m =>
+                    m.Title.Value.Contains(search) ||
+                    (m.Description != null && m.Description.Contains(search))
                 );
             }
 
-            // 3) Dynamic Filters
-            // ---------------------------------------------------------
-            query = query.ApplyDynamicFilters(request.Filters);
+            // 4. الفرز (Sorting) - افتراضياً الأحدث
+            query = query.OrderByDescending(x => x.CreatedAt);
 
-            // ---------------------------------------------------------
-            // 4) Sorting
-            // ---------------------------------------------------------
-            query = query.ApplySorting(request.SortBy, defaultSort: "CreatedAt desc");
+            // 5. العد (Count) - ينفذ جملة SELECT COUNT(*) في الداتابيز
+            var totalCount = await query.CountAsync(cancellationToken);
 
-            // ---------------------------------------------------------
-            // 5) Projection (AutoMapper → يُحوّل الاستعلام لـ SELECT فقط)
-            // ---------------------------------------------------------
-            var projected = _mapper.ProjectTo<GetMeetingResponse>(query);
+            // 6. جلب الصفحة (Pagination & Projection)
+            // استخدام Select هنا يضمن أننا نجلب فقط الحقول المطلوبة للصفحة الحالية
+            var items = await query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(m => new GetMeetingResponse
+                {
+                    Id = m.Id.Value,
+                    Title = m.Title.Value,
+                    StartDate = m.StartDate,
+                    EndDate = m.EndDate,
+                    Status = m.Status.ToString(),
+                    FormattedLocation = m.Location.Type == LocationType.Online
+                        ? "Online"
+                        : (m.Location.RoomName ?? m.Location.Address ?? "Physical Location"),
+                    AttendeesCount = m.Attendances.Count
+                })
+                .ToListAsync(cancellationToken);
 
-            // ---------------------------------------------------------
-            // 6) Pagination
-            // ---------------------------------------------------------
-            return await _paginationService.PaginateAsync(
-                projected,
-                request.PageNumber,
-                request.PageSize
-            );
+            // 7. إرجاع النتيجة
+            return PaginatedResult<GetMeetingResponse>.Success(
+                    items,
+                    totalCount,
+                    request.PageNumber,
+                    request.PageSize
+                );
         }
     }
 }

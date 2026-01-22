@@ -1,5 +1,5 @@
 ﻿using MassTransit;
-using MeetingCore.Events;
+using MeetingCore.Events.MoMEvents;
 using Microsoft.Extensions.Logging;
 
 namespace MeetingInfrastructure.Messaging.Consumers

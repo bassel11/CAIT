@@ -1,20 +1,8 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class CreateMoMCommand : IRequest<Guid>
-    {
-        public Guid MeetingId { get; set; }
-        public string? AttendanceSummary { get; set; }
-        public string? AgendaSummary { get; set; }
-        public string? DecisionsSummary { get; set; }
-        public string? ActionItemsJson { get; set; }
-        public string? InitialContent { get; set; }
-
-        public CreateMoMCommand(Guid meetingId, string? initialContent)
-        {
-            MeetingId = meetingId;
-            InitialContent = initialContent;
-        }
-    }
+    public record CreateMoMCommand(Guid MeetingId, string InitialContent)
+        : ICommand<Result<Guid>>;
 }

@@ -1,9 +1,7 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.MoMs.Commands.Models
 {
-    public class ArchiveMoMCommand : IRequest<Unit>
-    {
-        public Guid MoMId { get; set; }
-    }
+    public record ArchiveMoMCommand(Guid MeetingId) : ICommand<Result>;
 }

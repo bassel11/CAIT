@@ -1,39 +1,37 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.AgendaItems.Commands.Models;
 using MeetingCore.Repositories;
+using MeetingCore.ValueObjects.AgendaItemVO;
+using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
 {
-    public class DeleteAgendaItemCommandHandler : IRequestHandler<DeleteAgendaItemCommand, Unit>
+    public class DeleteAgendaItemCommandHandler
+        : ICommandHandler<DeleteAgendaItemCommand, Result>
     {
-        #region Fields
+        private readonly IMeetingRepository _meetingRepository;
 
-        private readonly IAgendaRepository _agendaRepository;
-        #endregion
-
-        #region Constructor
-        public DeleteAgendaItemCommandHandler(IAgendaRepository agendaRepository)
+        public DeleteAgendaItemCommandHandler(IMeetingRepository meetingRepository)
         {
-            _agendaRepository = agendaRepository;
+            _meetingRepository = meetingRepository;
         }
 
-        #endregion
-
-        #region Actions
-
-        public async Task<Unit> Handle(DeleteAgendaItemCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(DeleteAgendaItemCommand request, CancellationToken cancellationToken)
         {
-            var item = await _agendaRepository.GetByIdAsync(request.Id);
+            var meeting = await _meetingRepository.GetWithAgendaAsync(MeetingId.Of(request.MeetingId), cancellationToken);
+            if (meeting == null) return Result.Failure("Meeting not found.");
 
-            if (item == null)
-                throw new NotFoundException("AgendaItem", request.Id);
-
-            await _agendaRepository.DeleteAsync(item);
-
-            return Unit.Value;
+            try
+            {
+                meeting.RemoveAgendaItem(AgendaItemId.Of(request.AgendaItemId));
+                await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+                return Result.Success("Agenda Item removed successfully.");
+            }
+            catch (DomainException ex)
+            {
+                return Result.Failure(ex.Message);
+            }
         }
-
-        #endregion
     }
 }

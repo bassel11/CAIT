@@ -1,12 +1,15 @@
-﻿using MediatR;
+﻿using BuildingBlocks.Shared.CQRS;
+using BuildingBlocks.Shared.Wrappers;
 
 namespace MeetingApplication.Features.AgendaItems.Commands.Models
 {
-    public class UpdateAgendaItemCommand : IRequest<Guid>
-    {
-        public Guid Id { get; set; }
-        public string Title { get; set; }
-        public string? Description { get; set; }
-        public int SortOrder { get; set; }
-    }
+    public record UpdateAgendaItemCommand(
+    Guid MeetingId, // ضروري للوصول للـ Aggregate
+    Guid AgendaItemId,
+    string Title,
+    string? Description,
+    int SortOrder,
+    int? DurationMinutes,
+    Guid? PresenterId
+) : ICommand<Result>;
 }
