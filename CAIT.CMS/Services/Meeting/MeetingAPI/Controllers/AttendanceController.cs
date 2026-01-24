@@ -122,14 +122,14 @@ namespace MeetingAPI.Controllers
         // -------------------------------------------------------------
         // GET: By Member (Paginated)
         // -------------------------------------------------------------
-        [HttpGet("member")] // نستخدم Query String للبحث
-        [Authorize(Policy = "Permission:Attendance.View")]
-        [ProducesResponseType(typeof(Result<PaginatedResult<AttendanceResponse>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAttendanceForMember([FromQuery] GetAttendanceForMemberQuery query)
-        {
-            var result = await Mediator.Send(query);
-            return Success(result);
-        }
+        //[HttpGet("member")] // نستخدم Query String للبحث
+        //[Authorize(Policy = "Permission:Attendance.View")]
+        //[ProducesResponseType(typeof(Result<PaginatedResult<AttendanceResponse>>), StatusCodes.Status200OK)]
+        //public async Task<IActionResult> GetAttendanceForMember([FromQuery] GetAttendanceForMemberQuery query)
+        //{
+        //    var result = await Mediator.Send(query);
+        //    return Success(result);
+        //}
 
         // -------------------------------------------------------------
         // GET: Validate Quorum
