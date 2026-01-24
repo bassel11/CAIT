@@ -64,7 +64,8 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtConfig["Issuer"],      // من Identity Service
         ValidAudience = jwtConfig["Audience"],  // من Identity Service
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtConfig["Key"]))
+            Encoding.UTF8.GetBytes(jwtConfig["Key"])),
+        ClockSkew = TimeSpan.Zero
     };
 });
 
