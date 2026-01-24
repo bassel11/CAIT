@@ -2,6 +2,7 @@
 using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingCore.Entities;
+using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
 using MeetingCore.ValueObjects;
 using MeetingCore.ValueObjects.MeetingVO;
@@ -46,16 +47,31 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             );
 
             // بناء كائن التكرار
+            //  منطق قوي يحترم النوع أولاً
+            // 1. القيمة الافتراضية: لا يوجد تكرار
             RecurrencePattern recurrence = RecurrencePattern.None;
+
+            // 2. هل التكرار مفعل؟
             if (request.IsRecurring)
             {
-                if (!string.IsNullOrWhiteSpace(request.RecurrenceRule))
+                // A. الأولوية الأولى: النوع القياسي (Daily, Weekly, etc)
+                // نتحقق أن القيمة موجودة وليست None
+                if (request.RecurrenceType.HasValue && request.RecurrenceType != RecurrenceType.None)
                 {
+                    // نستخدم النمط البسيط وننظف الـ Rule (حتى لو أرسل الـ Frontend بيانات خاطئة هنا)
+                    recurrence = RecurrencePattern.Simple(request.RecurrenceType.Value);
+                }
+                // B. الأولوية الثانية: القاعدة المخصصة (Custom Rule)
+                // نصل هنا فقط إذا لم يكن هناك Type
+                else if (!string.IsNullOrWhiteSpace(request.RecurrenceRule))
+                {
+                    // نستخدم القاعدة المخصصة
                     recurrence = RecurrencePattern.WithRule(request.RecurrenceRule);
                 }
-                else if (request.RecurrenceType.HasValue)
+                // C. معالجة الخطأ: التكرار مفعل لكن لا يوجد نوع ولا قاعدة
+                else
                 {
-                    recurrence = RecurrencePattern.Simple(request.RecurrenceType.Value);
+                    throw new DomainException("Recurring meetings must have a valid Recurrence Type or Rule.");
                 }
             }
 

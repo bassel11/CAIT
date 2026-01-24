@@ -1,7 +1,6 @@
 ﻿using BuildingBlocks.Shared.CQRS;
 using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
-using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
 using MeetingCore.ValueObjects.MeetingVO;
 
@@ -35,7 +34,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
                 var title = MeetingTitle.Of(request.Title);
 
                 var location = MeetingLocation.Create(
-                    (LocationType)request.LocationType,
+                    request.LocationType,
                     request.LocationRoom,
                     request.LocationAddress,
                     request.LocationOnlineUrl
