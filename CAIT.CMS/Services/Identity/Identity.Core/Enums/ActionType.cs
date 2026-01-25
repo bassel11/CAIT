@@ -31,5 +31,6 @@
         Submit = 26,           // تأكيد
         Unassign = 27,
         Schedule = 28,      // جدولة
+        Reset = 29
     }
 }

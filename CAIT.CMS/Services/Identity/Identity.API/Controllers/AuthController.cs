@@ -178,14 +178,27 @@ namespace Identity.API.Controllers
         // verify-mfa
         [HttpPost("verify-mfa")]
 
-        public async Task<IActionResult> VerifyMfa(VerifyMfaDto dto)
+        public async Task<IActionResult> VerifyMfa([FromBody] VerifyMfaDto dto)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
             var result = await _mfaService.VerifyMfaAsync(dto);
 
             if (!result.Success)
                 return Unauthorized(result.Error);
 
             return Ok(result.Response);
+        }
+
+        [HttpPost("resend-mfa-code")]
+        public async Task<IActionResult> ResendMfaCode([FromBody] ResendMfaCodeDto dto)
+        {
+            var result = await _mfaService.ResendMfaCodeAsync(dto.UserId);
+
+            if (!result.Success)
+                return BadRequest(new { Error = result.Error });
+
+            return Ok(new { Message = result.Message });
         }
 
         // enable mfa
@@ -223,7 +236,23 @@ namespace Identity.API.Controllers
 
         }
 
+        // =================================================================
+        // : Admin Force Reset
+        // =================================================================
+        [HttpPost("admin/force-reset-password")]
+        [Authorize(Roles = "SuperAdmin", Policy = "Permission:Password.Reset", AuthenticationSchemes = "BearerPolicy")]
+        public async Task<IActionResult> ForceResetPassword([FromBody] ForceResetPasswordDto dto)
+        {
+            // تحقق إضافي: التأكد من أن المستخدم الحالي هو فعلاً أدمن (عبر Claims)
+            // (الـ [Authorize] تكفي عادةً، لكن هذا للتأكيد)
 
+            var result = await _authService.ForceResetPasswordAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(new { Error = result.Error });
+
+            return Ok(new { Message = result.Message });
+        }
 
         // change password
         [HttpPost("change-password")]
@@ -241,7 +270,37 @@ namespace Identity.API.Controllers
             return Ok(new { Message = "Password changed successfully" });
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            var result = await _authService.ForgotPasswordAsync(dto.Email);
 
+            // دائماً نرجع OK لأسباب أمنية (كما شرحنا في الـ Service)
+            // نرجع المعلومات التفصيلية كما طلبت
+            return Ok(new
+            {
+                Message = result.Message,
+                // تحذير: في الـ Production يفضل عدم إرجاع هذه القيم
+                DebugInfo = new
+                {
+                    ResetLink = result.ResetLink,
+                    Token = result.Token
+                }
+            });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var result = await _authService.ResetPasswordAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(new { Error = result.Error });
+
+            return Ok(new { Message = result.Message });
+        }
 
     }
 }

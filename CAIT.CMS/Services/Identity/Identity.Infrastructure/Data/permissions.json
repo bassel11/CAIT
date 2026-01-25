@@ -16,6 +16,14 @@
     "IsActive": true
   },
   {
+    "Name": "Password.Reset",
+    "ResourceType": 1,
+    "Action": 29,
+    "Description": "Force Reset User Password for SuperAdmn Only",
+    "IsGlobal": true,
+    "IsActive": true
+  },
+  {
     "Name": "User.View",
     "ResourceType": 2,
     "Action": 0,

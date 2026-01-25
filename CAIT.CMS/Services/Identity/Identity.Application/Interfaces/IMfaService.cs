@@ -9,6 +9,8 @@ namespace Identity.Application.Interfaces
 
         Task<(bool Success, string? QrCodeUrl, string? Error)> EnableMfaAsync(string userId, MFAMethod deliveryMethod);
 
+        Task<(bool Success, string? Message, string? Error)> ResendMfaCodeAsync(string userId);
+
         //Task<(bool Success, string? QrCodeUrl, string? Error)> EnableTfaAsync(string userId);
     }
 }

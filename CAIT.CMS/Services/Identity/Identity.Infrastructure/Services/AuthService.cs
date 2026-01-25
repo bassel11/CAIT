@@ -8,6 +8,7 @@ using Identity.Infrastructure.Data;
 using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
@@ -349,6 +350,184 @@ namespace Identity.Infrastructure.Services
 
             return (true, null);
         }
+
+
+        // سنستخدم forget password هذا ولكن في بيئة الانتاج نحتاج الى عدم تمرير token and info ونلتزم بالكود المعلق اسفل
+        public async Task<(bool Success, string? Message, string? ResetLink, string? Token)> ForgotPasswordAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            // Security: Even if user not found, return Success (Anti-Enumeration)
+            if (user == null || user.AuthType != ApplicationUser.AuthenticationType.Database)
+            {
+                await Task.Delay(new Random().Next(100, 300));
+                return (true, "If your email is registered, you will receive a reset link.", null, null);
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+            // الرابط الذي سيستخدمه الفرونت إند
+            var resetLink = $"https://your-frontend-app.com/reset-password?email={email}&token={encodedToken}";
+
+            // إرسال الإيميل (كما هو)
+            await _emailService.SendEmailAsync(user.Email!, "Reset Your Password",
+                $"Please reset your password by clicking here: <a href='{resetLink}'>Reset Password</a>");
+
+            // ✅ الإرجاع: نرجع الرابط والتوكن للمطور (أو الفرونت إند)
+            return (true, "Reset link generated successfully.", resetLink, encodedToken);
+        }
+
+
+        //public async Task<(bool Success, string? Message, string? Error)> ForgotPasswordAsync(string email)
+        //{
+        //    var user = await _userManager.FindByEmailAsync(email);
+
+        //    // Security: Even if user not found, return Success to prevent Email Enumeration
+        //    if (user == null || user.AuthType != ApplicationUser.AuthenticationType.Database)
+        //    {
+        //        // Fake delay to simulate processing time (Timing Attack protection)
+        //        await Task.Delay(new Random().Next(100, 300));
+        //        return (true, "If your email is registered, you will receive a reset link.", null);
+        //    }
+
+        //    // Generate Reset Token (ASP.NET Identity default provider)
+        //    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+        //    // Encode token for URL safety
+        //    var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        //    // In a real scenario, this URL points to your Frontend App
+        //    var resetLink = $"https://your-frontend-app.com/reset-password?email={email}&token={encodedToken}";
+
+        //    // Send Email
+        //    await _emailService.SendEmailAsync(user.Email!, "Reset Your Password",
+        //        $"Please reset your password by clicking here: <a href='{resetLink}'>Reset Password</a>");
+
+        //    return (true, "If your email is registered, you will receive a reset link.", null);
+        //}
+
+        // =========================================================================
+        //  Reset Password Implementation (With Token Revocation)
+        // =========================================================================
+        public async Task<(bool Success, string? Message, string? Error)> ResetPasswordAsync(ResetPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null || user.AuthType != ApplicationUser.AuthenticationType.Database)
+                return (false, null, "Invalid request");
+
+            // Decode Token
+            string decodedToken;
+            try
+            {
+                decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(dto.Token));
+            }
+            catch
+            {
+                return (false, null, "Invalid Token");
+            }
+
+            // Check previous passwords policy
+            var passwordHasher = new PasswordHasher<ApplicationUser>();
+            var previousPasswords = await _dbContext.UserPasswordHistories
+                .Where(h => h.UserId == user.Id)
+                .OrderByDescending(h => h.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+
+            foreach (var oldPassword in previousPasswords)
+            {
+                if (passwordHasher.VerifyHashedPassword(user, oldPassword.PasswordHash, dto.NewPassword) == PasswordVerificationResult.Success)
+                    return (false, null, "You cannot reuse a previously used password");
+            }
+
+            // Perform Reset
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
+
+            if (!result.Succeeded)
+                return (false, null, string.Join(", ", result.Errors.Select(e => e.Description)));
+
+            // ✅ Security: Burn all sessions (Refresh Tokens) upon password reset
+            await RevokeAllUserSessionsInternalAsync(user.Id, "Password Reset");
+
+            // ✅ Security: Update Security Stamp (Invalidates Access Tokens immediately if checked)
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            // Add to History
+            _dbContext.UserPasswordHistories.Add(new UserPasswordHistory
+            {
+                UserId = user.Id,
+                PasswordHash = user.PasswordHash!,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _dbContext.SaveChangesAsync();
+
+            return (true, "Password has been reset successfully.", null);
+        }
+
+
+        // =========================================================================
+        //  Force Reset Password (Admin Feature)
+        // =========================================================================
+        public async Task<(bool Success, string? Message, string? Error)> ForceResetPasswordAsync(ForceResetPasswordDto dto)
+        {
+            var user = await _userManager.FindByIdAsync(dto.UserId);
+            if (user == null) return (false, null, "User not found");
+
+            if (user.AuthType != ApplicationUser.AuthenticationType.Database)
+                return (false, null, "Can only reset passwords for Database users.");
+
+            // 1. حذف الباسورد القديم قسراً
+            var removeResult = await _userManager.RemovePasswordAsync(user);
+            if (!removeResult.Succeeded)
+                return (false, null, "Failed to remove old password");
+
+            // 2. إضافة الباسورد الجديد
+            var addResult = await _userManager.AddPasswordAsync(user, dto.NewPassword);
+            if (!addResult.Succeeded)
+                return (false, null, string.Join(", ", addResult.Errors.Select(e => e.Description)));
+
+            // 3. 🚨 حرق الجلسات (هام جداً لطرد أي شخص يستخدم الحساب حالياً)
+            await RevokeAllUserSessionsInternalAsync(user.Id, "Admin Force Reset");
+
+            // 4. تحديث Security Stamp
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            // 5. (اختياري) إجبار المستخدم على تغيير كلمة المرور عند الدخول القادم
+            // user.MustChangePassword = true; 
+            // await _userManager.UpdateAsync(user);
+
+            // تسجيل في الهستوري
+            _dbContext.UserPasswordHistories.Add(new UserPasswordHistory
+            {
+                UserId = user.Id,
+                PasswordHash = user.PasswordHash!, // الهاش الجديد
+                CreatedAt = DateTime.UtcNow
+            });
+            await _dbContext.SaveChangesAsync();
+
+            return (true, "Password has been force-reset successfully by Admin.", null);
+        }
+        private async Task RevokeAllUserSessionsInternalAsync(Guid userId, string reason)
+        {
+            var userTokens = await _dbContext.RefreshTokens
+                .Where(t => t.UserId == userId && !t.Revoked)
+                .ToListAsync();
+
+            foreach (var token in userTokens)
+            {
+                token.Revoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+                token.ReasonRevoked = reason;
+                token.RevokedByIp = GetIp();
+            }
+            _dbContext.RefreshTokens.UpdateRange(userTokens);
+            await _dbContext.SaveChangesAsync();
+
+            // Publish Event
+            await _publishEndpoint.Publish(new UserLoggedOutEvent { UserId = userId, Timestamp = DateTime.UtcNow });
+        }
+
         private string HashCode(string code, string salt)
         {
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(salt));
