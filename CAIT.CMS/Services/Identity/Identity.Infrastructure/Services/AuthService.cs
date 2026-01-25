@@ -202,8 +202,13 @@ namespace Identity.Infrastructure.Services
                  .FirstOrDefaultAsync(r => r.Token == refreshToken);
 
             if (storedTokenEntity == null) return (false, null, "Invalid Token");
+            if (storedTokenEntity.Revoked) return (false, null, "Token has been revoked");
+
 
             var user = storedTokenEntity.User;
+
+            if (user == null || !user.IsActive)
+                return (false, null, "User is inactive or not found");
 
             // 2. استدعاء خدمة التدوير الآمنة
             var rotationResult = await _refreshTokenService.RotateRefreshTokenAsync(refreshToken, user);

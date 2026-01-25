@@ -126,22 +126,30 @@ namespace Identity.API.Controllers
         [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto dto)
         {
-            if (dto.AuthType == (int)ApplicationUser.AuthenticationType.OnPremAD)
-            {
-                var ldapResult = await _ldapAuthService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
-                if (!ldapResult.Success)
-                    return Unauthorized(new { Error = ldapResult.Error });
-                return Ok(ldapResult.Response);
-            }
-            else if (dto.AuthType == (int)ApplicationUser.AuthenticationType.Database)
-            {
-                var dbResult = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
-                if (!dbResult.Success)
-                    return Unauthorized(new { Error = dbResult.Error });
-                return Ok(dbResult.Response);
-            }
 
-            return BadRequest("Unsupported authentication type");
+            var result = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
+
+            if (!result.Success)
+                return Unauthorized(new { Error = result.Error });
+
+            return Ok(result.Response);
+
+            //if (dto.AuthType == (int)ApplicationUser.AuthenticationType.OnPremAD)
+            //{
+            //    var ldapResult = await _ldapAuthService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
+            //    if (!ldapResult.Success)
+            //        return Unauthorized(new { Error = ldapResult.Error });
+            //    return Ok(ldapResult.Response);
+            //}
+            //else if (dto.AuthType == (int)ApplicationUser.AuthenticationType.Database)
+            //{
+            //    var dbResult = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
+            //    if (!dbResult.Success)
+            //        return Unauthorized(new { Error = dbResult.Error });
+            //    return Ok(dbResult.Response);
+            //}
+
+            //return BadRequest("Unsupported authentication type");
         }
 
         // ------------------- Logout -------------------
