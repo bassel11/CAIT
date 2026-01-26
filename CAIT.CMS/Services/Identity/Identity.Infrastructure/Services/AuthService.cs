@@ -252,7 +252,7 @@ namespace Identity.Infrastructure.Services
             }
             _dbContext.RefreshTokens.UpdateRange(userTokens);
 
-            // 🔥 3. تدوير بصمة الأمان (Security Stamp)
+            // 3. تدوير بصمة الأمان (Security Stamp)
             // هذا يجعل التوكنات القديمة (Access Tokens) غير صالحة فوراً حتى لو لم تنتهِ مدتها
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user != null)

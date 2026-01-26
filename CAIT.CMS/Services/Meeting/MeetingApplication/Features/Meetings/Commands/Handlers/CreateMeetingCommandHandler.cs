@@ -1,10 +1,12 @@
 ﻿using BuildingBlocks.Shared.CQRS;
 using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
+using MeetingApplication.Interfaces.Committee;
 using MeetingCore.Entities;
 using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
 using MeetingCore.ValueObjects;
+using MeetingCore.ValueObjects.AttendanceVO;
 using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Meetings.Commands.Handlers
@@ -13,13 +15,16 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
     {
         private readonly IMeetingRepository _meetingRepository;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ICommitteeService _committeeService; // ✅ خدمة لجلب الأعضاء
 
         public CreateMeetingCommandHandler(
             IMeetingRepository meetingRepository,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            ICommitteeService committeeService)
         {
             _meetingRepository = meetingRepository;
             _currentUserService = currentUserService;
+            _committeeService = committeeService;
         }
 
         public async Task<Result<Guid>> Handle(CreateMeetingCommand request, CancellationToken cancellationToken)
@@ -92,8 +97,34 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
                 currentUserId // Audit User
             );
 
+
             // =========================================================
-            // 3. الحفظ وضمان الـ Transactionality
+            // ✅ 3. (الجديد) جلب أعضاء اللجنة وإضافتهم تلقائياً
+            // =========================================================
+            var committeeMembers = await _committeeService.GetActiveMembersAsync(committeeId.Value, cancellationToken);
+
+            if (committeeMembers == null || !committeeMembers.Any())
+            {
+                // تحذير أو خطأ حسب رغبتك، لكن يفضل السماح بذلك وإضافة الأعضاء يدوياً لاحقاً
+            }
+            else
+            {
+                foreach (var member in committeeMembers)
+                {
+                    // تحويل بيانات العضو إلى Value Objects الخاصة بـ Meeting
+                    var userId = UserId.Of(member.UserId); // تأكد من تحويل النوع
+
+                    // نفترض أن خدمة اللجنة تعيد الدور وحق التصويت
+                    meeting.AddAttendee(
+                        userId,
+                        member.Role,        // e.g., Chairman, Member
+                        member.VotingRight  // e.g., Voting, NonVoting
+                    );
+                }
+            }
+
+            // =========================================================
+            // 4. الحفظ وضمان الـ Transactionality
             // =========================================================
 
             // إضافة للذاكرة

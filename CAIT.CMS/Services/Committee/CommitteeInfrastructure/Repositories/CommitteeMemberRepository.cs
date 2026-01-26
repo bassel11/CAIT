@@ -57,5 +57,13 @@ namespace CommitteeInfrastructure.Repositories
                 .CountAsync(ct);
         }
 
+        // Integration
+        public async Task<List<CommitteeMember>> GetMembersWithRolesAsync(Guid committeeId)
+        {
+            return await _dbContext.CommitteeMembers
+                .Include(m => m.CommitteeMemberRoles) // هام
+                .Where(m => m.CommitteeId == committeeId && m.IsActive)
+                .ToListAsync();
+        }
     }
 }

@@ -10,7 +10,10 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Validators
             RuleFor(x => x.MeetingId).NotEmpty();
             RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
             RuleFor(x => x.SortOrder).GreaterThan(0);
-            RuleFor(x => x.DurationMinutes).GreaterThan(0).When(x => x.DurationMinutes.HasValue);
+            RuleFor(x => x.DurationMinutes)
+                .GreaterThan(0)
+                .When(x => x.DurationMinutes.HasValue)
+                .WithMessage("Duration must be positive.");
         }
     }
 }

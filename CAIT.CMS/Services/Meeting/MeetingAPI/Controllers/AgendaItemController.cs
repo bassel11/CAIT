@@ -101,6 +101,18 @@ namespace MeetingAPI.Controllers
             return Success(result);
         }
 
+        // -------------------------------------------------------
+        // Load Template
+        // -------------------------------------------------------
+        [HttpPost("load-template")]
+        [Authorize(Policy = "Permission:AgendaItem.Create")] // أو Permission خاصة بالقوالب
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LoadTemplate([FromBody] LoadAgendaTemplateCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return Success(result, "Template loaded successfully.");
+        }
+
         #endregion
 
 

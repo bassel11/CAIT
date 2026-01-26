@@ -1,10 +1,10 @@
-﻿namespace MeetingCore.Enums
-{
-    public enum VoteChoice
-    {
-        None,
-        Yes,
-        No,
-        Abstain
-    }
-}
+﻿//namespace MeetingCore.Enums
+//{
+//    public enum VoteChoice
+//    {
+//        None,
+//        Yes,
+//        No,
+//        Abstain
+//    }
+//}

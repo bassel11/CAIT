@@ -139,6 +139,20 @@ namespace CommitteeAPI.Controllers
         }
 
 
+        // -------------------------------------------------------
+        // GET Integration Members (For Meeting Service)
+        // -------------------------------------------------------
+        [HttpGet("GetCommitteeMembers/{committeeId}")] // ✅ يطابق المسار الذي وضعناه في Client
+        //[Authorize] // قد تحتاج لسياسة خاصة مثل "ServiceToService"
+        [ProducesResponseType(typeof(List<CommitteeMemberIntegrationResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMembersForIntegration(Guid committeeId)
+        {
+            var query = new GetCommitteeMembersForIntegrationQuery(committeeId);
+            var result = await Mediator.Send(query);
+            return Ok(result); // نرجع القائمة مباشرة لتسهيل الـ Deserialize في الطرف الآخر
+        }
+
+
         #endregion
     }
 }

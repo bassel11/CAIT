@@ -12,5 +12,8 @@ namespace CommitteeCore.Repositories
         Task RemoveRangeAsync(IEnumerable<CommitteeMember> members);
         Task<int> GetActiveMemberCountAsync(Guid committeeId, CancellationToken ct = default);
 
+        // Integration
+        Task<List<CommitteeMember>> GetMembersWithRolesAsync(Guid committeeId);
+
     }
 }

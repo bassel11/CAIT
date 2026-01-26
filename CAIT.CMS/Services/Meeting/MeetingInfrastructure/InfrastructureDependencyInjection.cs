@@ -5,6 +5,7 @@ using MassTransit;
 using MeetingApplication.Data;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
+using MeetingApplication.Interfaces.AI;
 using MeetingApplication.Wrappers;
 using MeetingCore.Repositories;
 using MeetingInfrastructure.Audit;
@@ -14,6 +15,7 @@ using MeetingInfrastructure.Interceptors;
 using MeetingInfrastructure.Pdf;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
+using MeetingInfrastructure.Services.AI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration; // مهم لإضافة IConfiguration
 using Microsoft.Extensions.DependencyInjection;
@@ -77,7 +79,7 @@ namespace MeetingInfrastructure
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
             services.AddScoped<IMeetingRepository, MeetingRepository>();
             services.AddScoped<IMinutesRepository, MinutesRepository>();
-            services.AddScoped<IAgendaGeneratorService, AgendaGeneratorService>();
+            services.AddScoped<IAiAgendaService, MockAiAgendaService>();
             //services.AddScoped<IMeetingNotificationRepository, MeetingNotificationRepository>();
             //services.AddScoped<IIntegrationLogRepository, IntegrationLogRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
