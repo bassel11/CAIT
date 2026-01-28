@@ -470,6 +470,56 @@
     "IsGlobal": false,
     "IsActive": true
   },
+  {
+    "Name": "AgendaItemAttachment.Upload",
+    "ResourceType": 4,
+    "Action": 6,
+    "Description": "Upload AgendaItemAttachment",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaItemAttachment.Remove",
+    "ResourceType": 4,
+    "Action": 17,
+    "Description": "Remove AgendaItemAttachment",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
+  {
+    "Name": "AgendaTemplate.Create",
+    "ResourceType": 4,
+    "Action": 1,
+    "Description": "Create Agenda Template",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaTemplate.Update",
+    "ResourceType": 4,
+    "Action": 2,
+    "Description": "Update Agenda Template",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaTemplate.Delete",
+    "ResourceType": 4,
+    "Action": 3,
+    "Description": "Delete Agenda Template",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "AgendaTemplate.View",
+    "ResourceType": 4,
+    "Action": 0,
+    "Description": "View Agenda Template",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
 
   {
     "Name": "Attendance.CheckIn",

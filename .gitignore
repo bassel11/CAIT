@@ -430,3 +430,4 @@ secrets.json
 /project-structure.txt
 
 /CAIT.CMS/Services/Identity/Identity.API/Dockerfile2.original
+/CAIT.CMS/Services/Identity/Identity.Infrastructure/Data/permissions.json
