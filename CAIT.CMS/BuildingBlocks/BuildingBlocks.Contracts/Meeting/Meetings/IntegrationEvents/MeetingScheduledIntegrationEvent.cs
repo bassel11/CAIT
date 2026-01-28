@@ -1,4 +1,4 @@
-﻿namespace BuildingBlocks.Contracts.Meeting.Meeting.IntegrationEvents
+﻿namespace BuildingBlocks.Contracts.Meeting.Meetings.IntegrationEvents
 {
     public record MeetingScheduledIntegrationEvent
     {

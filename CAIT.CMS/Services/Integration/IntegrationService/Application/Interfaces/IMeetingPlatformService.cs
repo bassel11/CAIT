@@ -13,5 +13,12 @@
 
         Task CancelMeetingAsync(string outlookEventId, string cancellationReason);
         Task UpdateMeetingTimeAsync(string outlookEventId, DateTime newStartUtc, DateTime newEndUtc);
+
+        // دالة فحص التوفر
+        Task<bool> AreAttendeesAvailableAsync(
+            List<string> attendeeEmails,
+            DateTime startUtc,
+            DateTime endUtc,
+            string timeZone);
     }
 }

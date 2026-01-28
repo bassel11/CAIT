@@ -1,4 +1,4 @@
-﻿using BuildingBlocks.Contracts.Meeting.Meeting.IntegrationEvents;
+﻿using BuildingBlocks.Contracts.Meeting.Meetings.IntegrationEvents;
 using IntegrationService.Application.Interfaces;
 using MassTransit;
 
@@ -23,27 +23,47 @@ namespace IntegrationService.Application.Consumers
         public async Task Consume(ConsumeContext<MeetingScheduledIntegrationEvent> context)
         {
             var msg = context.Message;
-            _logger.LogInformation("Integration Service: Received Schedule Request for Meeting {MeetingId}", msg.MeetingId);
+            _logger.LogInformation("Integration Service: Processing Schedule Request for Meeting {MeetingId}", msg.MeetingId);
 
             try
             {
-                // 1. تحضير الإيميلات
-                // ملاحظة: الحدث يحتوي على UserIds (Guid). في بيئة مثالية، نستعلم من Identity Service.
-                // للتبسيط ولضمان العمل الآن، سنفترض وجود دالة مساعدة أو أننا عدلنا الحدث ليحمل الإيميلات.
-                // سأضع هنا قائمة وهمية للتجربة، ويجب عليك لاحقاً استبدالها بـ Lookup حقيقي.
+                // 1. استخراج الإيميلات (افترضنا وجود هذه الدالة المساعدة سابقاً)
                 var emails = await ResolveEmailsAsync(msg.AttendeeIds);
 
-                // 2. التنفيذ الفعلي
+                // 2. ✅ التحقق من التوفر (Conflict Check)
+                // هل الأوقات متاحة في Outlook؟
+                bool isAvailable = await _platformService.AreAttendeesAvailableAsync(
+                    emails,
+                    msg.StartDate,
+                    msg.EndDate,
+                    "UTC");
+
+                // 3. 🛑 معالجة التعارض (Failure Path)
+                if (!isAvailable)
+                {
+                    _logger.LogWarning("⚠️ Conflict Detected for Meeting {MeetingId}. Aborting creation.", msg.MeetingId);
+
+                    // نشر حدث الفشل لإبلاغ الـ Meeting Service
+                    await _publishEndpoint.Publish(new MeetingSchedulingFailedIntegrationEvent
+                    {
+                        MeetingId = msg.MeetingId,
+                        Reason = "Conflict detected in attendees' Outlook calendars."
+                    });
+
+                    // نتوقف هنا ولا ننشئ الاجتماع
+                    return;
+                }
+
+                // 4. ✅ المسار الناجح (Success Path)
                 var result = await _platformService.CreateOnlineMeetingAsync(
                     msg.Title,
-                    $"Committee Meeting Scheduled. ID: {msg.MeetingId}", // يمكن تحسين الوصف
+                    $"Committee Meeting. ID: {msg.MeetingId}",
                     msg.StartDate,
                     msg.EndDate,
                     emails
                 );
 
-                // 3. النجاح: إرسال الروابط إلى Meeting Service
-                // يجب أن تكون قد عرفت هذا الحدث في BuildingBlocks.Contracts
+                // إرسال نتيجة النجاح
                 await _publishEndpoint.Publish(new MeetingPlatformCreatedIntegrationEvent
                 {
                     MeetingId = msg.MeetingId,
@@ -51,20 +71,22 @@ namespace IntegrationService.Application.Consumers
                     TeamsLink = result.TeamsJoinUrl
                 });
 
-                _logger.LogInformation("✅ Meeting Created on Teams/Outlook. Event ID: {EventId}", result.OutlookEventId);
+                _logger.LogInformation("✅ Meeting Created on Teams successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Integration Failed for Meeting {MeetingId}", msg.MeetingId);
-                throw; // Trigger Retry
+                _logger.LogError(ex, "❌ Unexpected Error via Graph API for Meeting {MeetingId}", msg.MeetingId);
+
+                // في حالة وجود خطأ تقني (وليس تعارض)، نرمي الخطأ ليعيد MassTransit المحاولة
+                // أو يمكننا إرسال حدث فشل تقني أيضاً
+                throw;
             }
         }
 
-        // دالة مساعدة (مؤقتة) لتحويل المعرفات لإيميلات
+        // Mock method for emails
         private Task<List<string>> ResolveEmailsAsync(List<Guid> userIds)
         {
-            // TODO: Call Identity Grpc Service here
-            // return _identityGrpcService.GetEmailsAsync(userIds);
+            // في الواقع يتم جلبه من Identity
             return Task.FromResult(new List<string> { "member1@cait.gov.kw", "member2@cait.gov.kw" });
         }
     }

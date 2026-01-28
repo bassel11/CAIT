@@ -6,19 +6,24 @@ using MeetingApplication.Data;
 using MeetingApplication.Integrations;
 using MeetingApplication.Interfaces;
 using MeetingApplication.Interfaces.AI;
+using MeetingApplication.Interfaces.Scheduling;
 using MeetingApplication.Wrappers;
+using MeetingCore.DomainServices;
 using MeetingCore.Repositories;
 using MeetingInfrastructure.Audit;
 using MeetingInfrastructure.Data;
+using MeetingInfrastructure.DomainServices;
 using MeetingInfrastructure.Integrations;
 using MeetingInfrastructure.Interceptors;
 using MeetingInfrastructure.Pdf;
 using MeetingInfrastructure.Repositories;
 using MeetingInfrastructure.Services;
 using MeetingInfrastructure.Services.AI;
+using MeetingInfrastructure.Services.Scheduling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration; // مهم لإضافة IConfiguration
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 
 namespace MeetingInfrastructure
 {
@@ -61,7 +66,6 @@ namespace MeetingInfrastructure
                 var connectionString = configuration.GetConnectionString("MeetingConnectionString")
                                        ?? configuration.GetConnectionString("DefaultConnection");
 
-                // 🛑 Fail Fast: إيقاف التطبيق إذا كان النص مفقوداً
                 if (string.IsNullOrWhiteSpace(connectionString))
                 {
                     throw new InvalidOperationException("CRITICAL: Connection string 'MeetingConnectionString' is missing in appsettings.json.");
@@ -72,16 +76,17 @@ namespace MeetingInfrastructure
             });
 
 
-            services.AddScoped<IMeetingDbContext>(provider => provider.GetRequiredService<MeetingDbContext>());
+            services.AddScoped<IMeetingDbContext>(
+                provider => provider.GetRequiredService<MeetingDbContext>());
 
 
             // Repositories
             services.AddScoped(typeof(IAsyncRepository<>), typeof(RepositoryBase<>));
             services.AddScoped<IMeetingRepository, MeetingRepository>();
             services.AddScoped<IMinutesRepository, MinutesRepository>();
+            services.AddScoped<IAgendaTemplateRepository, AgendaTemplateRepository>();
             services.AddScoped<IAiAgendaService, MockAiAgendaService>();
-            //services.AddScoped<IMeetingNotificationRepository, MeetingNotificationRepository>();
-            //services.AddScoped<IIntegrationLogRepository, IntegrationLogRepository>();
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IMinutesAIService, MinutesAIService>();
 
@@ -91,58 +96,52 @@ namespace MeetingInfrastructure
 
             // PDF & Storage
             services.AddSingleton<IPdfGenerator, SimpleHtmlPdfGenerator>();
-            // services.AddSingleton<IStorageService>(_ => new LocalFileStorageService("./storage"));
             services.AddScoped<IStorageService, StorageService>();
 
             // Stubs
             services.AddSingleton<OutlookClientStub>();
             services.AddSingleton<BusPublisherStub>();
-
-
-
-            // Other integrations
             services.AddScoped<IAuditService, AuditService>();
 
+            services.AddScoped<IMeetingSchedulerGateway, QuartzMeetingSchedulerGateway>();
+            // Domain Services
+            services.AddScoped<IMeetingOverlapDomainService, MeetingOverlapDomainService>();
 
-            // --------------------
-            // MassTransit
-            // --------------------
-            // ========================
-            // MassTransit + RabbitMQ
-            // ========================
-            //services.AddMassTransit(x =>
-            //{
-            //    // تسجيل جميع الـConsumers من Assembly
-            //    //x.AddConsumers(typeof(ApproveMoMCommandHandler).Assembly);
-            //    x.AddConsumers(typeof(OutlookAttachMoMConsumer).Assembly);
+            services.AddQuartz(q =>
+            {
+                // التخزين الدائم في SQL Server
+                q.UsePersistentStore(s =>
+                {
+                    s.UseProperties = true; // لتخزين البيانات كـ Key-Value
+                    s.RetryInterval = TimeSpan.FromSeconds(15);
 
-            //    // EF Core Outbox (Transactional Outbox)
-            //    x.AddEntityFrameworkOutbox<MeetingDbContext>(o =>
-            //    {
-            //        o.UseSqlServer();     // أو UsePostgres
-            //        o.UseBusOutbox();     // يضمن إرسال الرسائل بعد نجاح SaveChanges
+                    s.UseSqlServer(sqlServer =>
+                    {
+                        // 1. استخراج نص الاتصال في متغير
+                        var connectionString = configuration.GetConnectionString("MeetingConnectionString")
+                                               ?? configuration.GetConnectionString("DefaultConnection");
 
-            //        // 👇 هذا الخيار يمنع الحذف ويجعل الرسائل تبقى معلمة كـProcessed
-            //        o.DisableInboxCleanupService(); // إذا أردت التحكم في التنظيف بنفسك
-            //        o.QueryDelay = TimeSpan.FromSeconds(10);
+                        // 2. التحقق الصارم: إذا كان فارغاً، نرمي خطأ يوقف التطبيق فوراً
+                        if (string.IsNullOrWhiteSpace(connectionString))
+                        {
+                            throw new InvalidOperationException("CRITICAL: Quartz Connection string is missing in appsettings.json.");
+                        }
 
-            //    });
+                        // 3. التعيين الآمن (الآن الكومبايلر يعرف أن القيمة ليست null)
+                        sqlServer.ConnectionString = connectionString;
+                        sqlServer.TablePrefix = "QRTZ_";
+                    });
 
-            //    // إعداد RabbitMQ
-            //    x.UsingRabbitMq((context, cfg) =>
-            //    {
-            //        cfg.Host(configuration["RabbitMQ:Host"] ?? "localhost", "/", h =>
-            //        {
-            //            h.Username(configuration["RabbitMQ:User"] ?? "guest");
-            //            h.Password(configuration["RabbitMQ:Pass"] ?? "guest");
-            //        });
+                    // استخدام JSON لتخزين بيانات الـ JobDataMap (أفضل للصيانة من Binary)
+                    s.UseNewtonsoftJsonSerializer();
+                });
+            });
 
-            //        // Configure all endpoints تلقائيًا لكل Consumer
-            //        cfg.ConfigureEndpoints(context);
-            //    });
-            //});
-
-
+            // تشغيل Quartz كـ Hosted Service (يعمل مع بدء التطبيق)
+            services.AddQuartzHostedService(options =>
+            {
+                options.WaitForJobsToComplete = true; // الانتظار حتى تنتهي الوظائف عند الإغلاق
+            });
 
             services.AddMessageBroker<MeetingDbContext>(
                 configuration,

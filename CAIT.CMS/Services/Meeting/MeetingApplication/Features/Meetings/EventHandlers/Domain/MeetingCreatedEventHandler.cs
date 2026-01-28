@@ -1,4 +1,4 @@
-﻿using BuildingBlocks.Contracts.Meeting.Meeting.IntegrationEvents;
+﻿using BuildingBlocks.Contracts.Meeting.Meetings.IntegrationEvents;
 using MassTransit;
 using MediatR;
 using MeetingCore.Events.MeetingEvents;

@@ -27,5 +27,13 @@ namespace MeetingCore.Repositories
         Task<Meeting?> GetForSchedulingAsync(MeetingId id, CancellationToken cancellationToken = default);
 
         IQueryable<Meeting> GetTableNoTracking();
+
+        // ✅ الدالة الجديدة للتحقق من التعارض
+        Task<bool> HasConflictAsync(
+            DateTime startDate,
+            DateTime endDate,
+            string roomName,
+            MeetingId? excludeMeetingId = null, // لتجاوز الاجتماع الحالي عند التعديل
+            CancellationToken cancellationToken = default);
     }
 }

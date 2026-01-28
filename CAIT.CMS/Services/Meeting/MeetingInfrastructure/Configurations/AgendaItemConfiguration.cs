@@ -82,6 +82,18 @@ namespace MeetingInfrastructure.Configurations
 
             // فهرس مركب لترتيب البنود داخل الاجتماع (Optimization)
             builder.HasIndex(x => new { x.MeetingId, x.SortOrder }).IsUnique();
+
+
+
+            builder.HasMany(x => x.Attachments)
+                   .WithOne()
+                   .HasForeignKey(att => att.AgendaItemId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Backing Field
+            builder.Navigation(x => x.Attachments)
+                   .HasField("_attachments")
+                   .UsePropertyAccessMode(PropertyAccessMode.Field);
         }
     }
 }

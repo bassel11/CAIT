@@ -433,5 +433,25 @@ namespace MeetingCore.Entities
             // if (content.ContentType == AIContentType.AgendaDraft) { ... نسخ النصوص ... }
         }
 
+
+        public void HandleSchedulingFailure(string reason)
+        {
+            // التحقق: لا يمكن فشل جدولة اجتماع هو أصلاً منتهي أو ملغي
+            if (Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
+                return; // تجاهل آمن
+
+            // الرجوع إلى Draft أو حالة خاصة (مثلاً PendingRetry)
+            // الأفضل هنا: إعادته لـ Draft ليقوم المقرر بتعديل الوقت
+            Status = MeetingStatus.Draft;
+
+            // نخزن سبب الفشل في وصف الإلغاء مؤقتاً أو نضيف حقل جديد للملاحظات
+            // هنا سنستخدم حقل موجود أو نعتبره ملاحظة تدقيق
+            // CancellationReason = $"Scheduling Failed: {reason}"; // خيار
+
+            LastTimeModified = DateTime.UtcNow;
+
+            // نطلق حدثاً داخلياً (Domain Event) قد يفيد في إرسال إشعار للمقرر
+            // AddDomainEvent(new MeetingSchedulingFailedDomainEvent(...));
+        }
     }
 }

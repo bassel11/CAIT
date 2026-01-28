@@ -4,25 +4,24 @@ using MeetingCore.Enums.MeetingEnums;
 
 namespace MeetingApplication.Features.Meetings.Commands.Models
 {
-    public record CreateMeetingCommand(
-        Guid CommitteeId,
-        string Title,
-        string? Description,
+    public record CreateMeetingCommand : ICommand<Result<Guid>>
+    {
+        public Guid CommitteeId { get; init; }
+        public string Title { get; init; }
+        public string? Description { get; init; }
 
-        DateTime StartDate,
-        DateTime EndDate,
-        string TimeZone, // e.g., "Syria Standard Time"
+        public DateTime StartDate { get; init; }
+        public DateTime EndDate { get; init; }
+        public string TimeZone { get; init; }
 
-        // بيانات الموقع (Location)
-        LocationType LocationType, // 1=Physical, 2=Online, 3=Hybrid (نستقبل رقم أو نص)
-        string? LocationRoom,
-        string? LocationAddress,
-        string? LocationOnlineUrl,
+        public LocationType LocationType { get; init; }
+        public string? LocationRoom { get; init; }
+        public string? LocationAddress { get; init; }
+        public string? LocationOnlineUrl { get; init; }
 
-        // بيانات التكرار (Recurrence)
-        bool IsRecurring,
-        RecurrenceType? RecurrenceType, // 1=Daily, 2=Weekly...
-        string? RecurrenceRule
-    // Guid CreatedBy
-    ) : ICommand<Result<Guid>>;
+        public bool IsRecurring { get; init; } = false;
+        public RecurrenceType? RecurrenceType { get; init; } = MeetingCore.Enums.MeetingEnums.RecurrenceType.None;
+        public string? RecurrenceRule { get; init; }
+        public bool AutoAddMembers { get; init; } = true; // من اجل جلب الاعضاء تلقائيا من خدمة الجان
+    }
 }

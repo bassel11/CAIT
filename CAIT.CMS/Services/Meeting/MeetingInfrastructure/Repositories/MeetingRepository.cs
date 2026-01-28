@@ -1,5 +1,6 @@
 ﻿using BuildingBlocks.Shared.Abstractions;
 using MeetingCore.Entities;
+using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
 using MeetingCore.ValueObjects.MeetingVO;
 using MeetingInfrastructure.Data;
@@ -88,6 +89,32 @@ namespace MeetingInfrastructure.Repositories
         public IQueryable<Meeting> GetTableNoTracking()
         {
             return _context.Meetings.AsNoTracking();
+        }
+
+
+        public async Task<bool> HasConflictAsync(
+            DateTime startDate,
+            DateTime endDate,
+            string roomName,
+            MeetingId? excludeMeetingId = null,
+            CancellationToken cancellationToken = default)
+        {
+            // التحقق فقط للاجتماعات غير الملغاة والمنعقدة في نفس الغرفة
+            var query = _context.Meetings
+                .AsNoTracking() // لأداء أسرع (Read-Only)
+                .Where(m => m.Status != MeetingStatus.Cancelled)
+                .Where(m => m.Location.Type == LocationType.Physical || m.Location.Type == LocationType.Hybrid)
+                .Where(m => m.Location.RoomName == roomName);
+
+            // استثناء الاجتماع الحالي (مهم جداً في حالة التعديل Update)
+            if (excludeMeetingId != null)
+            {
+                query = query.Where(m => m.Id != excludeMeetingId);
+            }
+
+            // شرط التقاطع الزمني (Overlap Condition)
+            // (StartA < EndB) and (EndA > StartB)
+            return await query.AnyAsync(m => m.StartDate < endDate && m.EndDate > startDate, cancellationToken);
         }
     }
 }

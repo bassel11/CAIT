@@ -16,6 +16,9 @@ namespace MeetingInfrastructure.Data
         // ======================= Core Aggregates =======================
         public DbSet<Meeting> Meetings => Set<Meeting>();
         public DbSet<AgendaItem> AgendaItems => Set<AgendaItem>();
+        public DbSet<AgendaItemAttachment> AgendaItemAttachments => Set<AgendaItemAttachment>();
+        public DbSet<AgendaTemplate> AgendaTemplates => Set<AgendaTemplate>();
+        public DbSet<AgendaTemplateItem> AgendaTemplateItems => Set<AgendaTemplateItem>();
         public DbSet<Attendance> Attendances => Set<Attendance>();
 
         // ======================= Minutes of Meeting & Related =======================
@@ -75,6 +78,8 @@ namespace MeetingInfrastructure.Data
                 .Where(e => e.Entity is Meeting
                     || e.Entity is AgendaItem
                     || e.Entity is Attendance
+                    || e.Entity is AgendaTemplate // ✅ إضافة القوالب للتدقيق
+                    || e.Entity is AgendaItemAttachment
                     || e.Entity is MinutesOfMeeting
                     || e.Entity is MinutesVersion
                     || e.Entity is AIGeneratedContent

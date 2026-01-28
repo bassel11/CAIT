@@ -2,6 +2,7 @@
 using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Interfaces.Committee;
+using MeetingCore.DomainServices;
 using MeetingCore.Entities;
 using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
@@ -16,15 +17,18 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
         private readonly IMeetingRepository _meetingRepository;
         private readonly ICurrentUserService _currentUserService;
         private readonly ICommitteeService _committeeService; // ✅ خدمة لجلب الأعضاء
+        private readonly IMeetingOverlapDomainService _overlapService; // ✅ 1. تعريف الخدمة
 
         public CreateMeetingCommandHandler(
             IMeetingRepository meetingRepository,
             ICurrentUserService currentUserService,
-            ICommitteeService committeeService)
+            ICommitteeService committeeService,
+            IMeetingOverlapDomainService overlapService)
         {
             _meetingRepository = meetingRepository;
             _currentUserService = currentUserService;
             _committeeService = committeeService;
+            _overlapService = overlapService;
         }
 
         public async Task<Result<Guid>> Handle(CreateMeetingCommand request, CancellationToken cancellationToken)
@@ -80,6 +84,37 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
                 }
             }
 
+
+            // =========================================================
+            // ✅ الخطوة الجديدة: التحقق من تعارض القاعات قبل الإنشاء
+            // =========================================================
+
+            // نتحقق فقط إذا لم يكن الاجتماع متكرراً (التكرار يتطلب منطقاً أعقد، سنناقشه لاحقاً)
+            // أو نتحقق من أول حدوث (First Occurrence) مبدئياً
+            if (!request.IsRecurring)
+            {
+                await _overlapService.ValidateRoomAvailabilityAsync(
+                    request.StartDate,
+                    request.EndDate,
+                    location,
+                    null, // لا يوجد ID للاستثناء لأنه اجتماع جديد
+                    cancellationToken
+                );
+            }
+            else
+            {
+                // ملاحظة: للاجتماعات المتكررة، عادة نحجز الغرفة لأول موعد،
+                // أما المواعيد المستقبلية فنتحقق منها عند توليدها (Expansion).
+                // لكن للتبسيط الآن، نتحقق من أول موعد.
+                await _overlapService.ValidateRoomAvailabilityAsync(
+                   request.StartDate,
+                   request.EndDate,
+                   location,
+                   null,
+                   cancellationToken
+               );
+            }
+
             // =========================================================
             // 2. إنشاء الـ Aggregate Root باستخدام الـ Factory
             // =========================================================
@@ -101,25 +136,38 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             // =========================================================
             // ✅ 3. (الجديد) جلب أعضاء اللجنة وإضافتهم تلقائياً
             // =========================================================
-            var committeeMembers = await _committeeService.GetActiveMembersAsync(committeeId.Value, cancellationToken);
 
-            if (committeeMembers == null || !committeeMembers.Any())
+            if (request.AutoAddMembers)
             {
-                // تحذير أو خطأ حسب رغبتك، لكن يفضل السماح بذلك وإضافة الأعضاء يدوياً لاحقاً
-            }
-            else
-            {
-                foreach (var member in committeeMembers)
+                try
                 {
-                    // تحويل بيانات العضو إلى Value Objects الخاصة بـ Meeting
-                    var userId = UserId.Of(member.UserId); // تأكد من تحويل النوع
+                    var committeeMembers = await _committeeService.GetActiveMembersAsync(committeeId.Value, cancellationToken);
 
-                    // نفترض أن خدمة اللجنة تعيد الدور وحق التصويت
-                    meeting.AddAttendee(
-                        userId,
-                        member.Role,        // e.g., Chairman, Member
-                        member.VotingRight  // e.g., Voting, NonVoting
-                    );
+                    if (committeeMembers != null && committeeMembers.Any())
+                    {
+                        foreach (var member in committeeMembers)
+                        {
+                            var userId = UserId.Of(member.UserId);
+                            meeting.AddAttendee(
+                                userId,
+                                member.Role,
+                                member.VotingRight
+                            );
+                        }
+                    }
+                    else
+                    {
+                        // تحذير أو خطأ حسب رغبتك، لكن يفضل السماح بذلك وإضافة الأعضاء يدوياً لاحقاً
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // سؤال معماري مهم: هل نوقف إنشاء الاجتماع إذا فشل جلب الأعضاء؟
+                    // في الأنظمة المرنة: لا، نسجل تحذير ونكمل الإنشاء، والمستخدم يضيفهم يدوياً لاحقاً.
+                    // _logger.LogWarning(ex, "Failed to auto-fetch committee members.");
+
+                    // أما إذا كان العمل يتطلب صرامة تامة، اترك الـ Exception يوقف العملية.
+                    throw;
                 }
             }
 

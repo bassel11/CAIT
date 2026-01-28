@@ -116,5 +116,57 @@ namespace IntegrationService.Infrastructure.Services
                 throw;
             }
         }
+
+
+        public async Task<bool> AreAttendeesAvailableAsync(
+    List<string> attendeeEmails, DateTime startUtc, DateTime endUtc, string timeZone)
+        {
+            try
+            {
+                // 1. تجهيز طلب البحث
+                var requestBody = new Microsoft.Graph.Users.Item.FindMeetingTimes.FindMeetingTimesPostRequestBody
+                {
+                    Attendees = attendeeEmails.Select(e => new AttendeeBase
+                    {
+                        EmailAddress = new EmailAddress { Address = e },
+                        Type = AttendeeType.Required
+                    }).ToList(),
+                    TimeConstraint = new TimeConstraint
+                    {
+                        ActivityDomain = ActivityDomain.Work,
+                        TimeSlots = new List<TimeSlot>
+                {
+                    new TimeSlot
+                    {
+                        Start = new DateTimeTimeZone { DateTime = startUtc.ToString("o"), TimeZone = "UTC" },
+                        End = new DateTimeTimeZone { DateTime = endUtc.ToString("o"), TimeZone = "UTC" }
+                    }
+                }
+                    },
+                    IsOrganizerOptional = true,
+                    MeetingDuration = endUtc - startUtc,
+                    MaxCandidates = 1 // نحتاج فقط لمعرفة هل يوجد اقتراح واحد على الأقل مطابق؟
+                };
+
+                // 2. استدعاء Graph API
+                var result = await _graphClient.Users[_options.OrganizerUserId]
+                    .FindMeetingTimes
+                    .PostAsync(requestBody);
+
+                // 3. التحليل
+                // إذا أعاد Graph اقتراحاً بنفس الوقت المطلوب تماماً، فالجميع متاحون.
+                // إذا كانت القائمة فارغة، فهناك تعارض.
+                return result?.MeetingTimeSuggestions?.Any() ?? false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking availability.");
+                // في حالة الخطأ، نفترض التوفر لتجنب تعطيل النظام (Fail Open) أو العكس حسب السياسة
+                return true;
+            }
+        }
+
+
+
     }
 }

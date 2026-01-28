@@ -298,6 +298,139 @@ namespace MeetingInfrastructure.Migrations
                     b.ToTable("AgendaItems", (string)null);
                 });
 
+            modelBuilder.Entity("MeetingCore.Entities.AgendaItemAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AgendaItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastTimeModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.ComplexProperty<Dictionary<string, object>>("FileDetails", "MeetingCore.Entities.AgendaItemAttachment.FileDetails#AttachmentFile", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("ContentType")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)")
+                                .HasColumnName("ContentType");
+
+                            b1.Property<string>("FileName")
+                                .IsRequired()
+                                .HasMaxLength(255)
+                                .HasColumnType("nvarchar(255)")
+                                .HasColumnName("FileName");
+
+                            b1.Property<string>("FileUrl")
+                                .IsRequired()
+                                .HasMaxLength(2048)
+                                .HasColumnType("nvarchar(2048)")
+                                .HasColumnName("FileUrl");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgendaItemId");
+
+                    b.ToTable("AgendaItemAttachments", (string)null);
+                });
+
+            modelBuilder.Entity("MeetingCore.Entities.AgendaTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastTimeModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AgendaTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("MeetingCore.Entities.AgendaTemplateItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AgendaTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastTimeModified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgendaTemplateId");
+
+                    b.ToTable("AgendaTemplateItems", (string)null);
+                });
+
             modelBuilder.Entity("MeetingCore.Entities.Attendance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -781,6 +914,24 @@ namespace MeetingInfrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MeetingCore.Entities.AgendaItemAttachment", b =>
+                {
+                    b.HasOne("MeetingCore.Entities.AgendaItem", null)
+                        .WithMany("Attachments")
+                        .HasForeignKey("AgendaItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MeetingCore.Entities.AgendaTemplateItem", b =>
+                {
+                    b.HasOne("MeetingCore.Entities.AgendaTemplate", null)
+                        .WithMany("Items")
+                        .HasForeignKey("AgendaTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MeetingCore.Entities.Attendance", b =>
                 {
                     b.HasOne("MeetingCore.Entities.Meeting", null)
@@ -833,6 +984,16 @@ namespace MeetingInfrastructure.Migrations
                         .HasForeignKey("MoMId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MeetingCore.Entities.AgendaItem", b =>
+                {
+                    b.Navigation("Attachments");
+                });
+
+            modelBuilder.Entity("MeetingCore.Entities.AgendaTemplate", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("MeetingCore.Entities.Meeting", b =>

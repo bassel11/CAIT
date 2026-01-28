@@ -105,13 +105,46 @@ namespace MeetingAPI.Controllers
         // Load Template
         // -------------------------------------------------------
         [HttpPost("load-template")]
-        [Authorize(Policy = "Permission:AgendaItem.Create")] // أو Permission خاصة بالقوالب
+        [Authorize(Policy = "Permission:AgendaItem.Create")]
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> LoadTemplate([FromBody] LoadAgendaTemplateCommand command)
         {
+            // التحقق من صحة الطلب (اختياري هنا لأن الـ Validator سيقوم به)
+            if (command.MeetingId == Guid.Empty || command.TemplateId == Guid.Empty)
+                return BadRequest(Result.Failure("Invalid MeetingId or TemplateId."));
+
             var result = await Mediator.Send(command);
             return Success(result, "Template loaded successfully.");
         }
+
+        // -------------------------------------------------------
+        // Add Attachment
+        // -------------------------------------------------------
+        [HttpPost("{agendaItemId:guid}/attachments")]
+        [Authorize(Policy = "Permission:AgendaItemAttachment.Upload")] // إضافة مرفق يعتبر تعديل للبند
+        [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status201Created)]
+        public async Task<IActionResult> AddAttachment(Guid agendaItemId, [FromBody] AddAgendaItemAttachmentCommand command)
+        {
+            if (agendaItemId != command.AgendaItemId)
+                return BadRequest(Result.Failure("Agenda Item ID mismatch."));
+
+            var result = await Mediator.Send(command);
+            return Success(result, "Attachment added successfully.");
+        }
+
+        // -------------------------------------------------------
+        // Remove Attachment
+        // -------------------------------------------------------
+        [HttpDelete("{agendaItemId:guid}/attachments/{attachmentId:guid}")]
+        [Authorize(Policy = "Permission:AgendaItemAttachment.Remove")]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        public async Task<IActionResult> RemoveAttachment(Guid agendaItemId, Guid attachmentId, [FromQuery] Guid meetingId)
+        {
+            var command = new RemoveAgendaItemAttachmentCommand(meetingId, agendaItemId, attachmentId);
+            var result = await Mediator.Send(command);
+            return Success(result, "Attachment removed successfully.");
+        }
+
 
         #endregion
 
