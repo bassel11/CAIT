@@ -49,6 +49,15 @@ namespace MeetingInfrastructure.Repositories
                 .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
         }
 
+        public async Task<Meeting?> GetWithAgendaAndAttachmentsAsync(MeetingId id, CancellationToken cancellationToken = default)
+        {
+            return await _context.Meetings
+                .Include(m => m.AgendaItems)          // المستوى 1: البنود
+                    .ThenInclude(ai => ai.Attachments) // المستوى 2: المرفقات (هنا يكمن الحل)
+                .AsSplitQuery() // مهم جداً هنا لأن البيانات قد تكون كبيرة
+                .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        }
+
         //public async Task<Meeting?> GetWithAttendeesAsync(MeetingId id, CancellationToken cancellationToken = default)
         //{
         //    return await _context.Meetings

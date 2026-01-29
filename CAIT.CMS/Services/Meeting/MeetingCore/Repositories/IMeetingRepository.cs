@@ -18,6 +18,8 @@ namespace MeetingCore.Repositories
         // 2. مع الأجندة: لعمليات إضافة/ترتيب البنود
         Task<Meeting?> GetWithAgendaAsync(MeetingId id, CancellationToken cancellationToken = default);
 
+        Task<Meeting?> GetWithAgendaAndAttachmentsAsync(MeetingId id, CancellationToken cancellationToken = default);
+
         // 3. مع الحضور: لعمليات الدعوة والحضور
         Task<Meeting?> GetWithAttendeesAsync(MeetingId id, CancellationToken cancellationToken = default);
 

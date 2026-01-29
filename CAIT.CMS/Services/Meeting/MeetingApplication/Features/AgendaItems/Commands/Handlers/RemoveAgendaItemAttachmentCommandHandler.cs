@@ -21,8 +21,8 @@ namespace MeetingApplication.Features.AgendaItems.Commands.Handlers
         {
             // نحتاج هنا لتضمين المرفقات عند الجلب للتمكن من حذفها
             // يجب تحديث IMeetingRepository لإضافة Include(Attachments) في GetWithAgendaAsync أو دالة جديدة
-            var meeting = await _meetingRepository.GetWithAgendaAsync(MeetingId.Of(request.MeetingId), cancellationToken);
-            if (meeting == null) return Result.Failure("Meeting not found.");
+            // داخل الـ Handler
+            var meeting = await _meetingRepository.GetWithAgendaAndAttachmentsAsync(MeetingId.Of(request.MeetingId), cancellationToken); if (meeting == null) return Result.Failure("Meeting not found.");
 
             var agendaItem = meeting.AgendaItems.FirstOrDefault(x => x.Id == AgendaItemId.Of(request.AgendaItemId));
             if (agendaItem == null) return Result.Failure("Agenda item not found.");
