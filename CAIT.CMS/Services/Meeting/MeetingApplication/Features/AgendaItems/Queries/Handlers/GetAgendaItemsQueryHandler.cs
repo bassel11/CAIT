@@ -30,18 +30,20 @@ namespace MeetingApplication.Features.AgendaItems.Queries.Handlers
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 var search = request.Search.Trim();
-                query = query.Where(x => x.Title.Value.Contains(search) || (x.Description != null && x.Description.Contains(search)));
+                query = query.Where(x => ((string)(object)x.Title).Contains(search) ||
+                                 (x.Description != null && x.Description.Contains(search)));
+                //query = query.Where(x => x.Title.Value.Contains(search) || (x.Description != null && x.Description.Contains(search)));
             }
 
             // 3. Sorting (Default by SortOrder)
-            query = query.OrderBy(x => x.SortOrder.Value);
+            query = query.OrderBy(x => x.SortOrder);
 
             // 4. Count
             var totalCount = await query.CountAsync(cancellationToken);
 
             // 5. Pagination & Projection
             var items = await query
-                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Skip(((request.PageNumber < 1 ? 1 : request.PageNumber) - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(x => new AgendaItemResponse
                 {
