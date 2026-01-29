@@ -37,6 +37,11 @@ namespace MeetingCore.Entities
         // Concurrency Control
         public byte[] RowVersion { get; set; } = default!;
 
+        // =========================================================
+        // الجديد: سياسة النصاب (Snapshot من اللجنة)
+        // =========================================================
+        public MeetingQuorumPolicy QuorumPolicy { get; private set; } = default!;
+
         // ================= العلاقات (Collections) =================
         private readonly List<AgendaItem> _agendaItems = new();
         public IReadOnlyCollection<AgendaItem> AgendaItems => _agendaItems.AsReadOnly();
@@ -49,6 +54,7 @@ namespace MeetingCore.Entities
 
         // علاقة 1-to-1 مع المحضر
         public MinutesOfMeeting? Minutes { get; private set; }
+
 
         // ================= البناء (Construction) =================
         private Meeting() { } // EF Core
@@ -91,6 +97,7 @@ namespace MeetingCore.Entities
             TimeZoneId timeZone,
             MeetingLocation location,
             RecurrencePattern recurrence,
+            MeetingQuorumPolicy quorumPolicy,
             string? createdBy)
         {
             if (endDate <= startDate)
@@ -110,6 +117,8 @@ namespace MeetingCore.Entities
                 TimeZone = timeZone,
                 Location = location,
                 Recurrence = recurrence,
+                Status = MeetingStatus.Draft,
+                QuorumPolicy = quorumPolicy ?? throw new DomainException("Quorum Policy is required."),
                 CreatedBy = createdBy,
                 CreatedAt = DateTime.UtcNow
             };
@@ -126,6 +135,46 @@ namespace MeetingCore.Entities
                 meeting.CreatedAt
     ));
             return meeting;
+        }
+
+        // =========================================================
+        //  منطق التحقق من النصاب (Core Logic)
+        // =========================================================
+        public bool IsQuorumMet()
+        {
+            // 1. حساب الأعضاء الذين يحق لهم التصويت
+            var votingMembersCount = _attendances.Count(a => a.VotingRight == VotingRight.Voting);
+
+            // إذا لم يوجد مصوتون، النصاب متحقق افتراضياً (اجتماع مفتوح/تشاوري)
+            if (votingMembersCount == 0) return true;
+
+            // 2. حساب الحضور الفعلي (بمن فيهم النواب)
+            var presentCount = _attendances.Count(a => a.CountsForQuorum());
+
+            // 3. تطبيق السياسة المخزنة
+            switch (QuorumPolicy.Type)
+            {
+                case QuorumType.Percentage:
+                    // المعادلة: (الحضور / الكلي) * 100 >= النسبة
+                    if (!QuorumPolicy.ThresholdPercent.HasValue) return false;
+                    decimal currentPercent = ((decimal)presentCount / votingMembersCount) * 100;
+                    return currentPercent >= QuorumPolicy.ThresholdPercent.Value;
+
+                case QuorumType.PercentagePlusOne:
+                    // المعادلة: 50% + 1 (عادة تعني النصف + 1)
+                    // مثال: 10 أعضاء -> النصف 5 -> المطلوب 6
+                    // مثال: 11 عضو -> النصف 5.5 -> المطلوب 6
+                    int half = votingMembersCount / 2;
+                    return presentCount >= (half + 1);
+
+                case QuorumType.AbsoluteNumber:
+                    // المعادلة: عدد ثابت
+                    if (!QuorumPolicy.AbsoluteCount.HasValue) return false;
+                    return presentCount >= QuorumPolicy.AbsoluteCount.Value;
+
+                default:
+                    return false;
+            }
         }
 
 
@@ -247,6 +296,9 @@ namespace MeetingCore.Entities
              AttendanceRole role,
              VotingRight votingRight)
         {
+            if (Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
+                throw new DomainException("Cannot add attendee to a closed meeting.");
+
             if (_attendances.Any(a => a.UserId == userId))
                 return;
 
@@ -262,6 +314,9 @@ namespace MeetingCore.Entities
 
         public void RemoveAttendee(UserId userId)
         {
+            if (Status == MeetingStatus.Completed)
+                throw new DomainException("Cannot remove attendee from a completed meeting history.");
+
             var attendance = _attendances.FirstOrDefault(a => a.UserId == userId);
             if (attendance == null) throw new DomainException("Attendee not found.");
 
@@ -277,6 +332,11 @@ namespace MeetingCore.Entities
 
         public void ConfirmRSVP(UserId userId, RSVPStatus status)
         {
+            if (Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
+            {
+                throw new DomainException("Cannot change RSVP for a closed or cancelled meeting.");
+            }
+
             var attendance = _attendances.FirstOrDefault(a => a.UserId == userId);
             if (attendance == null) throw new DomainException("Attendee not found in this meeting.");
 
@@ -291,64 +351,116 @@ namespace MeetingCore.Entities
             ));
         }
 
-        public void CheckInAttendee(UserId userId, bool isRemote)
+        public void CheckInAttendee(UserId userId, bool isRemote, bool isProxy = false, string? proxyName = null)
         {
-            // تحقق من أن الاجتماع في حالة تسمح بتسجيل الدخول (مثلاً Scheduled أو Started)
-            if (Status == MeetingStatus.Draft || Status == MeetingStatus.Cancelled)
-                throw new DomainException("Cannot check-in to a draft or cancelled meeting.");
+            bool isCheckInAllowed = Status == MeetingStatus.Scheduled ||
+                                    Status == MeetingStatus.Rescheduled ||
+                                    Status == MeetingStatus.InProgress;
+
+            // ثم نقول: إذا لم يكن مسموحاً، ارمِ خطأ
+            if (!isCheckInAllowed)
+            {
+                throw new DomainException($"Check-in is not allowed. Current status: {Status}");
+            }
 
             var attendance = _attendances.FirstOrDefault(a => a.UserId == userId);
 
-            // إذا كان "Walk-in" (غير مدعو)، يجب إضافته أولاً (حسب قواعد العمل).
-            // هنا سنفترض الصرامة: يجب أن يكون مدعواً.
+            // هنا نسمح بالـ CheckIn حتى لو لم يكن مدعواً إذا كانت السياسة تسمح (Walk-in logic)
+            // ولكن بناءً على كودك، سنفترض أنه يجب أن يكون في القائمة.
             if (attendance == null) throw new DomainException("User is not listed as an attendee.");
 
-            attendance.CheckIn(isRemote);
+            attendance.CheckIn(isRemote, isProxy, proxyName);
             LastTimeModified = DateTime.UtcNow;
 
-            var status = isRemote ? AttendanceStatus.Remote : AttendanceStatus.Present;
-
+            // نطلق حدث يحتوي على حالة النصاب الجديدة لتحديث الواجهة فوراً
             AddDomainEvent(new MeetingAttendeeCheckedInEvent(
-                    Id.Value,
-                    userId.Value,
-                    status,      // تمرير الحالة كـ Enum
-                    isRemote,    // تمرير الـ flag (إذا أضفته للحدث كما اقترحت أعلاه)
-                    DateTime.UtcNow
-                ));
+                Id.Value,
+                userId.Value,
+                attendance.AttendanceStatus,
+                isRemote,
+                DateTime.UtcNow,
+                IsQuorumMet() // ✅ نرسل حالة النصاب الحالية
+            ));
         }
 
-        public void BulkCheckIn(List<(UserId UserId, AttendanceStatus Status)> entries)
-        {
-            var now = DateTime.UtcNow; // توحيد التوقيت للعملية كاملة
+        // ... داخل كلاس Meeting ...
 
-            // قائمة لتجميع التغييرات التي تمت بنجاح لإرسالها في الحدث
+        // =========================================================
+        // ✅ ميزة تحديث النصاب (Refresh Quorum)
+        // =========================================================
+        public void RefreshQuorumPolicy(MeetingQuorumPolicy newPolicy, string modifiedBy)
+        {
+            // 1. التحقق من الحالة (Invariants)
+            // لا يجوز تغيير قواعد اللعبة أثناء اللعب (InProgress) أو بعد انتهائها (Completed)
+            if (Status == MeetingStatus.InProgress || Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
+            {
+                throw new DomainException($"Cannot refresh quorum rules when meeting status is '{Status}'. Rules are locked once the meeting starts.");
+            }
+
+            // 2. التحقق من أن السياسة الجديدة مختلفة فعلاً (لتحسين الأداء والتدقيق)
+            if (QuorumPolicy.Equals(newPolicy))
+            {
+                return; // لا داعي لعمل شيء إذا كانت القواعد متطابقة
+            }
+
+            // 3. تطبيق التغيير
+            var oldPolicyDescription = QuorumPolicy.GetDescription();
+            QuorumPolicy = newPolicy;
+
+            // 4. التدقيق
+            LastModifiedBy = modifiedBy;
+            LastTimeModified = DateTime.UtcNow;
+
+            // 5. إطلاق حدث (مهم جداً هنا لتوثيق تغيير قانوني)
+            AddDomainEvent(new MeetingQuorumPolicyUpdatedEvent(
+                Id.Value,
+                oldPolicyDescription,
+                newPolicy.GetDescription(),
+                modifiedBy,
+                DateTime.UtcNow));
+        }
+
+
+        public void BulkCheckIn(List<(UserId UserId, AttendanceStatus Status, bool IsProxy, string? ProxyName)> entries)
+        {
+            var now = DateTime.UtcNow;
             var changesList = new List<BulkCheckInItem>();
 
             foreach (var entry in entries)
             {
                 var attendance = _attendances.FirstOrDefault(a => a.UserId == entry.UserId);
 
-                // نتجاوز من ليس موجوداً في القائمة (أو يمكن إضافته هنا لو أردت منطق Walk-in)
+                // يمكن هنا تطبيق منطق Walk-in إذا لم يوجد
                 if (attendance != null)
                 {
-                    // 1. التحديث الفعلي للحالة باستخدام التابع الداخلي
-                    attendance.SetStatus(entry.Status, now);
+                    // نستخدم الدالة الذكية لتوحيد المنطق
+                    // ملاحظة: SetStatus السابقة كانت بسيطة، الآن نستخدم CheckIn إذا كانت الحالة حضور
+                    if (entry.Status == AttendanceStatus.Present || entry.Status == AttendanceStatus.Remote)
+                    {
+                        attendance.CheckIn(
+                            entry.Status == AttendanceStatus.Remote,
+                            entry.IsProxy,
+                            entry.ProxyName
+                        );
+                    }
+                    else
+                    {
+                        attendance.MarkAbsent(); // أو SetStatus للغياب
+                    }
 
-                    // 2. إضافة التغيير للقائمة المؤقتة
                     changesList.Add(new BulkCheckInItem(entry.UserId.Value, entry.Status));
                 }
             }
 
-            // 3. نتحقق هل تم تعديل أي شيء فعلاً؟
             if (changesList.Any())
             {
                 LastTimeModified = now;
-
-                // 4. إطلاق حدث واحد يحتوي على كل التفاصيل
+                // ✅ نرسل حالة النصاب الجديدة مع الحدث
                 AddDomainEvent(new MeetingAttendeesBulkCheckedInEvent(
                     Id.Value,
                     changesList,
-                    now
+                    now,
+                    IsQuorumMet()
                 ));
             }
         }

@@ -104,6 +104,28 @@ namespace MeetingAPI.Controllers
             return Success("Meeting Completed Successfully");
         }
 
+        [HttpPut("{id}/refresh-quorum")]
+        [Authorize(Policy = "Permission:Meeting.Create")] // صلاحيات حساسة
+        public async Task<IActionResult> RefreshQuorum(Guid id)
+        {
+            var command = new RefreshMeetingQuorumCommand(id);
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        [HttpGet("{id}/check-quorum-updates")]
+        [Authorize(Policy = "Permission:Meeting.Create")]
+        public async Task<IActionResult> CheckQuorumUpdates(Guid id)
+        {
+            var query = new CheckQuorumMismatchQuery(id);
+            var result = await Mediator.Send(query);
+            return Ok(result);
+        }
+
         #endregion
 
 

@@ -16,7 +16,8 @@ namespace MeetingCore.Events.AttendanceEvents
         Guid MemberId,
         AttendanceStatus Status,
         bool IsRemote,
-        DateTime Timestamp
+        DateTime Timestamp,
+        bool IsQuorumMet
     ) : IDomainEvent;
 
     // 3. عند إضافة عضو جديد
@@ -36,7 +37,8 @@ namespace MeetingCore.Events.AttendanceEvents
 
     public record MeetingAttendeesBulkCheckedInEvent(
         Guid MeetingId,
-        List<BulkCheckInItem> CheckedInItems, // قائمة بمن تم تعديلهم وحالاتهم
-        DateTime Timestamp
+        List<BulkCheckInItem> CheckedInItems,
+        DateTime Timestamp,
+        bool IsQuorumMet // ✅ هام جداً: حالة النصاب الجديدة بعد التحديث الجماعي
     ) : IDomainEvent;
 }

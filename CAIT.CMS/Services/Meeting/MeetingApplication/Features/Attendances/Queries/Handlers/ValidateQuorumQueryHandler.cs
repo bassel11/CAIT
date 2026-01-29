@@ -1,134 +1,77 @@
 ﻿using BuildingBlocks.Shared.CQRS;
-using MeetingApplication.Data;
+using BuildingBlocks.Shared.Wrappers;
 using MeetingApplication.Features.Attendances.Queries.Models;
 using MeetingApplication.Features.Attendances.Queries.Results;
-using MeetingApplication.Interfaces.Committee;
-using MeetingCore.Entities;
 using MeetingCore.Enums;
 using MeetingCore.Enums.AttendanceEnums;
+using MeetingCore.Repositories;
 using MeetingCore.ValueObjects.MeetingVO;
 
 namespace MeetingApplication.Features.Attendances.Queries.Handlers
 {
-    public class ValidateQuorumQueryHandler : IQueryHandler<ValidateQuorumQuery, QuorumValidationResult>
+    public class ValidateQuorumQueryHandler : IQueryHandler<ValidateQuorumQuery, Result<QuorumValidationResult>>
     {
-        private readonly IMeetingDbContext _dbContext;
-        private readonly ICommitteeService _committeeService;
+        private readonly IMeetingRepository _repository;
 
-        public ValidateQuorumQueryHandler(
-            IMeetingDbContext dbContext,
-            ICommitteeService committeeService)
+        public ValidateQuorumQueryHandler(IMeetingRepository repository)
         {
-            _dbContext = dbContext;
-            _committeeService = committeeService;
+            _repository = repository;
         }
 
-        public async Task<QuorumValidationResult> Handle(ValidateQuorumQuery req, CancellationToken ct)
+        public async Task<Result<QuorumValidationResult>> Handle(ValidateQuorumQuery request, CancellationToken ct)
         {
-            var meetingId = MeetingId.Of(req.MeetingId);
+            // 1. جلب الاجتماع مع الحضور من المستودع
+            // نحتاج الحضور لحساب الأعداد، ونحتاج الاجتماع لقراءة الـ QuorumPolicy
+            var meeting = await _repository.GetWithAttendeesAsync(MeetingId.Of(request.MeetingId), ct);
 
-            // -----------------------------------------------------------
-            // 1. الخطوة الأولى: جلب بيانات الاجتماع وعدد الحضور الفعليين
-            // -----------------------------------------------------------
-            // نستخدم Projection لجلب ما نحتاجه فقط (CommitteeId + Count)
-            var meetingData = await _dbContext.Meetings
-                .AsNoTracking()
-                .Where(m => m.Id == meetingId)
-                .Select(m => new
-                {
-                    m.CommitteeId,
-                    // العد الذكي: (حاضر أو أونلاين) + (يملك حق التصويت)
-                    PresentVotersCount = m.Attendances.Count(a =>
-                        (a.AttendanceStatus == AttendanceStatus.Present || a.AttendanceStatus == AttendanceStatus.Remote)
-                        && a.VotingRight == VotingRight.Voting
-                    )
-                })
-                .FirstOrDefaultAsync(ct);
+            if (meeting == null)
+                return Result<QuorumValidationResult>.Failure("Meeting not found.");
 
-            if (meetingData == null)
+            // 2. التحقق من النصاب باستخدام منطق الدومين (Snapshot Logic)
+            bool isMet = meeting.IsQuorumMet();
+
+            // 3. حساب الأرقام للعرض في الواجهة (ViewModel Logic)
+            // عدد الأعضاء الذين يحق لهم التصويت في هذا الاجتماع
+            var totalVotingMembers = meeting.Attendances.Count(a => a.VotingRight == VotingRight.Voting);
+
+            // عدد الحضور الفعليين (بمن فيهم النواب) الذين يحق لهم التصويت
+            var presentVotingMembers = meeting.Attendances.Count(a => a.CountsForQuorum());
+
+            // حساب العدد المطلوب تحقيقه (نعيد تطبيق نفس معادلة الدومين للعرض)
+            int requiredCount = CalculateRequired(meeting.QuorumPolicy, totalVotingMembers);
+
+            // 4. إرجاع النتيجة
+            return Result<QuorumValidationResult>.Success(new QuorumValidationResult
             {
-                throw new NotFoundException(nameof(Meeting), req.MeetingId);
-            }
-
-            // -----------------------------------------------------------
-            // 2. الخطوة الثانية: جلب بيانات اللجنة (قواعد النصاب)
-            // -----------------------------------------------------------
-            // نحصل على العدد الكلي للأعضاء في اللجنة
-            var totalMembers = await _committeeService.GetMemberCountAsync(meetingData.CommitteeId.Value, ct);
-
-            // نحصل على قاعدة النصاب، وإذا لم تكن محددة نستخدم قاعدة افتراضية (50% + 1)
-            var rule = await _committeeService.GetQuorumRuleAsync(meetingData.CommitteeId.Value, ct)
-                ?? new QuorumRule
-                {
-                    Type = QuorumType.PercentagePlusOne,
-                    Threshold = 50m,
-                    UsePlusOne = true
-                };
-
-            // -----------------------------------------------------------
-            // 3. الخطوة الثالثة: تطبيق منطق الحساب (Business Logic)
-            // -----------------------------------------------------------
-            int requiredCount = CalculateRequiredCount(rule, totalMembers);
-
-            // التحقق النهائي
-            bool isMet = meetingData.PresentVotersCount >= requiredCount;
-
-            // -----------------------------------------------------------
-            // 4. بناء النتيجة
-            // -----------------------------------------------------------
-            return new QuorumValidationResult
-            {
-                MeetingId = req.MeetingId,
-                TotalMembers = totalMembers,
-                PresentCount = meetingData.PresentVotersCount,
+                MeetingId = request.MeetingId,
+                TotalVotingMembers = totalVotingMembers,
+                PresentVotingMembers = presentVotingMembers,
                 RequiredCount = requiredCount,
                 QuorumMet = isMet,
-                RuleDescription = GetRuleDescription(rule),
+                // نستخدم دالة الوصف الموجودة في الـ Value Object
+                RuleDescription = meeting.QuorumPolicy.GetDescription(),
                 StatusMessage = isMet
-                    ? "Quorum is satisfied. You can proceed."
-                    : $"Quorum not met. Need {requiredCount - meetingData.PresentVotersCount} more member(s)."
-            };
+                    ? "Quorum is satisfied. You can proceed to official decisions."
+                    : $"Quorum not met. Need {Math.Max(0, requiredCount - presentVotingMembers)} more voting member(s)."
+            });
         }
 
-        // ============================================================
-        // Helper Methods (للحفاظ على نظافة الـ Handle)
-        // ============================================================
-
-        private int CalculateRequiredCount(QuorumRule rule, int total)
+        // منطق حساب العدد المطلوب للعرض (يمكن نقله لداخل MeetingQuorumPolicy لاحقاً)
+        private int CalculateRequired(MeetingQuorumPolicy policy, int total)
         {
-            if (total == 0) return 0; // حماية من الأخطاء المنطقية
+            if (total == 0) return 0;
 
-            decimal threshold = rule.Threshold ?? 0;
-
-            switch (rule.Type)
+            return policy.Type switch
             {
-                case QuorumType.AbsoluteNumber:
-                    // عدد ثابت (مثلاً: يجب حضور 5 أشخاص مهما كان العدد الكلي)
-                    // نستخدم Min لضمان عدم طلب عدد أكبر من الأعضاء الموجودين
-                    return Math.Min(rule.AbsoluteCount ?? 0, total);
+                QuorumType.AbsoluteNumber => policy.AbsoluteCount ?? 0,
 
-                case QuorumType.Percentage:
-                    // نسبة مئوية (مثلاً: 60% من الأعضاء)
-                    // Ceiling لضمان جبر الكسر للأعلى (مثلاً 5.1 تصبح 6)
-                    return (int)Math.Ceiling(total * (threshold / 100m));
+                QuorumType.Percentage =>
+                    (int)Math.Ceiling(total * ((policy.ThresholdPercent ?? 0) / 100m)),
 
-                case QuorumType.PercentagePlusOne:
-                default:
-                    // النسبة الشائعة (50% + 1)
-                    // Floor ثم إضافة 1
-                    var baseCount = (int)Math.Floor(total * (threshold / 100m));
-                    return rule.UsePlusOne ? baseCount + 1 : baseCount;
-            }
-        }
+                QuorumType.PercentagePlusOne =>
+                    (total / 2) + 1,
 
-        private string GetRuleDescription(QuorumRule rule)
-        {
-            return rule.Type switch
-            {
-                QuorumType.AbsoluteNumber => $"Fixed Number ({rule.AbsoluteCount})",
-                QuorumType.Percentage => $"Percentage ({rule.Threshold}%)",
-                QuorumType.PercentagePlusOne => $"Majority ({rule.Threshold}% + 1)",
-                _ => "Standard Rule"
+                _ => 0
             };
         }
     }

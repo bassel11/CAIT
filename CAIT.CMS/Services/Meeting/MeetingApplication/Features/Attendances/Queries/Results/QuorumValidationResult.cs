@@ -3,11 +3,11 @@
     public class QuorumValidationResult
     {
         public Guid MeetingId { get; set; }
-        public int TotalMembers { get; set; }               // from CommitteeService
-        public int PresentCount { get; set; }               // attendees counted as Present or Remote
-        public int RequiredCount { get; set; }              // required by rule
+        public int TotalVotingMembers { get; set; } // تم تغيير الاسم ليكون أدق (المصوتون داخل الاجتماع)
+        public int PresentVotingMembers { get; set; }
+        public int RequiredCount { get; set; }
         public bool QuorumMet { get; set; }
-        public string RuleDescription { get; set; } = default!;      // human readable
+        public string RuleDescription { get; set; } = default!;
         public string StatusMessage { get; set; } = default!;
     }
 }

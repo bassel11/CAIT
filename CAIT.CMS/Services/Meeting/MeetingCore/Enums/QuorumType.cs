@@ -2,8 +2,8 @@
 {
     public enum QuorumType
     {
-        PercentagePlusOne, // e.g., 50% +1
-        Percentage,        // e.g., 66.67%
-        AbsoluteNumber     // e.g., at least 7 members
+        Percentage = 1,        // e.g., 66.67%
+        PercentagePlusOne = 2, // e.g., 50% +1
+        AbsoluteNumber = 3    // e.g., at least 7 members
     }
 }

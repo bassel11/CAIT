@@ -8,10 +8,13 @@ namespace MeetingApplication.Features.Attendances.Commands.Validators
     {
         public ConfirmAttendanceValidator()
         {
-            RuleFor(x => x.MeetingId).NotEmpty();
+            RuleFor(x => x.MeetingId)
+                .NotEmpty();
+
             RuleFor(x => x.Status)
-                .IsInEnum().WithMessage("Invalid RSVP status.")
-                .NotEqual(RSVPStatus.Pending).WithMessage("You must select a valid response (Accepted, Declined, etc.).");
+                .IsInEnum()
+                .NotEqual(RSVPStatus.Pending)
+                .WithMessage("You must choose either Accepted, Declined, or Tentative.");
         }
     }
 }

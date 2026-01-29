@@ -4,7 +4,12 @@ using MeetingCore.Enums.AttendanceEnums;
 
 namespace MeetingApplication.Features.Attendances.Commands.Models
 {
-    public record BulkCheckInItemDto(Guid UserId, AttendanceStatus Status);
+    public record BulkCheckInItemDto(
+        Guid UserId,
+        AttendanceStatus Status,
+        bool IsProxy = false,
+        string? ProxyName = null
+       );
 
     public record BulkCheckInCommand(
         Guid MeetingId,

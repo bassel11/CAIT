@@ -23,9 +23,19 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
 
             try
             {
-                meeting.CheckInAttendee(UserId.Of(request.UserId), request.IsRemote);
+                // ✅ تمرير بارامترات النائب
+                meeting.CheckInAttendee(
+                    UserId.Of(request.UserId),
+                    request.IsRemote,
+                    request.IsProxy,    // من الـ Command
+                    request.ProxyName   // من الـ Command
+                );
+
                 await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
-                return Result.Success("Checked in successfully.");
+
+                // رسالة ذكية
+                var statusMsg = meeting.IsQuorumMet() ? "Quorum Met ✅" : "Waiting for Quorum ⏳";
+                return Result.Success($"Checked in successfully. {statusMsg}");
             }
             catch (DomainException ex)
             {

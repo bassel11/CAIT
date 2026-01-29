@@ -43,29 +43,34 @@ namespace MeetingInfrastructure.Integrations.Committee
         {
             var url = $"/api/CommitteeQuorumRule/GetByCommitteeId/{committeeId}";
 
-            var response = await _http.GetAsync(url, ct);
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                _logger.LogWarning(
-                    "CommitteeService: No quorum rule for committee {CommitteeId}.",
-                    committeeId);
+                var response = await _http.GetAsync(url, ct);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("No quorum rule found for committee {Id}. Using default.", committeeId);
+                    return null;
+                }
 
+                var data = await response.Content.ReadFromJsonAsync<CommitteeQuorumRuleResponse>(cancellationToken: ct);
+
+                if (data == null) return null;
+
+                // Mapping
+                return new QuorumRule
+                {
+                    Type = (QuorumType)data.Type, // Ensure Enums match or map manually
+                    ThresholdPercent = data.ThresholdPercent,
+                    UsePlusOne = data.UsePlusOne,
+                    AbsoluteCount = data.AbsoluteCount
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching quorum rule.");
                 return null;
             }
 
-            var data = await response.Content.ReadFromJsonAsync<CommitteeQuorumRuleResponse>(
-                cancellationToken: ct);
-
-            if (data == null)
-                return null;
-
-            return new QuorumRule
-            {
-                Type = data.Type,
-                Threshold = data.ThresholdPercent,
-                UsePlusOne = data.UsePlusOne,
-                AbsoluteCount = data.AbsoluteCount
-            };
         }
 
         public async Task<List<CommitteeMemberDto>> GetActiveMembersAsync(Guid committeeId, CancellationToken ct = default)

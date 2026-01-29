@@ -4,6 +4,7 @@ using MeetingApplication.Features.Meetings.Commands.Models;
 using MeetingApplication.Interfaces.Committee;
 using MeetingCore.DomainServices;
 using MeetingCore.Entities;
+using MeetingCore.Enums;
 using MeetingCore.Enums.MeetingEnums;
 using MeetingCore.Repositories;
 using MeetingCore.ValueObjects;
@@ -31,7 +32,9 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
             _overlapService = overlapService;
         }
 
-        public async Task<Result<Guid>> Handle(CreateMeetingCommand request, CancellationToken cancellationToken)
+        public async Task<Result<Guid>> Handle(
+            CreateMeetingCommand request,
+            CancellationToken cancellationToken)
         {
 
             // =========================================================
@@ -115,6 +118,14 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
                );
             }
 
+
+            //
+            var ruleDto = await _committeeService.GetQuorumRuleAsync(
+                request.CommitteeId, cancellationToken);
+
+            var quorumPolicy = ruleDto != null
+            ? MeetingQuorumPolicy.Create(ruleDto.Type, ruleDto.ThresholdPercent, ruleDto.AbsoluteCount, ruleDto.UsePlusOne)
+            : MeetingQuorumPolicy.Create(QuorumType.PercentagePlusOne, null, null, true);
             // =========================================================
             // 2. إنشاء الـ Aggregate Root باستخدام الـ Factory
             // =========================================================
@@ -129,6 +140,7 @@ namespace MeetingApplication.Features.Meetings.Commands.Handlers
                 timeZone,
                 location,
                 recurrence,
+                quorumPolicy,
                 currentUserId // Audit User
             );
 

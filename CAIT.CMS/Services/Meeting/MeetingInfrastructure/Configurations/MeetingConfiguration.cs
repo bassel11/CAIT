@@ -86,6 +86,31 @@ namespace MeetingInfrastructure.Configurations
             builder.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
             builder.Property(x => x.RowVersion).IsRowVersion();
 
+            // ... داخل Configure ...
+
+            // تخزين سياسة النصاب كـ Complex Property (أعمدة مسطحة في جدول Meeting)
+            // ... داخل Configure ...
+
+            // ✅ Complex Property لتخزين السياسة (Flattening)
+            builder.ComplexProperty(x => x.QuorumPolicy, q =>
+            {
+                q.Property(p => p.Type)
+                 .HasColumnName("QuorumType")
+                 .HasConversion<string>() // أو int
+                 .IsRequired();
+
+                q.Property(p => p.ThresholdPercent)
+                 .HasColumnName("QuorumThresholdPercent")
+                 .HasPrecision(5, 2);
+
+                q.Property(p => p.AbsoluteCount)
+                 .HasColumnName("QuorumAbsoluteCount");
+
+                q.Property(p => p.UsePlusOne)
+                 .HasColumnName("QuorumUsePlusOne")
+                 .HasDefaultValue(false);
+            });
+
             // =========================================================
             // 6. Relationships & Encapsulation (Crucial for DDD)
             // =========================================================

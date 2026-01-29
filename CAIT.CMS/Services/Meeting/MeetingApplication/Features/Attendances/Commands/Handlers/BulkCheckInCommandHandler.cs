@@ -19,6 +19,7 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
         public async Task<Result> Handle(BulkCheckInCommand request, CancellationToken cancellationToken)
         {
             // 1. Load Aggregate
+            // نحتاج Attendees للتحقق وتحديث حالتهم
             var meeting = await _meetingRepository.GetWithAttendeesAsync(MeetingId.Of(request.MeetingId), cancellationToken);
 
             if (meeting == null)
@@ -26,10 +27,16 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
 
             try
             {
-                // 2. Map Command DTOs to Domain Types (Value Objects & Enums)
-                // تحويل القائمة القادمة من الخارج إلى الشكل الذي يفهمه الدومين (Tuples)
+                // 2. Map Command DTOs to Domain Arguments
+                // نحول القائمة إلى Tuple يحتوي على (UserId, Status, IsProxy, ProxyName)
+                // ليتمكن الدومين من معالجتها
                 var domainEntries = request.Items
-                    .Select(x => (UserId.Of(x.UserId), x.Status)) // ✅ لا حاجة للـ Casting هنا
+                    .Select(x => (
+                        UserId: UserId.Of(x.UserId),
+                        Status: x.Status,
+                        IsProxy: x.IsProxy,        // ✅ تمرير
+                        ProxyName: x.ProxyName     // ✅ تمرير
+                    ))
                     .ToList();
 
                 // 3. Execute Domain Logic
@@ -38,7 +45,9 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
                 // 4. Save
                 await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
 
-                return Result.Success("Bulk check-in completed successfully.");
+                // نتحقق من النصاب بعد التعديل لإرجاع رسالة ذكية
+                var quorumMsg = meeting.IsQuorumMet() ? "Quorum Met ✅" : "Waiting for Quorum ⏳";
+                return Result.Success($"Bulk check-in completed. {quorumMsg}");
             }
             catch (DomainException ex)
             {

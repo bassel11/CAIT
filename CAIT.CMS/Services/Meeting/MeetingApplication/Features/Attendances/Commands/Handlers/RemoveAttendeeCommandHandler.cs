@@ -4,16 +4,21 @@ using MeetingApplication.Features.Attendances.Commands.Models;
 using MeetingCore.Repositories;
 using MeetingCore.ValueObjects.AttendanceVO;
 using MeetingCore.ValueObjects.MeetingVO;
+using Microsoft.Extensions.Logging;
 
 namespace MeetingApplication.Features.Attendances.Commands.Handlers
 {
     public class RemoveAttendeeCommandHandler : ICommandHandler<RemoveAttendeeCommand, Result>
     {
         private readonly IMeetingRepository _meetingRepository;
+        private readonly ILogger<RemoveAttendeeCommandHandler> _logger;
 
-        public RemoveAttendeeCommandHandler(IMeetingRepository meetingRepository)
+        public RemoveAttendeeCommandHandler(
+            IMeetingRepository meetingRepository,
+            ILogger<RemoveAttendeeCommandHandler> logger)
         {
             _meetingRepository = meetingRepository;
+            _logger = logger;
         }
 
         public async Task<Result> Handle(RemoveAttendeeCommand request, CancellationToken cancellationToken)
@@ -25,10 +30,12 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
             {
                 meeting.RemoveAttendee(UserId.Of(request.UserId));
                 await _meetingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Attendee {UserId} removed from meeting {MeetingId}", request.UserId, request.MeetingId);
                 return Result.Success("Attendee removed successfully.");
             }
             catch (DomainException ex)
             {
+                _logger.LogWarning("Failed to remove attendee: {Message}", ex.Message);
                 return Result.Failure(ex.Message);
             }
         }
