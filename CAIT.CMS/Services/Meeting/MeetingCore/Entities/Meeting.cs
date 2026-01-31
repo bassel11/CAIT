@@ -32,7 +32,7 @@ namespace MeetingCore.Entities
         public string? OutlookEventId { get; private set; }
 
         // التكرار
-        public RecurrencePattern Recurrence { get; private set; }
+        public RecurrencePattern Recurrence { get; private set; } = default!;
 
         // Concurrency Control
         public byte[] RowVersion { get; set; } = default!;
@@ -41,6 +41,7 @@ namespace MeetingCore.Entities
         // الجديد: سياسة النصاب (Snapshot من اللجنة)
         // =========================================================
         public MeetingQuorumPolicy QuorumPolicy { get; private set; } = default!;
+        public bool IsCurrentQuorumMet { get; private set; } = false;
 
         // ================= العلاقات (Collections) =================
         private readonly List<AgendaItem> _agendaItems = new();
@@ -58,6 +59,8 @@ namespace MeetingCore.Entities
 
         // ================= البناء (Construction) =================
         private Meeting() { } // EF Core
+
+        #region Constructor and Create
 
         public Meeting(
             MeetingId id,
@@ -137,9 +140,9 @@ namespace MeetingCore.Entities
             return meeting;
         }
 
-        // =========================================================
-        //  منطق التحقق من النصاب (Core Logic)
-        // =========================================================
+        #endregion
+
+        #region Quorum Logic
         public bool IsQuorumMet()
         {
             // 1. حساب الأعضاء الذين يحق لهم التصويت
@@ -176,33 +179,89 @@ namespace MeetingCore.Entities
                     return false;
             }
         }
-
-
-        public void UpdateDetails(
-            MeetingTitle title,
-            string? description,
-            MeetingLocation location,
-            string modifiedBy)
+        private bool CalculateQuorumStatus()
         {
-            // 1. التحقق من القوانين (Invariants)
-            // لا يمكن تعديل تفاصيل اجتماع ملغي أو مكتمل
-            if (Status == MeetingStatus.Cancelled || Status == MeetingStatus.Completed)
-                throw new DomainException("Cannot update details of a finished meeting.");
+            // عدد الأعضاء الكلي الذين يحق لهم التصويت (المقام)
+            var votingMembersCount = _attendances.Count(a => a.VotingRight == VotingRight.Voting);
 
-            // 2. تطبيق التغييرات
-            Title = title;
-            Description = description;
-            Location = location;
+            // اجتماعات بدون مصوتين تعتبر قانونية (تشاورية)
+            if (votingMembersCount == 0) return true;
 
-            // 3. تحديث التدقيق
+            // عدد الحضور الفعلي للمصوتين (البسط)
+            var presentCount = _attendances.Count(a => a.CountsForQuorum());
+
+            return QuorumPolicy.Type switch
+            {
+                QuorumType.Percentage =>
+                    QuorumPolicy.ThresholdPercent.HasValue &&
+                    ((decimal)presentCount / votingMembersCount) * 100 >= QuorumPolicy.ThresholdPercent.Value,
+
+                QuorumType.PercentagePlusOne =>
+                    presentCount >= (votingMembersCount / 2) + 1,
+
+                QuorumType.AbsoluteNumber =>
+                    QuorumPolicy.AbsoluteCount.HasValue &&
+                    presentCount >= QuorumPolicy.AbsoluteCount.Value,
+
+                _ => false
+            };
+        }
+        private void UpdateQuorumState()
+        {
+            var newState = CalculateQuorumStatus();
+
+            // نحدث فقط إذا تغيرت الحالة لتقليل عمليات الكتابة والأحداث
+            if (IsCurrentQuorumMet != newState)
+            {
+                IsCurrentQuorumMet = newState;
+
+                // 🔥 إطلاق حدث خاص بتغير الحالة (مفيد للـ Frontend Real-time notifications)
+                AddDomainEvent(new MeetingQuorumStatusChangedEvent(
+                    Id.Value,
+                    IsCurrentQuorumMet,
+                    DateTime.UtcNow
+                ));
+            }
+        }
+        public void RefreshQuorumPolicy(MeetingQuorumPolicy newPolicy, string modifiedBy)
+        {
+            // 1. التحقق من الحالة (Invariants)
+            // لا يجوز تغيير قواعد اللعبة أثناء اللعب (InProgress) أو بعد انتهائها (Completed)
+            if (Status == MeetingStatus.InProgress || Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
+            {
+                throw new DomainException($"Cannot refresh quorum rules when meeting status is '{Status}'. Rules are locked once the meeting starts.");
+            }
+
+            // 2. التحقق من أن السياسة الجديدة مختلفة فعلاً (لتحسين الأداء والتدقيق)
+            if (QuorumPolicy.Equals(newPolicy))
+            {
+                return; // لا داعي لعمل شيء إذا كانت القواعد متطابقة
+            }
+
+            // 3. تطبيق التغيير
+            var oldPolicyDescription = QuorumPolicy.GetDescription();
+            QuorumPolicy = newPolicy;
+
+            // 4. التدقيق
             LastModifiedBy = modifiedBy;
             LastTimeModified = DateTime.UtcNow;
 
-            // 4. إطلاق حدث (اختياري، مفيد لتحديث الـ Read Models)
-            // AddDomainEvent(new MeetingDetailsUpdatedEvent(Id, Title.Value, ...));
+
+            UpdateQuorumState();
+
+            // 5. إطلاق حدث (مهم جداً هنا لتوثيق تغيير قانوني)
+            AddDomainEvent(new MeetingQuorumPolicyUpdatedEvent(
+                Id.Value,
+                oldPolicyDescription,
+                newPolicy.GetDescription(),
+                modifiedBy,
+                DateTime.UtcNow));
         }
 
-        // ================= منطق العمل (Domain Behaviors) =================
+
+        #endregion
+
+        #region Domain Behaviour
 
         public void Schedule()
         {
@@ -224,8 +283,6 @@ namespace MeetingCore.Entities
                 EndDate,
                 _attendances.Select(a => a.UserId.Value).ToList()));
         }
-
-        // داخل كلاس Meeting
         public void Complete(string userId)
         {
             // 1. التحقق من القوانين (Invariants)
@@ -261,7 +318,6 @@ namespace MeetingCore.Entities
 
             AddDomainEvent(new MeetingRescheduledEvent(Id, newStart, newEnd, OutlookEventId));
         }
-
         public void Cancel(string reason, string? cancelledBy = null)
         {
             if (Status == MeetingStatus.Completed)
@@ -283,18 +339,42 @@ namespace MeetingCore.Entities
             ));
         }
 
+        public void UpdateDetails(
+            MeetingTitle title,
+            string? description,
+            MeetingLocation location,
+            string modifiedBy)
+        {
+            // 1. التحقق من القوانين (Invariants)
+            // لا يمكن تعديل تفاصيل اجتماع ملغي أو مكتمل
+            if (Status == MeetingStatus.Cancelled || Status == MeetingStatus.Completed)
+                throw new DomainException("Cannot update details of a finished meeting.");
 
+            // 2. تطبيق التغييرات
+            Title = title;
+            Description = description;
+            Location = location;
+
+            // 3. تحديث التدقيق
+            LastModifiedBy = modifiedBy;
+            LastTimeModified = DateTime.UtcNow;
+
+            // 4. إطلاق حدث (اختياري، مفيد لتحديث الـ Read Models)
+            // AddDomainEvent(new MeetingDetailsUpdatedEvent(Id, Title.Value, ...));
+        }
         public void UpdateIntegrationInfo(string outlookEventId, string teamsLink)
         {
             OutlookEventId = outlookEventId;
             TeamsLink = teamsLink;
         }
 
-        // إضافة الحضور والأجندة
+        #endregion
+
+        #region Attendance Behaviour
         public void AddAttendee(
-             UserId userId,
-             AttendanceRole role,
-             VotingRight votingRight)
+            UserId userId,
+            AttendanceRole role,
+            VotingRight votingRight)
         {
             if (Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
                 throw new DomainException("Cannot add attendee to a closed meeting.");
@@ -308,10 +388,9 @@ namespace MeetingCore.Entities
                     userId,
                     role,
                     votingRight));
+
+            UpdateQuorumState();
         }
-
-        // داخل كلاس Meeting
-
         public void RemoveAttendee(UserId userId)
         {
             if (Status == MeetingStatus.Completed)
@@ -326,6 +405,8 @@ namespace MeetingCore.Entities
 
             _attendances.Remove(attendance);
             LastTimeModified = DateTime.UtcNow;
+
+            UpdateQuorumState();
 
             AddDomainEvent(new MeetingAttendeeRemovedEvent(Id.Value, userId.Value));
         }
@@ -350,7 +431,6 @@ namespace MeetingCore.Entities
                 DateTime.UtcNow
             ));
         }
-
         public void CheckInAttendee(UserId userId, bool isRemote, bool isProxy = false, string? proxyName = null)
         {
             bool isCheckInAllowed = Status == MeetingStatus.Scheduled ||
@@ -372,6 +452,7 @@ namespace MeetingCore.Entities
             attendance.CheckIn(isRemote, isProxy, proxyName);
             LastTimeModified = DateTime.UtcNow;
 
+            UpdateQuorumState();
             // نطلق حدث يحتوي على حالة النصاب الجديدة لتحديث الواجهة فوراً
             AddDomainEvent(new MeetingAttendeeCheckedInEvent(
                 Id.Value,
@@ -382,45 +463,6 @@ namespace MeetingCore.Entities
                 IsQuorumMet() // ✅ نرسل حالة النصاب الحالية
             ));
         }
-
-        // ... داخل كلاس Meeting ...
-
-        // =========================================================
-        // ✅ ميزة تحديث النصاب (Refresh Quorum)
-        // =========================================================
-        public void RefreshQuorumPolicy(MeetingQuorumPolicy newPolicy, string modifiedBy)
-        {
-            // 1. التحقق من الحالة (Invariants)
-            // لا يجوز تغيير قواعد اللعبة أثناء اللعب (InProgress) أو بعد انتهائها (Completed)
-            if (Status == MeetingStatus.InProgress || Status == MeetingStatus.Completed || Status == MeetingStatus.Cancelled)
-            {
-                throw new DomainException($"Cannot refresh quorum rules when meeting status is '{Status}'. Rules are locked once the meeting starts.");
-            }
-
-            // 2. التحقق من أن السياسة الجديدة مختلفة فعلاً (لتحسين الأداء والتدقيق)
-            if (QuorumPolicy.Equals(newPolicy))
-            {
-                return; // لا داعي لعمل شيء إذا كانت القواعد متطابقة
-            }
-
-            // 3. تطبيق التغيير
-            var oldPolicyDescription = QuorumPolicy.GetDescription();
-            QuorumPolicy = newPolicy;
-
-            // 4. التدقيق
-            LastModifiedBy = modifiedBy;
-            LastTimeModified = DateTime.UtcNow;
-
-            // 5. إطلاق حدث (مهم جداً هنا لتوثيق تغيير قانوني)
-            AddDomainEvent(new MeetingQuorumPolicyUpdatedEvent(
-                Id.Value,
-                oldPolicyDescription,
-                newPolicy.GetDescription(),
-                modifiedBy,
-                DateTime.UtcNow));
-        }
-
-
         public void BulkCheckIn(List<(UserId UserId, AttendanceStatus Status, bool IsProxy, string? ProxyName)> entries)
         {
             var now = DateTime.UtcNow;
@@ -454,7 +496,9 @@ namespace MeetingCore.Entities
 
             if (changesList.Any())
             {
-                LastTimeModified = now;
+                LastTimeModified = DateTime.UtcNow;
+
+                UpdateQuorumState();
                 // ✅ نرسل حالة النصاب الجديدة مع الحدث
                 AddDomainEvent(new MeetingAttendeesBulkCheckedInEvent(
                     Id.Value,
@@ -464,12 +508,17 @@ namespace MeetingCore.Entities
                 ));
             }
         }
+
+        #endregion
+
+        #region Agenda Item Behaviour
+
         public void AddAgendaItem(
-            AgendaItemTitle title,
-            Duration? allocatedTime,
-            SortOrder sortOrder,
-            PresenterId? presenterId,
-            string? description = null)
+           AgendaItemTitle title,
+           Duration? allocatedTime,
+           SortOrder sortOrder,
+           PresenterId? presenterId,
+           string? description = null)
         {
             if (_agendaItems.Any(a => a.SortOrder == sortOrder))
                 throw new DomainException("Duplicate agenda item order.");
@@ -511,6 +560,10 @@ namespace MeetingCore.Entities
             LastTimeModified = DateTime.UtcNow;
         }
 
+        #endregion
+
+        #region AIGenerate
+
         public void LogAIGeneration(
             AIContentType type,
             string prompt,
@@ -544,8 +597,9 @@ namespace MeetingCore.Entities
             // هنا يمكن تنفيذ المنطق، مثلاً:
             // if (content.ContentType == AIContentType.AgendaDraft) { ... نسخ النصوص ... }
         }
+        #endregion
 
-
+        #region Helpers & Validators Functions
         public void HandleSchedulingFailure(string reason)
         {
             // التحقق: لا يمكن فشل جدولة اجتماع هو أصلاً منتهي أو ملغي
@@ -565,5 +619,14 @@ namespace MeetingCore.Entities
             // نطلق حدثاً داخلياً (Domain Event) قد يفيد في إرسال إشعار للمقرر
             // AddDomainEvent(new MeetingSchedulingFailedDomainEvent(...));
         }
+        public void EnsureDecisionsAreAllowed()
+        {
+            if (!IsCurrentQuorumMet)
+            {
+                throw new DomainException("Action failed: Quorum is not met. Official decisions cannot be recorded.");
+            }
+        }
+
+        #endregion
     }
 }
