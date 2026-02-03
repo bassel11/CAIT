@@ -1,11 +1,14 @@
-﻿using MeetingCore.Enums.MoMEnums;
+﻿using MeetingCore.Enums.AttendanceEnums;
+using MeetingCore.Enums.MoMEnums;
 using MeetingCore.Events.MoMEvents;
 using MeetingCore.ValueObjects.AttendanceVO;
 using MeetingCore.ValueObjects.MeetingVO;
 using MeetingCore.ValueObjects.MinutesVO;
 using MeetingCore.ValueObjects.MoMActionItemDraftVO;
 using MeetingCore.ValueObjects.MoMAttachmentVO;
+using MeetingCore.ValueObjects.MoMAttendanceVO;
 using MeetingCore.ValueObjects.MoMDecisionDraftVO;
+using MeetingCore.ValueObjects.MoMDiscussionVO;
 
 namespace MeetingCore.Entities
 {
@@ -23,6 +26,15 @@ namespace MeetingCore.Entities
 
         private readonly List<MoMActionItemDraft> _actionItems = new();
         public IReadOnlyCollection<MoMActionItemDraft> ActionItems => _actionItems.AsReadOnly();
+
+
+        // لقطة الحضور (جدول جديد)
+        private readonly List<MoMAttendance> _attendanceSnapshot = new();
+        public IReadOnlyCollection<MoMAttendance> AttendanceSnapshot => _attendanceSnapshot.AsReadOnly();
+
+        // نقاشات البنود (جدول جديد)
+        private readonly List<MoMDiscussion> _discussions = new();
+        public IReadOnlyCollection<MoMDiscussion> Discussions => _discussions.AsReadOnly();
 
         // المرفقات والإصدارات
         private readonly List<MoMAttachment> _attachments = new();
@@ -71,6 +83,15 @@ namespace MeetingCore.Entities
             if (Status != MoMStatus.PendingApproval)
                 throw new DomainException("Only pending MoMs can be approved.");
 
+            foreach (var decision in _decisions)
+            {
+                decision.MarkAsApproved();
+            }
+
+            foreach (var actionItem in _actionItems)
+            {
+                actionItem.MarkAsApproved();
+            }
 
             Status = MoMStatus.Approved;
             ApprovedAt = DateTime.UtcNow;
@@ -262,6 +283,159 @@ namespace MeetingCore.Entities
             _actionItems.Remove(actionItem);
             LastTimeModified = DateTime.UtcNow;
         }
+
+
+        #region Snapshot
+
+        public void InitializeSnapshot(
+            List<Attendance> meetingAttendances,
+            List<AgendaItem> meetingAgendaItems,
+            Func<UserId, string> getUserNameResolver)
+        {
+            if (Status != MoMStatus.Draft) throw new DomainException("Can only initialize draft MoM.");
+
+            // 1. نسخ الحضور (تجميد الحالة)
+            // ✅ التعديل هنا: مسح القائمة القديمة (إن وجدت) لضمان عدم التكرار عند إعادة التهيئة
+            _attendanceSnapshot.Clear();
+
+            foreach (var att in meetingAttendances)
+            {
+                string name = getUserNameResolver(att.UserId);
+
+                // ✅ منطق ذكي لتوزيع الملاحظات:
+                // إذا كان غائباً، نعتبر الملاحظة "سبب غياب".
+                // إذا كان حاضراً، نعتبرها "ملاحظة عامة".
+                string? absenceReason = att.AttendanceStatus == AttendanceStatus.Absent ? att.Notes : null;
+                string? generalNotes = att.AttendanceStatus != AttendanceStatus.Absent ? att.Notes : null;
+
+                _attendanceSnapshot.Add(new MoMAttendance(
+                    this.Id,
+                    att.UserId,
+                    name,
+                    att.Role.ToString(),
+                    att.AttendanceStatus,
+                    absenceReason, // ✅ تمرير السبب فقط إذا كان غائباً
+                    generalNotes   // ✅ تمرير الملاحظات في الحالات الأخرى
+                ));
+            }
+
+            // 2. إنشاء هياكل للنقاش بناءً على الأجندة
+            // ✅ التعديل هنا: التحقق من عدم وجود نقاشات مسبقاً لتجنب التكرار
+            if (!_discussions.Any())
+            {
+                foreach (var item in meetingAgendaItems.OrderBy(x => x.SortOrder))
+                {
+                    _discussions.Add(new MoMDiscussion(
+                        this.Id,
+                        item.Id,
+                        item.Title.Value,
+                        "" // المحتوى فارغ في البداية ليقوم المقرر بتعبئته
+                    ));
+                }
+            }
+        }
+        // ================= دالة لتحديث نقاش بند معين =================
+        public void UpdateTopicDiscussion(MoMDiscussionId topicId, string content)
+        {
+            // 1. التحقق من الحالات المغلقة (Approved OR Archived)
+            if (Status == MoMStatus.Approved || Status == MoMStatus.Archived)
+                throw new DomainException("Cannot update discussions in an approved or archived MoM.");
+
+            // 2. البحث باستخدام المعرف الصحيح
+            var topic = _discussions.FirstOrDefault(x => x.Id == topicId);
+
+            if (topic == null)
+                throw new DomainException("Discussion topic not found.");
+
+            // 3. التعديل
+            topic.UpdateContent(content);
+
+            // 4. تحديث وقت التعديل للمحضر
+            LastTimeModified = DateTime.UtcNow;
+        }
+
+        // =========================================================
+        // ✅ إدارة النقاشات (إضافة وحذف)
+        // =========================================================
+
+        /// <summary>
+        /// إضافة بند نقاش طارئ (غير موجود في الأجندة الأصلية)
+        /// مثل: ما يستجد من أعمال (AOB)
+        /// </summary>
+        public void AddAdHocDiscussion(string title, string content)
+        {
+            // 1. التحقق من الحالة
+            EnsureEditable();
+
+            // 2. التحقق من صحة البيانات
+            if (string.IsNullOrWhiteSpace(title))
+                throw new DomainException("Discussion title is required.");
+
+            // 3. الإضافة (نرسل null للـ AgendaItemId لأنه طارئ)
+            var discussion = new MoMDiscussion(
+                this.Id,
+                null, // لا يوجد بند أجندة مرتبط
+                title,
+                content
+            );
+
+            _discussions.Add(discussion);
+            LastTimeModified = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// حذف بند نقاش
+        /// </summary>
+        public void RemoveDiscussion(MoMDiscussionId discussionId)
+        {
+            // 1. التحقق من الحالة
+            EnsureEditable();
+
+            var discussion = _discussions.FirstOrDefault(x => x.Id == discussionId);
+            if (discussion == null) throw new DomainException("Discussion not found.");
+
+            // ⚠️ قاعدة عمل اختيارية (Business Rule):
+            // هل نسمح بحذف النقاشات المرتبطة بالأجندة الأصلية؟
+            // الأفضل في الأنظمة الحكومية: لا. لأن المحضر يجب أن يعكس الأجندة.
+            // إذا لم يناقش البند، يكتب المقرر "تم تأجيل النقاش" بدلاً من حذف السجل.
+
+            if (discussion.OriginalAgendaItemId != null)
+            {
+                throw new DomainException("Cannot remove a discussion linked to a core Agenda Item. You can clear its content instead.");
+            }
+
+            _discussions.Remove(discussion);
+            LastTimeModified = DateTime.UtcNow;
+        }
+
+        // دالة مساعدة لتقليل التكرار
+        private void EnsureEditable()
+        {
+            if (Status == MoMStatus.Approved || Status == MoMStatus.Archived)
+                throw new DomainException("Cannot modify an approved or archived MoM.");
+        }
+
+
+        public void CorrectAttendance(MoMAttendanceId attendanceRowId, AttendanceStatus newStatus, string? notes)
+        {
+            // 1. التحقق من أن المحضر قابل للتعديل
+            if (Status == MoMStatus.Approved || Status == MoMStatus.Archived)
+                throw new DomainException("Cannot correct attendance in an approved or archived MoM.");
+
+            // 2. البحث عن السجل
+            var attendanceRecord = _attendanceSnapshot.FirstOrDefault(x => x.Id == attendanceRowId);
+            if (attendanceRecord == null)
+                throw new DomainException("Attendance record not found in this MoM.");
+
+            // 3. التعديل
+            attendanceRecord.CorrectStatus(newStatus, notes);
+
+            // 4. تحديث التدقيق
+            LastTimeModified = DateTime.UtcNow;
+        }
+        #endregion
+
+
 
     }
 }

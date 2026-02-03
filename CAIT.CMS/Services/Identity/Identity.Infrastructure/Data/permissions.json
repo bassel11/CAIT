@@ -612,6 +612,39 @@
   },
 
   {
+    "Name": "MoMDiscussion.Update",
+    "ResourceType": 4,
+    "Action": 2,
+    "Description": "Update Minute of Meeting MoM Discussion Snapshot",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoMDiscussion.Create",
+    "ResourceType": 4,
+    "Action": 1,
+    "Description": "Create Minute of Meeting MoM Discussion Snapshot",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoMDiscussion.Remove",
+    "ResourceType": 4,
+    "Action": 17,
+    "Description": "Remove Minute of Meeting MoM Discussion Snapshot",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+  {
+    "Name": "MoMAttendance.Update",
+    "ResourceType": 4,
+    "Action": 2,
+    "Description": "Update Minute of Meeting MoM Attendance Snapshot",
+    "IsGlobal": false,
+    "IsActive": true
+  },
+
+  {
     "Name": "Audit.View",
     "ResourceType": 8,
     "Action": 0,

@@ -28,8 +28,10 @@
     <Folder Include="Features\AgendaItems\EventHandlers\Domain\" />
     <Folder Include="Features\Attendances\Commands\Results\" />
     <Folder Include="Features\MoMAttachments\Commands\Results\" />
+    <Folder Include="Features\MoMAttendances\Commands\Validators\" />
+    <Folder Include="Features\MoMDiscussions\Commands\Validators\" />
     <Folder Include="Features\MoMs\Commands\Results\" />
-    <Folder Include="Features\MoMs\EventHandlers\" />
+    <Folder Include="Features\MoMs\EventHandlers\Integration\" />
     <Folder Include="Mappers\" />
   </ItemGroup>
 

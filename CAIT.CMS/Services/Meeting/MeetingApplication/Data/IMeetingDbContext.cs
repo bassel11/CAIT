@@ -13,6 +13,8 @@ namespace MeetingApplication.Data
         DbSet<MoMDecisionDraft> MoMDecisionDrafts { get; }
         DbSet<MoMActionItemDraft> MoMActionItemDrafts { get; }
         DbSet<AIGeneratedContent> AIGeneratedContents { get; }
+        DbSet<MoMAttendance> MoMAttendances { get; }
+        DbSet<MoMDiscussion> MoMDiscussions { get; }
 
     }
 }

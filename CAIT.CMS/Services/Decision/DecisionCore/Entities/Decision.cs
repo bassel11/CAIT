@@ -1,6 +1,4 @@
-﻿using BuildingBlocks.Shared.Exceptions;
-
-namespace DecisionCore.Entities
+﻿namespace DecisionCore.Entities
 {
     public class Decision : Aggregate<DecisionId>
     {
@@ -10,6 +8,7 @@ namespace DecisionCore.Entities
         public DecisionTitle Title { get; private set; } = default!;
         public DecisionText Text { get; private set; } = default!;
         public MeetingId MeetingId { get; private set; } = default!;
+        public MoMId? MoMId { get; private set; } = default!;
         public AgendaItemId? AgendaItemId { get; private set; }
         public VotingDeadline? VotingDeadline { get; private set; }
         public DecisionType Type { get; private set; } = default!;
@@ -125,6 +124,45 @@ namespace DecisionCore.Entities
 
             AddDomainEvent(new DecisionFinalizedEvent(Id, MeetingId, Status, finalizedBy));
         }
+
+        #region 
+
+        public static Decision CreateDecisionFromMoM(
+            DecisionId id,
+            DecisionTitle title,
+            DecisionText text,
+            MeetingId meetingId,
+            MoMId momId) // المصدر
+        {
+            var decision = new Decision
+            {
+                Id = id,
+                Title = title,
+                Text = text,
+                MeetingId = meetingId,
+
+                // القرارات من المحضر عادة لا تحتاج تصويت، هي قرارات إدارية أو تم التصويت عليها شفهياً
+                Type = DecisionType.ChairmanAuthority, // هام أو نوع جديد مثل Official
+
+                // ✅ الحالة هنا يجب أن تكون معتمدة فوراً
+                Status = DecisionStatus.Approved,
+
+                // ربط بالمصدر
+                MoMId = momId
+            };
+
+            // نطلق حدثاً مختلفاً (اختياري) أو نفس الحدث
+            decision.AddDomainEvent(new DecisionCreatedEvent(
+                decision.Id,
+                decision.MeetingId,
+                decision.Title,
+                decision.Text.Arabic,
+                decision.Text.English));
+
+            return decision;
+        }
+
+        #endregion
 
     }
 }

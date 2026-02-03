@@ -32,8 +32,4 @@
     <ProjectReference Include="..\MeetingApplication\MeetingApplication.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Integrations\Identity\" />
-  </ItemGroup>
-
 </Project>

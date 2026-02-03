@@ -43,6 +43,16 @@ namespace MeetingApplication.Features.MoMs.Commands.Handlers
                 _user.UserId.ToString()
             );
 
+            var userIds = meeting.Attendances.Select(a => a.UserId.Value).ToList();
+            //var userNamesMap = await _committeeService.GetUsersNamesAsync(userIds, ct);
+
+            // 4. ✅ تنفيذ اللقطة (The Snapshot)
+            mom.InitializeSnapshot(
+                meeting.Attendances.ToList(),
+                meeting.AgendaItems.ToList(),
+                null //(userId) => userNamesMap.TryGetValue(userId.Value, out var name) ? name : "Unknown Member"
+            );
+
             // 4. الحفظ
             await _momRepo.AddAsync(mom, ct);
             await _momRepo.UnitOfWork.SaveChangesAsync(ct);

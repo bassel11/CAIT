@@ -16,6 +16,13 @@ namespace DecisionInfrastructure.Data.Configurations
             builder.Property(d => d.MeetingId)
                 .HasConversion(id => id.Value, dbId => MeetingId.Of(dbId));
 
+            builder.Property(d => d.MoMId)
+                   .HasConversion(
+                       id => id != null ? id.Value : (Guid?)null,
+                       dbId => dbId.HasValue ? MoMId.Of(dbId.Value) : null
+                   )
+                   .IsRequired(false); // يمكن
+
             // تحويل AgendaItemId إلى Guid (nullable)
             builder.Property(d => d.AgendaItemId)
                    .HasConversion(

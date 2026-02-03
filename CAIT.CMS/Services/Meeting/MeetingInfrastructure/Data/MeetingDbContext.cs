@@ -26,6 +26,13 @@ namespace MeetingInfrastructure.Data
         public DbSet<MinutesVersion> MinutesVersions => Set<MinutesVersion>();
         public DbSet<MoMAttachment> MoMAttachments => Set<MoMAttachment>();
 
+
+        // Snapshot
+
+        // ✅ الجداول الجديدة للقطات (Snapshots)
+        public DbSet<MoMAttendance> MoMAttendances => Set<MoMAttendance>();
+        public DbSet<MoMDiscussion> MoMDiscussions => Set<MoMDiscussion>();
+
         // New Draft Entities
         public DbSet<MoMDecisionDraft> MoMDecisionDrafts => Set<MoMDecisionDraft>();
         public DbSet<MoMActionItemDraft> MoMActionItemDrafts => Set<MoMActionItemDraft>();
@@ -84,6 +91,8 @@ namespace MeetingInfrastructure.Data
                     || e.Entity is MinutesVersion
                     || e.Entity is AIGeneratedContent
                     || e.Entity is MoMAttachment
+                    || e.Entity is MoMAttendance
+                    || e.Entity is MoMDiscussion
                     );
 
             var now = DateTime.UtcNow;

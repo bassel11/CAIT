@@ -85,6 +85,25 @@ namespace MeetingInfrastructure.Configurations
             builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.Versions))!
                 .SetPropertyAccessMode(PropertyAccessMode.Field);
 
+            // ✅ E. Attendance Snapshot (الجديد)
+            builder.HasMany(x => x.AttendanceSnapshot)
+                .WithOne()
+                .HasForeignKey(x => x.MoMId) // Explicit FK in MoMAttendance
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // استخدام الـ Field للتأكد من أن EF Core يستخدم _attendanceSnapshot
+            builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.AttendanceSnapshot))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+            // ✅ F. Discussions (الجديد)
+            builder.HasMany(x => x.Discussions)
+                .WithOne()
+                .HasForeignKey(x => x.MoMId) // Explicit FK in MoMDiscussion
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Metadata.FindNavigation(nameof(MinutesOfMeeting.Discussions))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+
             // 4. Indexes
             builder.HasIndex(x => x.MeetingId).IsUnique(); // محضر واحد لكل اجتماع
             builder.HasIndex(x => x.Status);

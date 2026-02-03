@@ -34,6 +34,29 @@ namespace MeetingApplication.Features.MoMs.Queries.Handlers
                     CreatedAt = m.CreatedAt,
                     LastModified = m.LastTimeModified ?? m.CreatedAt,
                     ApprovedBy = m.ApprovedBy,
+                    // ✅ 1. قائمة الحضور (للعرض في الجدول)
+                    AttendanceList = m.AttendanceSnapshot.Select(a => new MoMAttendanceDto
+                    {
+                        Id = a.Id.Value,
+                        MemberName = a.MemberName,
+                        Role = a.Role,
+                        IsPresent = a.IsPresent,
+                        Status = a.Status.ToString(),
+                        Notes = a.Notes ?? a.AbsenceReason
+                    }).ToList(),
+
+                    // ✅ 2. قائمة النقاشات (للعرض في المحرر)
+                    Discussions = m.Discussions.Select(d => new MoMDiscussionDto
+                    {
+                        Id = d.Id.Value,
+                        TopicTitle = d.TopicTitle,
+                        Content = d.DiscussionContent,
+                        OriginalAgendaItemId = d.OriginalAgendaItemId != null ? d.OriginalAgendaItemId.Value : null
+                    }).OrderBy(d => d.OriginalAgendaItemId).ToList(), // ترتيب حسب الأجندة
+
+                    // ✅ 3. القرارات والمهام
+                    Decisions = m.Decisions.Select(d => new DecisionDto(d.Id.Value, d.Title, d.Text)).ToList(),
+                    ActionItems = m.ActionItems.Select(t => new ActionItemDto(t.Id.Value, t.TaskTitle, t.AssigneeId)).ToList(),
 
                     DecisionsCount = m.Decisions.Count,
                     ActionItemsCount = m.ActionItems.Count,

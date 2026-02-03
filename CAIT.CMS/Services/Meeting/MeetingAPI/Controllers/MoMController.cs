@@ -6,9 +6,11 @@ using MeetingApplication.Features.MoMActionItemDrafts.Queries.Models;
 using MeetingApplication.Features.MoMActionItemDrafts.Queries.Results;
 using MeetingApplication.Features.MoMAttachments.Commands.Models;
 using MeetingApplication.Features.MoMAttachments.Queries.Models;
+using MeetingApplication.Features.MoMAttendances.Commands.Models;
 using MeetingApplication.Features.MoMDecisionDrafts.Commands.Models;
 using MeetingApplication.Features.MoMDecisionDrafts.Queries.Models;
 using MeetingApplication.Features.MoMDecisionDrafts.Queries.Results;
+using MeetingApplication.Features.MoMDiscussions.Commands.Models;
 using MeetingApplication.Features.MoMs.Commands.Models;
 using MeetingApplication.Features.MoMs.Queries.Models;
 using MeetingApplication.Features.MoMs.Queries.Results;
@@ -292,6 +294,60 @@ namespace MeetingAPI.Controllers
         {
             var result = await Mediator.Send(new GetMoMVersionDetailQuery(meetingId, versionNumber));
             return Success(result);
+        }
+
+        #endregion
+
+        #region 7. Discussions Management (New)
+
+        // تعديل نص النقاش لبند معين (هذا هو الأكثر استخداماً)
+        [HttpPut("discussions/{topicId:guid}")]
+        [Authorize(Policy = "Permission:MoMDiscussion.Update")]
+        public async Task<IActionResult> UpdateDiscussion(Guid meetingId, Guid topicId, [FromBody] UpdateMoMDiscussionCommand command)
+        {
+            // تحقق من تطابق المعرفات للأمان
+            if (meetingId != command.MeetingId || topicId != command.TopicId)
+                return BadRequest("ID Mismatch");
+
+            await Mediator.Send(command);
+            return Success("Discussion Topic Updated");
+        }
+
+        // إضافة نقاش طارئ (غير موجود في الأجندة الأصلية)
+        [HttpPost("discussions")]
+        [Authorize(Policy = "Permission:MoMDiscussion.Create")]
+        public async Task<IActionResult> AddAdHocDiscussion(Guid meetingId, [FromBody] AddMoMDiscussionCommand command)
+        {
+            if (meetingId != command.MeetingId) return BadRequest("ID Mismatch");
+
+            var result = await Mediator.Send(command);
+            return Success(result, "Ad-hoc Discussion Added");
+        }
+
+        // حذف نقاش (مسموح فقط للنقاشات الطارئة عادة، أو حسب قواعد العمل)
+        [HttpDelete("discussions/{topicId:guid}")]
+        [Authorize(Policy = "Permission:MoMDiscussion.Remove")]
+        public async Task<IActionResult> RemoveDiscussion(Guid meetingId, Guid topicId)
+        {
+            await Mediator.Send(new RemoveMoMDiscussionCommand(meetingId, topicId));
+            return Success("Discussion Removed");
+        }
+
+        #endregion
+
+        #region 8. Attendance Correction (New)
+
+        // تصحيح حالة الحضور (Correct Snapshot)
+        [HttpPut("attendance/{attendanceId:guid}")]
+        [Authorize(Policy = "Permission:MoMAttendance.Update")]
+        public async Task<IActionResult> CorrectAttendance(Guid meetingId, Guid attendanceId, [FromBody] CorrectMoMAttendanceCommand command)
+        {
+            // attendanceId هنا هو معرف السطر في جدول MoMAttendance وليس معرف المستخدم
+            if (meetingId != command.MeetingId || attendanceId != command.AttendanceRowId)
+                return BadRequest("ID Mismatch");
+
+            await Mediator.Send(command);
+            return Success("Attendance Record Corrected");
         }
 
         #endregion

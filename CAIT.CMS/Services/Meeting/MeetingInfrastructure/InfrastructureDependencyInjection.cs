@@ -91,7 +91,7 @@ namespace MeetingInfrastructure
             services.AddScoped<IMinutesAIService, MinutesAIService>();
 
             // Services
-            services.AddScoped<IAIService, AIService>();
+            //services.AddScoped<IAIService, AIService>();
             services.AddScoped<IPaginationService, PaginationService>();
 
             // PDF & Storage
@@ -99,8 +99,6 @@ namespace MeetingInfrastructure
             services.AddScoped<IStorageService, StorageService>();
 
             // Stubs
-            services.AddSingleton<OutlookClientStub>();
-            services.AddSingleton<BusPublisherStub>();
             services.AddScoped<IAuditService, AuditService>();
 
             services.AddScoped<IMeetingSchedulerGateway, QuartzMeetingSchedulerGateway>();
