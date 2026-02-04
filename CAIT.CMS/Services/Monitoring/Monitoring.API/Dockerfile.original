@@ -13,13 +13,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Services/Monitoring/Monitoring.API/Monitoring.API.csproj", "Services/Monitoring/Monitoring.API/"]
-COPY ["Services/Monitoring/Monitoring.Application/Monitoring.Application.csproj", "Services/Monitoring/Monitoring.Application/"]
-COPY ["BuildingBlocks/BuildingBlocks.Contracts/BuildingBlocks.Contracts.csproj", "BuildingBlocks/BuildingBlocks.Contracts/"]
-COPY ["BuildingBlocks/BuildingBlocks.Shared/BuildingBlocks.Shared.csproj", "BuildingBlocks/BuildingBlocks.Shared/"]
-COPY ["Services/Monitoring/Monitoring.Core/Monitoring.Core.csproj", "Services/Monitoring/Monitoring.Core/"]
-COPY ["Services/Monitoring/Monitoring.Infrastructure/Monitoring.Infrastructure.csproj", "Services/Monitoring/Monitoring.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj", "BuildingBlocks/BuildingBlocks.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj", "BuildingBlocks/BuildingBlocks.Messaging/"]
 RUN dotnet restore "./Services/Monitoring/Monitoring.API/Monitoring.API.csproj"
 COPY . .
 WORKDIR "/src/Services/Monitoring/Monitoring.API"

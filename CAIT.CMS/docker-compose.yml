@@ -38,14 +38,14 @@ services:
     ports:
       - "6379:6379"
     # قراءة كلمة المرور من ملف .env واستخدام ملف الكونفيج
-    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass P@ssw0rd
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf:ro # قراءة الملف من جهازك
       - redis-data:/data
     networks:
       - cms-network
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "P@ssw0rd", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -121,7 +121,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       # SQL Server المحلي
-      - ConnectionStrings__IdentityConnectionString=Server=host.docker.internal,1433;Database=IdentityDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__IdentityConnectionString=Server=host.docker.internal,1433;Database=IdentityDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;MultipleActiveResultSets=true
       # Redis باستخدام المتغيرات
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
@@ -151,7 +151,7 @@ services:
       dockerfile: Services/Committee/CommitteeAPI/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__CommitteeConnectionString=Server=host.docker.internal,1433;Database=CommitteeDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__CommitteeConnectionString=Server=host.docker.internal,1433;Database=CommitteeDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
       # الاتصال الداخلي عبر أسماء الحاويات
@@ -176,7 +176,7 @@ services:
       dockerfile: Services/Meeting/MeetingAPI/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__MeetingConnectionString=Server=host.docker.internal,1433;Database=MeetingDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__MeetingConnectionString=Server=host.docker.internal,1433;Database=MeetingDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
       - Services__IdentityBaseUrl=http://identityapi:8080
@@ -200,7 +200,7 @@ services:
       dockerfile: Services/Decision/DecisionAPI/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DecisionConnectionString=Server=host.docker.internal,1433;Database=DecisionDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__DecisionConnectionString=Server=host.docker.internal,1433;Database=DecisionDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
       - Services__IdentityBaseUrl=http://identityapi:8080
@@ -224,7 +224,7 @@ services:
       dockerfile: Services/Task/TaskAPI/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__TaskConnectionString=Server=host.docker.internal,1433;Database=TaskDb;User Id=sa;Password=P@ssw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__TaskConnectionString=Server=host.docker.internal,1433;Database=TaskDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
       - Services__IdentityBaseUrl=http://identityapi:8080

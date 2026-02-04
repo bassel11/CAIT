@@ -12,26 +12,21 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Services/Audit/Audit.API/Audit.API.csproj", "Services/Audit/Audit.API/"]
-COPY ["Services/Audit/Audit.Application/Audit.Application.csproj", "Services/Audit/Audit.Application/"]
-COPY ["Services/Audit/Audit.Domain/Audit.Domain.csproj", "Services/Audit/Audit.Domain/"]
-COPY ["Services/Audit/Audit.Infrastructure/Audit.Infrastructure.csproj", "Services/Audit/Audit.Infrastructure/"]
+COPY ["Services/Notification/NotificationService/NotificationService.csproj", "Services/Notification/NotificationService/"]
 COPY ["BuildingBlocks/BuildingBlocks.Contracts/BuildingBlocks.Contracts.csproj", "BuildingBlocks/BuildingBlocks.Contracts/"]
-COPY ["BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj", "BuildingBlocks/BuildingBlocks.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Shared/BuildingBlocks.Shared.csproj", "BuildingBlocks/BuildingBlocks.Shared/"]
 COPY ["BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj", "BuildingBlocks/BuildingBlocks.Messaging/"]
-RUN dotnet restore "./Services/Audit/Audit.API/Audit.API.csproj"
+RUN dotnet restore "./Services/Notification/NotificationService/NotificationService.csproj"
 COPY . .
-WORKDIR "/src/Services/Audit/Audit.API"
-RUN dotnet build "./Audit.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Services/Notification/NotificationService"
+RUN dotnet build "./NotificationService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Audit.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./NotificationService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Audit.API.dll"]
+ENTRYPOINT ["dotnet", "NotificationService.dll"]
