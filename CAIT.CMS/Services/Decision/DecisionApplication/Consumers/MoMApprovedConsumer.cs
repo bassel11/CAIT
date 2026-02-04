@@ -61,7 +61,7 @@ namespace DecisionApplication.Consumers
             // 3. الحفظ
             await _dbContext.SaveChangesAsync(context.CancellationToken);
 
-            _logger.LogInformation("✅ Successfully created {Count} official decisions from MoM.", message.Decisions.Count);
+            _logger.LogInformation("Successfully created {Count} official decisions from MoM.", message.Decisions.Count);
         }
     }
 }

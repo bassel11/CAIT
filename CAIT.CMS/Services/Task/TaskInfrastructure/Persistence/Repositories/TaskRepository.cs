@@ -96,6 +96,9 @@ namespace TaskInfrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-
+        public async Task<bool> TasksExistForMoMAsync(MoMId momId)
+        {
+            return await _context.TaskItems.AnyAsync(t => t.MoMId == momId);
+        }
     }
 }

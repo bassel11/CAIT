@@ -13,5 +13,7 @@
         // جلب المهام التي موعدها بعد X أيام (للتذكير)
         // daysUntilDeadline: 1, 3, or 7
         Task<List<TaskItem>> GetReminderCandidatesAsync(int daysUntilDeadline, CancellationToken cancellationToken);
+
+        Task<bool> TasksExistForMoMAsync(MoMId momId);
     }
 }

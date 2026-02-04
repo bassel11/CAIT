@@ -70,6 +70,44 @@ namespace TaskCore.Entities
             return taskItem;
         }
 
+        #region Factory Methods for Integration
+
+        // ✅ مصنع مخصص للمهام القادمة من المحضر
+        public static TaskItem CreateFromMoM(
+            TaskItemId id,
+            TaskTitle title,
+            TaskDescription description, // يمكن أن يكون فارغاً أو نفس العنوان مؤقتاً
+            TaskDeadline? deadline,
+            CommitteeId committeeId,
+            MeetingId meetingId,
+            MoMId momId)
+        {
+            var task = new TaskItem
+            {
+                Id = id,
+                Title = title,
+                // عادةً المهام في المحضر تكون سطر واحد، لذا نضع العنوان في الوصف أيضاً أو نتركه فارغاً
+                Description = description,
+                Deadline = deadline,
+
+                // القيم الافتراضية لمهام المحضر
+                Priority = TaskPriority.Medium, // افتراضي
+                Category = TaskCategory.Operational, // افتراضي
+                Status = Enums.TaskStatus.NotStarted,
+
+                // الروابط المرجعية
+                CommitteeId = committeeId,
+                MeetingId = meetingId,
+                MoMId = momId
+            };
+
+            task.AddDomainEvent(new TaskItemCreatedEvent(task));
+            return task;
+        }
+
+        #endregion
+
+
         public void UpdateDetails(
                     UserId modifierId,
                     TaskTitle newTitle,
