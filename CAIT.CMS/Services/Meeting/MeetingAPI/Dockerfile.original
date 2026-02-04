@@ -14,12 +14,10 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Services/Meeting/MeetingAPI/MeetingAPI.csproj", "Services/Meeting/MeetingAPI/"]
 COPY ["Services/Meeting/MeetingApplication/MeetingApplication.csproj", "Services/Meeting/MeetingApplication/"]
-COPY ["BuildingBlocks/BuildingBlocks.Shared/BuildingBlocks.Shared.csproj", "BuildingBlocks/BuildingBlocks.Shared/"]
 COPY ["Services/Meeting/MeetingCore/MeetingCore.csproj", "Services/Meeting/MeetingCore/"]
 COPY ["BuildingBlocks/BuildingBlocks.Contracts/BuildingBlocks.Contracts.csproj", "BuildingBlocks/BuildingBlocks.Contracts/"]
 COPY ["Services/Meeting/MeetingInfrastructure/MeetingInfrastructure.csproj", "Services/Meeting/MeetingInfrastructure/"]
 COPY ["BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj", "BuildingBlocks/BuildingBlocks.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj", "BuildingBlocks/BuildingBlocks.Messaging/"]
 RUN dotnet restore "./Services/Meeting/MeetingAPI/MeetingAPI.csproj"
 COPY . .
 WORKDIR "/src/Services/Meeting/MeetingAPI"

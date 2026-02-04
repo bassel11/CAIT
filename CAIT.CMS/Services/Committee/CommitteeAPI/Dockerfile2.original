@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
+EXPOSE 443
 
 
 # This stage is used to build the service project
@@ -14,12 +14,8 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Services/Committee/CommitteeAPI/CommitteeAPI.csproj", "Services/Committee/CommitteeAPI/"]
 COPY ["Services/Committee/CommitteeApplication/CommitteeApplication.csproj", "Services/Committee/CommitteeApplication/"]
-COPY ["BuildingBlocks/BuildingBlocks.Contracts/BuildingBlocks.Contracts.csproj", "BuildingBlocks/BuildingBlocks.Contracts/"]
-COPY ["BuildingBlocks/BuildingBlocks.Shared/BuildingBlocks.Shared.csproj", "BuildingBlocks/BuildingBlocks.Shared/"]
 COPY ["Services/Committee/CommitteeCore/CommitteeCore.csproj", "Services/Committee/CommitteeCore/"]
 COPY ["Services/Committee/CommitteeInfrastructure/CommitteeInfrastructure.csproj", "Services/Committee/CommitteeInfrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj", "BuildingBlocks/BuildingBlocks.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj", "BuildingBlocks/BuildingBlocks.Messaging/"]
 RUN dotnet restore "./Services/Committee/CommitteeAPI/CommitteeAPI.csproj"
 COPY . .
 WORKDIR "/src/Services/Committee/CommitteeAPI"

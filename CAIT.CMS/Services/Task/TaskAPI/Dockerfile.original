@@ -13,13 +13,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Services/Task/TaskAPI/TaskAPI.csproj", "Services/Task/TaskAPI/"]
-COPY ["BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj", "BuildingBlocks/BuildingBlocks.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Contracts/BuildingBlocks.Contracts.csproj", "BuildingBlocks/BuildingBlocks.Contracts/"]
-COPY ["BuildingBlocks/BuildingBlocks.Shared/BuildingBlocks.Shared.csproj", "BuildingBlocks/BuildingBlocks.Shared/"]
-COPY ["Services/Task/TaskApplication/TaskApplication.csproj", "Services/Task/TaskApplication/"]
-COPY ["Services/Task/TaskCore/TaskCore.csproj", "Services/Task/TaskCore/"]
-COPY ["Services/Task/TaskInfrastructure/TaskInfrastructure.csproj", "Services/Task/TaskInfrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj", "BuildingBlocks/BuildingBlocks.Messaging/"]
 RUN dotnet restore "./Services/Task/TaskAPI/TaskAPI.csproj"
 COPY . .
 WORKDIR "/src/Services/Task/TaskAPI"

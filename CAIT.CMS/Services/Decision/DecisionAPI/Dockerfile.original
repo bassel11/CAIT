@@ -13,13 +13,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Services/Decision/DecisionAPI/DecisionAPI.csproj", "Services/Decision/DecisionAPI/"]
-COPY ["Services/Decision/DecisionApplication/DecisionApplication.csproj", "Services/Decision/DecisionApplication/"]
-COPY ["BuildingBlocks/BuildingBlocks.Contracts/BuildingBlocks.Contracts.csproj", "BuildingBlocks/BuildingBlocks.Contracts/"]
-COPY ["BuildingBlocks/BuildingBlocks.Shared/BuildingBlocks.Shared.csproj", "BuildingBlocks/BuildingBlocks.Shared/"]
-COPY ["Services/Decision/DecisionCore/DecisionCore.csproj", "Services/Decision/DecisionCore/"]
-COPY ["Services/Decision/DecisionInfrastructure/DecisionInfrastructure.csproj", "Services/Decision/DecisionInfrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj", "BuildingBlocks/BuildingBlocks.Infrastructure/"]
-COPY ["BuildingBlocks/BuildingBlocks.Messaging/BuildingBlocks.Messaging.csproj", "BuildingBlocks/BuildingBlocks.Messaging/"]
 RUN dotnet restore "./Services/Decision/DecisionAPI/DecisionAPI.csproj"
 COPY . .
 WORKDIR "/src/Services/Decision/DecisionAPI"
