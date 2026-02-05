@@ -7,18 +7,17 @@ networks:
 services:
 
   # ==========================================
-  # 1. INFRASTRUCTURE (Redis, Rabbit, Portainer)
+  # 1. INFRASTRUCTURE
   # ==========================================
   
-  # --- RabbitMQ ---
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: cms-rabbitmq
     hostname: rabbitmq
     restart: unless-stopped
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -30,17 +29,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- Redis (With Config File) ---
   redis:
     image: redis:7.2-alpine
     container_name: cms-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
-    # قراءة كلمة المرور من ملف .env واستخدام ملف الكونفيج
-    command: redis-server /usr/local/etc/redis/redis.conf --requirepass P@ssw0rd
+    command: redis-server --requirepass P@ssw0rd --bind 0.0.0.0 --appendonly yes --protected-mode yes
     volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro # قراءة الملف من جهازك
+      # - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
       - redis-data:/data
     networks:
       - cms-network
@@ -50,7 +47,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- Redis Insight (GUI) ---
   redis-insight:
     image: redis/redisinsight:latest
     container_name: cms-redis-insight
@@ -67,7 +63,6 @@ services:
     networks:
       - cms-network
 
-  # --- Portainer (Docker Management) ---
   portainer:
     image: portainer/portainer-ce:latest
     container_name: cms-portainer
@@ -91,14 +86,15 @@ services:
       context: .
       dockerfile: ApiGateways/YarpApiGateway/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      # === Yarp Configuration Overrides ===
-      # توجيه YARP للاتصال بأسماء الحاويات بدلاً من localhost
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address=http://identityapi:8080
       - ReverseProxy__Clusters__committee-cluster__Destinations__destination1__Address=http://committeeapi:8080
       - ReverseProxy__Clusters__meeting-cluster__Destinations__destination1__Address=http://meetingapi:8080
       - ReverseProxy__Clusters__decision-cluster__Destinations__destination1__Address=http://decisionapi:8080
       - ReverseProxy__Clusters__task-cluster__Destinations__destination1__Address=http://taskapi:8080
+      - ReverseProxy__Clusters__audit-cluster__Destinations__destination1__Address=http://auditapi:8080
+      - ReverseProxy__Clusters__monitoring-cluster__Destinations__destination1__Address=http://monitoringapi:8080
+      - ReverseProxy__Clusters__notification-cluster__Destinations__destination1__Address=http://notificationapi:8080
     ports:
       - "8080:8080"
     networks:
@@ -111,7 +107,7 @@ services:
   # 3. MICROSERVICES
   # ==========================================
 
-  # --- Identity Service ---
+  # --- Identity Service (UPDATED WITH ALL CONFIGS) ---
   identityapi:
     container_name: cms-identity-api
     image: ${DOCKER_REGISTRY-}identityapi
@@ -119,18 +115,38 @@ services:
       context: .
       dockerfile: Services/Identity/Identity.API/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      # SQL Server المحلي
-      - ConnectionStrings__IdentityConnectionString=Server=host.docker.internal,1433;Database=IdentityDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;MultipleActiveResultSets=true
-      # Redis باستخدام المتغيرات
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      # DB & Infra
+      - ConnectionStrings__IdentityConnectionString=Server=${SQL_SERVER};Database=IdentityDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
-      # gRPC Setup
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+      # gRPC/HTTP
       - ASPNETCORE_URLS=http://+:8080;http://+:8081
       - Kestrel__Endpoints__HttpApi__Url=http://+:8080
       - Kestrel__Endpoints__HttpApi__Protocols=Http1
       - Kestrel__Endpoints__Grpc__Url=http://+:8081
       - Kestrel__Endpoints__Grpc__Protocols=Http2
+      # ✅ LDAP Config
+      - Ldap__Url=${LDAP_URL}
+      - Ldap__BindDn=${LDAP_BIND_DN}
+      - Ldap__BindPassword=${LDAP_BIND_PASSWORD}
+      - Ldap__BaseDn=${LDAP_BASE_DN}
+      # ✅ Azure AD Config
+      - AzureAd__Instance=${AZURE_ID_INSTANCE}
+      - AzureAd__Domain=${AZURE_ID_DOMAIN}
+      - AzureAd__TenantId=${AZURE_ID_TENANT}
+      - AzureAd__ClientId=${AZURE_ID_CLIENT}
+      - AzureAd__Audience=${AZURE_ID_AUDIENCE}
+      - AzureAd__CallbackPath=${AZURE_ID_CALLBACK}
+      # ✅ SMTP Config
+      - Smtp__Host=${SMTP_HOST}
+      - Smtp__Port=${SMTP_PORT}
+      - Smtp__Username=${SMTP_USER}
+      - Smtp__Password=${SMTP_PASS}
+      - Smtp__FromEmail=${SMTP_FROM}
+      - Smtp__EnableSsl=true
     ports:
       - "5001:8080"
       - "6001:8081"
@@ -150,11 +166,12 @@ services:
       context: .
       dockerfile: Services/Committee/CommitteeAPI/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__CommitteeConnectionString=Server=host.docker.internal,1433;Database=CommitteeDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__CommitteeConnectionString=Server=${SQL_SERVER};Database=CommitteeDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
-      # الاتصال الداخلي عبر أسماء الحاويات
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
       - Services__IdentityBaseUrl=http://identityapi:8080
       - Services__GrpcUrl=http://identityapi:8081
     ports:
@@ -175,12 +192,20 @@ services:
       context: .
       dockerfile: Services/Meeting/MeetingAPI/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__MeetingConnectionString=Server=host.docker.internal,1433;Database=MeetingDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__MeetingConnectionString=Server=${SQL_SERVER};Database=MeetingDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
       - Services__IdentityBaseUrl=http://identityapi:8080
       - Services__CommitteeBaseUrl=http://committeeapi:8080
+      - Smtp__Host=${SMTP_HOST}
+      - Smtp__Port=${SMTP_PORT}
+      - Smtp__Username=${SMTP_USER}
+      - Smtp__Password=${SMTP_PASS}
+      - Smtp__FromEmail=${SMTP_FROM}
+      - Smtp__EnableSsl=true
     ports:
       - "5003:8080"
     networks:
@@ -199,12 +224,15 @@ services:
       context: .
       dockerfile: Services/Decision/DecisionAPI/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DecisionConnectionString=Server=host.docker.internal,1433;Database=DecisionDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__DecisionConnectionString=Server=${SQL_SERVER};Database=DecisionDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
       - Services__IdentityBaseUrl=http://identityapi:8080
       - Services__CommitteeBaseUrl=http://committeeapi:8080
+      - FeatureManagement__DecisionIntegration=true
     ports:
       - "5004:8080"
     networks:
@@ -223,14 +251,129 @@ services:
       context: .
       dockerfile: Services/Task/TaskAPI/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__TaskConnectionString=Server=host.docker.internal,1433;Database=TaskDb;User Id=cms;Password=cms12345;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__TaskConnectionString=Server=${SQL_SERVER};Database=TaskDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+      - Services__IdentityBaseUrl=http://identityapi:8080
+      - Services__CommitteeBaseUrl=http://committeeapi:8080
+      - QuartzSettings__EnableEscalationJob=false
+      - QuartzSettings__EnableReminderJob=true
+    ports:
+      - "5005:8080"
+    networks:
+      - cms-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Audit Service ---
+  auditapi:
+    container_name: cms-audit-api
+    image: ${DOCKER_REGISTRY-}auditapi
+    build:
+      context: .
+      dockerfile: Services/Audit/Audit.API/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__AuditConnectionString=Server=${SQL_SERVER};Database=AuditDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+      - Services__IdentityBaseUrl=http://identityapi:8080
+    ports:
+      - "5006:8080"
+    networks:
+      - cms-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Integration Service ---
+  integrationservice:
+    container_name: cms-integration-service
+    image: ${DOCKER_REGISTRY-}integrationservice
+    build:
+      context: .
+      dockerfile: Services/Integration/IntegrationService/Dockerfile
+    environment:
+      - ConnectionStrings__IntegrationConnectionString=Server=${SQL_SERVER};Database=IntegrationDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+      # Azure AD Config
+      - AzureAd__TenantId=${AZURE_INT_TENANT}
+      - AzureAd__ClientId=${AZURE_INT_CLIENT}
+      - AzureAd__ClientSecret=${AZURE_INT_SECRET}
+      - AzureAd__OrganizerUserId=${AZURE_INT_ORGANIZER}
+    ports:
+      - "5007:8080"
+    networks:
+      - cms-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Monitoring Service ---
+  monitoringapi:
+    container_name: cms-monitoring-api
+    image: ${DOCKER_REGISTRY-}monitoringapi
+    build:
+      context: .
+      dockerfile: Services/Monitoring/Monitoring.API/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__MonitoringConnectionString=Server=${SQL_SERVER};Database=MonitoringDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
       - Services__IdentityBaseUrl=http://identityapi:8080
       - Services__CommitteeBaseUrl=http://committeeapi:8080
     ports:
-      - "5005:8080"
+      - "5008:8080"
+    networks:
+      - cms-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Notification Service ---
+  notificationapi:
+    container_name: cms-notification-api
+    image: ${DOCKER_REGISTRY-}notificationapi
+    build:
+      context: .
+      dockerfile: Services/Notification/NotificationService/Dockerfile
+    environment:
+      - ConnectionStrings__NotificationConnectionString=Server=${SQL_SERVER};Database=NotificationDb;User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RABBITMQ_USER}
+      - RabbitMQ__Password=${RABBITMQ_PASS}
+      - Services__IdentityBaseUrl=http://identityapi:8080
+      - Services__CommitteeBaseUrl=http://committeeapi:8080
+      # SMTP Config
+      - Smtp__Host=${SMTP_HOST}
+      - Smtp__Port=${SMTP_PORT}
+      - Smtp__Username=${SMTP_USER}
+      - Smtp__Password=${SMTP_PASS}
+      - Smtp__FromEmail=${SMTP_FROM}
+      - Smtp__EnableSsl=true
+    ports:
+      - "5009:8080"
     networks:
       - cms-network
     depends_on:

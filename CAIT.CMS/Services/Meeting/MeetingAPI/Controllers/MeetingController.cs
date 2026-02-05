@@ -30,11 +30,17 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> Create([FromBody] CreateMeetingCommand command)
         {
             var response = await Mediator.Send(command);
-            return CreatedSuccess(
-                nameof(GetById),
-                new { id = response.Data, version = "1.0" },
-                response.Data,
-                "Meeting Created Successfully");
+            if (response.Succeeded)
+            {
+                return CreatedAtAction(
+                    nameof(GetById), new
+                    {
+                        id = response.Data,
+                        version = "1.0"
+                    },
+                    response);
+            }
+            return BadRequest(response);
         }
 
         // -------------------------------------------------------
@@ -46,9 +52,13 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMeetingCommand command)
         {
             if (id != command.Id)
-                throw new BadRequestException("ID mismatch");
-            var result = await Mediator.Send(command);
-            return EditSuccess(result, "Meeting Updated Successfully");
+                return BadRequest(Result<Guid>.Failure("ID mismatch"));
+            var response = await Mediator.Send(command);
+
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
         // -------------------------------------------------------
@@ -59,8 +69,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Schedule(Guid id)
         {
-            await Mediator.Send(new ScheduleMeetingCommand(id));
-            return Success("Meeting Scheduled Successfully");
+            var response = await Mediator.Send(new ScheduleMeetingCommand(id));
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
         // -------------------------------------------------------
@@ -74,8 +87,12 @@ namespace MeetingAPI.Controllers
             if (id != command.Id)
                 throw new BadRequestException("ID mismatch");
 
-            await Mediator.Send(command);
-            return Success("MeetingRescheduledSuccessfully");
+            var response = await Mediator.Send(command);
+
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
 
@@ -87,8 +104,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelMeetingRequestDto request)
         {
-            await Mediator.Send(new CancelMeetingCommand(id, request.Reason));
-            return Success("Meeting Canceled Successfully");
+            var response = await Mediator.Send(new CancelMeetingCommand(id, request.Reason));
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
 
@@ -100,8 +120,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Complete(Guid id)
         {
-            await Mediator.Send(new CompleteMeetingCommand(id));
-            return Success("Meeting Completed Successfully");
+            var response = await Mediator.Send(new CompleteMeetingCommand(id));
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
         [HttpPut("{id}/refresh-quorum")]
@@ -122,8 +145,11 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> CheckQuorumUpdates(Guid id)
         {
             var query = new CheckQuorumMismatchQuery(id);
-            var result = await Mediator.Send(query);
-            return Ok(result);
+            var response = await Mediator.Send(query);
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
         #endregion
@@ -139,8 +165,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result<GetMeetingResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var result = await Mediator.Send(new GetMeetingByIdQuery(id));
-            return Success(result, "MeetingRetrievedSuccessfully");
+            var response = await Mediator.Send(new GetMeetingByIdQuery(id));
+            if (response.Succeeded)
+                return Ok(response);
+
+            return BadRequest(response);
         }
 
 
@@ -152,8 +181,8 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result<PaginatedResult<GetMeetingResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMeetings([FromBody] GetMeetingsQuery query)
         {
-            var result = await Mediator.Send(query);
-            return Success(result);
+            var response = await Mediator.Send(query);
+            return Ok(response);
         }
 
         // -------------------------------------------------------
@@ -164,8 +193,8 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result<List<GetMeetingResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByCommitteeId(Guid committeeId)
         {
-            var result = await Mediator.Send(new GetMeetingsByCommitteeIdQuery(committeeId));
-            return Success(result);
+            var response = await Mediator.Send(new GetMeetingsByCommitteeIdQuery(committeeId));
+            return Ok(response);
         }
 
         #endregion

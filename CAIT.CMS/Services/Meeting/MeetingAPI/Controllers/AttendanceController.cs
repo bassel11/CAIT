@@ -27,10 +27,14 @@ namespace MeetingAPI.Controllers
         [HttpPost]
         [Authorize(Policy = "Permission:Attendance.Add")]
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add([FromBody] AddAttendeeCommand command)
         {
             var result = await Mediator.Send(command);
-            return Success(result, "Attendee Added Successfully");
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -40,10 +44,14 @@ namespace MeetingAPI.Controllers
         [HttpDelete("meeting/{meetingId:guid}/user/{userId:guid}")]
         [Authorize(Policy = "Permission:Attendance.Remove")]
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Remove(Guid meetingId, Guid userId)
         {
-            await Mediator.Send(new RemoveAttendeeCommand(meetingId, userId));
-            return Success("Attendee Removed Successfully");
+            var result = await Mediator.Send(new RemoveAttendeeCommand(meetingId, userId));
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -56,7 +64,10 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> ConfirmRSVP([FromBody] ConfirmAttendanceCommand command)
         {
             var result = await Mediator.Send(command);
-            return Success(result, "RSVP Confirmed Successfully");
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -68,7 +79,10 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> CheckIn([FromBody] CheckInAttendeeCommand command)
         {
             var result = await Mediator.Send(command);
-            return Success(result, "Checked-In Successfully");
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -79,8 +93,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> BulkCheckIn([FromBody] BulkCheckInCommand command)
         {
-            await Mediator.Send(command);
-            return Success("Bulk Check-In Completed Successfully");
+            var result = await Mediator.Send(command);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
@@ -97,7 +114,7 @@ namespace MeetingAPI.Controllers
         {
             query.MeetingId = meetingId;
             var result = await Mediator.Send(query);
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------------
@@ -111,7 +128,7 @@ namespace MeetingAPI.Controllers
         {
             query.MemberId = memberId;
             var result = await Mediator.Send(query);
-            return Success(result);
+            return Ok(result);
         }
 
 
@@ -140,7 +157,10 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> ValidateQuorum(Guid meetingId)
         {
             var result = await Mediator.Send(new ValidateQuorumQuery(meetingId));
-            return Success(result);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 

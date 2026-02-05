@@ -18,11 +18,10 @@ using MeetingApplication.Features.MoMVersions.Queries.Models;
 using MeetingApplication.Wrappers; // For PaginatedResult
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace MeetingAPI.Controllers
 {
     [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/meetings/{meetingId:guid}/mom")] // ✅ المسار المعياري الصحيح
+    [Route("api/v{version:apiVersion}/meetings/{meetingId:guid}/mom")]
     [Authorize]
     public class MoMController : BaseApiController
     {
@@ -36,16 +35,21 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result<Guid>), StatusCodes.Status201Created)]
         public async Task<IActionResult> Create(Guid meetingId, [FromBody] CreateMoMCommand command)
         {
-            if (meetingId != command.MeetingId) return BadRequest("Meeting ID Mismatch");
+            if (meetingId != command.MeetingId)
+                return BadRequest("Meeting ID Mismatch");
 
             var result = await Mediator.Send(command);
 
-            // نعيد رابط الـ Overview لأنه المورد الرئيسي
-            return CreatedSuccess(
-                nameof(GetOverview),
-                new { meetingId },
-                result.Data,
-                "MoM Draft Created Successfully");
+            if (result.Succeeded)
+            {
+                // نعيد رابط الـ Overview لأنه المورد الرئيسي
+                return CreatedAtAction(
+                    nameof(GetOverview),
+                    new { meetingId, version = "1.0" },
+                    result);
+            }
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -56,10 +60,14 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateContent(Guid meetingId, [FromBody] UpdateMoMContentCommand command)
         {
-            if (meetingId != command.MeetingId) return BadRequest("Meeting ID Mismatch");
+            if (meetingId != command.MeetingId)
+                return BadRequest("Meeting ID Mismatch");
 
-            await Mediator.Send(command);
-            return Success("Content Updated Successfully");
+            var result = await Mediator.Send(command);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -70,8 +78,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Submit(Guid meetingId)
         {
-            await Mediator.Send(new SubmitMoMForApprovalCommand(meetingId));
-            return Success("Submitted for Approval");
+            var result = await Mediator.Send(new SubmitMoMForApprovalCommand(meetingId));
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -82,8 +93,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Approve(Guid meetingId)
         {
-            await Mediator.Send(new ApproveMoMCommand(meetingId));
-            return Success("MoM Approved Successfully");
+            var result = await Mediator.Send(new ApproveMoMCommand(meetingId));
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -96,8 +110,12 @@ namespace MeetingAPI.Controllers
         {
             if (meetingId != command.MeetingId) return BadRequest("Meeting ID Mismatch");
 
-            await Mediator.Send(command);
-            return Success("MoM Rejected");
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -108,8 +126,12 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Archive(Guid meetingId)
         {
-            await Mediator.Send(new ArchiveMoMCommand(meetingId));
-            return Success("MoM Archived");
+            var result = await Mediator.Send(new ArchiveMoMCommand(meetingId));
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------------
@@ -120,8 +142,12 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Publish(Guid meetingId)
         {
-            await Mediator.Send(new PublishMoMCommand(meetingId));
-            return Success("MoM Published");
+            var result = await Mediator.Send(new PublishMoMCommand(meetingId));
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion
@@ -132,9 +158,15 @@ namespace MeetingAPI.Controllers
         [Authorize(Policy = "Permission:MoM.Update")]
         public async Task<IActionResult> AddDecision(Guid meetingId, [FromBody] AddDecisionDraftCommand command)
         {
-            if (meetingId != command.MeetingId) return BadRequest("ID Mismatch");
-            await Mediator.Send(command);
-            return Success("Decision Added");
+            if (meetingId != command.MeetingId)
+                return BadRequest("ID Mismatch");
+
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         [HttpPut("decisions/{decisionId:guid}")]
@@ -142,16 +174,24 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> UpdateDecision(Guid meetingId, Guid decisionId, [FromBody] UpdateDecisionDraftCommand command)
         {
             if (meetingId != command.MeetingId || decisionId != command.DecisionId) return BadRequest("ID Mismatch");
-            await Mediator.Send(command);
-            return Success("Decision Updated");
+
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         [HttpDelete("decisions/{decisionId:guid}")]
         [Authorize(Policy = "Permission:MoM.Update")]
         public async Task<IActionResult> RemoveDecision(Guid meetingId, Guid decisionId)
         {
-            await Mediator.Send(new RemoveDecisionDraftCommand(meetingId, decisionId));
-            return Success("Decision Removed");
+            var result = await Mediator.Send(new RemoveDecisionDraftCommand(meetingId, decisionId));
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion
@@ -163,8 +203,12 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> AddActionItem(Guid meetingId, [FromBody] AddActionItemDraftCommand command)
         {
             if (meetingId != command.MeetingId) return BadRequest("ID Mismatch");
-            await Mediator.Send(command);
-            return Success("Action Item Added");
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         [HttpPut("action-items/{actionId:guid}")]
@@ -172,16 +216,25 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> UpdateActionItem(Guid meetingId, Guid actionId, [FromBody] UpdateActionItemDraftCommand command)
         {
             if (meetingId != command.MeetingId || actionId != command.ActionItemId) return BadRequest("ID Mismatch");
-            await Mediator.Send(command);
-            return Success("Action Item Updated");
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         [HttpDelete("action-items/{actionId:guid}")]
         [Authorize(Policy = "Permission:MoM.Update")]
         public async Task<IActionResult> RemoveActionItem(Guid meetingId, Guid actionId)
         {
-            await Mediator.Send(new RemoveActionItemDraftCommand(meetingId, actionId));
-            return Success("Action Item Removed");
+            var result = await Mediator.Send(
+                new RemoveActionItemDraftCommand(meetingId, actionId));
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion
@@ -194,15 +247,23 @@ namespace MeetingAPI.Controllers
         {
             if (meetingId != command.MeetingId) return BadRequest("ID Mismatch");
             var result = await Mediator.Send(command);
-            return Success(result, "Attachment Added");
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         [HttpDelete("attachments/{attachmentId:guid}")]
         [Authorize(Policy = "Permission:MoM.Update")]
         public async Task<IActionResult> RemoveAttachment(Guid meetingId, Guid attachmentId)
         {
-            await Mediator.Send(new RemoveMoMAttachmentCommand(meetingId, attachmentId));
-            return Success("Attachment Removed");
+            var result = await Mediator.Send(new RemoveMoMAttachmentCommand(meetingId, attachmentId));
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion
@@ -215,7 +276,11 @@ namespace MeetingAPI.Controllers
         {
             if (meetingId != command.MeetingId) return BadRequest("ID Mismatch");
             var result = await Mediator.Send(command);
-            return Success(result); // Returns HTML string directly
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion
@@ -231,7 +296,7 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetOverview(Guid meetingId)
         {
             var result = await Mediator.Send(new GetMoMByMeetingIdQuery(meetingId));
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------------
@@ -244,7 +309,7 @@ namespace MeetingAPI.Controllers
         {
             query.MeetingId = meetingId; // Securely Enforce ID from Route
             var result = await Mediator.Send(query);
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------------
@@ -257,7 +322,7 @@ namespace MeetingAPI.Controllers
         {
             query.MeetingId = meetingId; // Securely Enforce ID from Route
             var result = await Mediator.Send(query);
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------------
@@ -269,7 +334,7 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetAttachments(Guid meetingId)
         {
             var result = await Mediator.Send(new GetMoMAttachmentsQuery(meetingId));
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------------
@@ -281,7 +346,7 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetVersions(Guid meetingId)
         {
             var result = await Mediator.Send(new GetMoMVersionsHistoryQuery(meetingId));
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------------
@@ -293,7 +358,7 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetVersionDetail(Guid meetingId, int versionNumber)
         {
             var result = await Mediator.Send(new GetMoMVersionDetailQuery(meetingId, versionNumber));
-            return Success(result);
+            return Ok(result);
         }
 
         #endregion
@@ -309,8 +374,12 @@ namespace MeetingAPI.Controllers
             if (meetingId != command.MeetingId || topicId != command.TopicId)
                 return BadRequest("ID Mismatch");
 
-            await Mediator.Send(command);
-            return Success("Discussion Topic Updated");
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // إضافة نقاش طارئ (غير موجود في الأجندة الأصلية)
@@ -321,7 +390,11 @@ namespace MeetingAPI.Controllers
             if (meetingId != command.MeetingId) return BadRequest("ID Mismatch");
 
             var result = await Mediator.Send(command);
-            return Success(result, "Ad-hoc Discussion Added");
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // حذف نقاش (مسموح فقط للنقاشات الطارئة عادة، أو حسب قواعد العمل)
@@ -329,8 +402,11 @@ namespace MeetingAPI.Controllers
         [Authorize(Policy = "Permission:MoMDiscussion.Remove")]
         public async Task<IActionResult> RemoveDiscussion(Guid meetingId, Guid topicId)
         {
-            await Mediator.Send(new RemoveMoMDiscussionCommand(meetingId, topicId));
-            return Success("Discussion Removed");
+            var result = await Mediator.Send(new RemoveMoMDiscussionCommand(meetingId, topicId));
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion
@@ -346,8 +422,12 @@ namespace MeetingAPI.Controllers
             if (meetingId != command.MeetingId || attendanceId != command.AttendanceRowId)
                 return BadRequest("ID Mismatch");
 
-            await Mediator.Send(command);
-            return Success("Attendance Record Corrected");
+            var result = await Mediator.Send(command);
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         #endregion

@@ -57,7 +57,10 @@ namespace MeetingAPI.Controllers
                 return BadRequest("ID mismatch");
 
             var result = await Mediator.Send(command);
-            return Success(result, "Agenda Item Updated Successfully");
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
@@ -69,8 +72,11 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> Delete(Guid meetingId, Guid id)
         {
-            await Mediator.Send(new DeleteAgendaItemCommand(meetingId, id));
-            return Success("Agenda Item Deleted Successfully");
+            var result = await Mediator.Send(new DeleteAgendaItemCommand(meetingId, id));
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
@@ -84,8 +90,10 @@ namespace MeetingAPI.Controllers
         {
             var result = await Mediator.Send(command);
 
-            // نستخدم Success لأنها Result<T>
-            return Success(result);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
@@ -98,7 +106,7 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetAgendaItems([FromBody] GetAgendaItemsQuery query)
         {
             var result = await Mediator.Send(query);
-            return Success(result);
+            return Ok(result);
         }
 
         // -------------------------------------------------------
@@ -109,12 +117,15 @@ namespace MeetingAPI.Controllers
         [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
         public async Task<IActionResult> LoadTemplate([FromBody] LoadAgendaTemplateCommand command)
         {
-            // التحقق من صحة الطلب (اختياري هنا لأن الـ Validator سيقوم به)
             if (command.MeetingId == Guid.Empty || command.TemplateId == Guid.Empty)
                 return BadRequest(Result.Failure("Invalid MeetingId or TemplateId."));
 
             var result = await Mediator.Send(command);
-            return Success(result, "Template loaded successfully.");
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------
@@ -129,7 +140,11 @@ namespace MeetingAPI.Controllers
                 return BadRequest(Result.Failure("Agenda Item ID mismatch."));
 
             var result = await Mediator.Send(command);
-            return Success(result, "Attachment added successfully.");
+
+            if (result.Succeeded)
+                return StatusCode(StatusCodes.Status201Created, result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------
@@ -142,7 +157,11 @@ namespace MeetingAPI.Controllers
         {
             var command = new RemoveAgendaItemAttachmentCommand(meetingId, agendaItemId, attachmentId);
             var result = await Mediator.Send(command);
-            return Success(result, "Attachment removed successfully.");
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 

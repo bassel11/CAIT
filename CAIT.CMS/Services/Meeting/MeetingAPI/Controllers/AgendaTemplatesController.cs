@@ -37,9 +37,11 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> Create([FromBody] CreateAgendaTemplateCommand command)
         {
             var result = await Mediator.Send(command);
-            return Success(result, "Template Created Successfully");
-
-            //return Success(result, "Template Created Successfully", StatusCodes.Status201Created);
+            if (result.Succeeded)
+            {
+                return StatusCode(StatusCodes.Status201Created, result);
+            }
+            return BadRequest(result);
         }
 
 
@@ -55,7 +57,11 @@ namespace MeetingAPI.Controllers
                 return BadRequest(Result.Failure("ID mismatch"));
 
             var result = await Mediator.Send(command);
-            return Success(result, "Template Updated Successfully");
+
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
         // -------------------------------------------------------
@@ -67,7 +73,10 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await Mediator.Send(new DeleteAgendaTemplateCommand(id));
-            return Success(result, "Template Deleted Successfully");
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
@@ -80,7 +89,10 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await Mediator.Send(new GetAgendaTemplateByIdQuery(id));
-            return Success(result);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
@@ -93,7 +105,10 @@ namespace MeetingAPI.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await Mediator.Send(new GetAllAgendaTemplatesQuery());
-            return Success(result);
+            if (result.Succeeded)
+                return Ok(result);
+
+            return BadRequest(result);
         }
 
 
