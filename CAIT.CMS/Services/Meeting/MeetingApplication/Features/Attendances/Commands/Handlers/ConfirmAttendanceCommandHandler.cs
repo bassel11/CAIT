@@ -37,7 +37,6 @@ namespace MeetingApplication.Features.Attendances.Commands.Handlers
             {
                 var userId = _currentUserService.UserId;
                 // 2. Domain Behavior
-                // ✅ استخدام المعرف من التوكن (Service) هو قمة الأمان
                 meeting.ConfirmRSVP(
                     UserId.Of(userId),
                     request.Status // لا حاجة للتحويل هنا

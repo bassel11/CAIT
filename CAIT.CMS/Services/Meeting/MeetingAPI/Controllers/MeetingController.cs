@@ -176,7 +176,7 @@ namespace MeetingAPI.Controllers
         // -------------------------------------------------------
         // Search (POST for complex filters)
         // -------------------------------------------------------
-        [HttpPost("search")] // ✅ تغيير الاسم ليكون أوضح
+        [HttpPost("search")] // تغيير الاسم ليكون أوضح
         [Authorize(Policy = "Permission:Meeting.View")]
         [ProducesResponseType(typeof(Result<PaginatedResult<GetMeetingResponse>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMeetings([FromBody] GetMeetingsQuery query)

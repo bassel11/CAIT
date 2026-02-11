@@ -124,16 +124,14 @@ namespace MeetingAPI.Controllers
         [HttpPost("member/{memberId:guid}/history/search")]
         [Authorize(Policy = "Permission:Attendance.View")]
         [ProducesResponseType(typeof(Result<PaginatedResult<AttendanceResponse>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetMemberHistory(Guid memberId, [FromBody] GetMemberAttendanceHistoryQuery query)
+        public async Task<IActionResult> GetMemberHistory(
+            Guid memberId,
+            [FromBody] GetMemberAttendanceHistoryQuery query)
         {
             query.MemberId = memberId;
             var result = await Mediator.Send(query);
             return Ok(result);
         }
-
-
-
-
 
 
         // -------------------------------------------------------------

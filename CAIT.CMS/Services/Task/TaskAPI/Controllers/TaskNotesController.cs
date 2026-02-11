@@ -13,7 +13,7 @@ namespace TaskAPI.Controllers
 {
 
     [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/tasks/{id}/notes")] // ✅ تحسين المسار ليكون Restful أكثر (notes تابعة لـ tasks)
+    [Route("api/v{version:apiVersion}/tasks/{id}/notes")]
     [Authorize]
     public class TaskNotesController : BaseApiController
     {

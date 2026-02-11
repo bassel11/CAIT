@@ -1,10 +1,13 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add YARP
 builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -12,8 +15,7 @@ builder.Services
 // Add Health Checks
 builder.Services.AddHealthChecks();
 
-
-// Add CORS (Allow All for Development / Microservices interaction)
+// Add CORS (Restricted in Production, Open in Dev)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -24,20 +26,30 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Rate Limiting (Global & Policy-based)
-//builder.Services.AddRateLimiter(options =>
-//{
-//    // A simple fixed window limiter for general protection
-//    options.AddFixedWindowLimiter("fixed", limiterOptions =>
-//    {
-//        limiterOptions.PermitLimit = 100;
-//        limiterOptions.Window = TimeSpan.FromSeconds(10);
-//        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-//        limiterOptions.QueueLimit = 5;
-//    });
-//});
+// Add Rate Limiting (Critical Security Feature)
+// هذا الجزء ضروري جداً لحماية بوابة الدخول من الهجمات
+builder.Services.AddRateLimiter(options =>
+{
+    // سياسة صارمة لعمليات المصادقة (Login, Register)
+    // تسمح بـ 10 محاولات فقط في الدقيقة لكل IP
+    options.AddFixedWindowLimiter("AuthLimiter", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 10;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 2;
+    });
 
-// Add Authentication (JWT)
+    // سياسة عامة لباقي الخدمات (أكثر مرونة)
+    options.AddFixedWindowLimiter("GeneralLimiter", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 100;
+        limiterOptions.Window = TimeSpan.FromSeconds(10);
+        limiterOptions.QueueLimit = 10;
+    });
+});
+
+// 5. Add Authentication (JWT)
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
@@ -58,49 +70,34 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
-        //ClockSkew = TimeSpan.Zero
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero // لإلغاء فترة السماح الافتراضية (5 دقائق) عند انتهاء التوكن
     };
 });
 
-// Authorization
+// 6. Authorization Policies (The Core Logic)
 builder.Services.AddAuthorization(options =>
 {
-    // Policy ????? Routes ???????
-    options.AddPolicy("allowed", policy =>
+    // A. سياسة للمستخدمين المسجلين (تتطلب توكن)
+    options.AddPolicy("AuthenticatedPolicy", policy =>
         policy.RequireAuthenticatedUser());
 
-    // LoginPolicy Route ?????
-    options.AddPolicy("LoginPolicy", policy =>
-        policy.RequireAssertion(_ => true)); // ???? ??? ??? ???? JWT
+    // B. سياسة عامة (للدخول، التسجيل، تحديث التوكن)
+    // هذه السياسة تسمح بالمرور دون فحص التوكن
+    options.AddPolicy("PublicPolicy", policy =>
+        policy.RequireAssertion(_ => true));
 
-    // FallbackPolicy ???? ?? Route ???? AuthorizationPolicy
+    // C. Zero Trust Fallback: أي راوت لم يحدد سياسة، سيتم رفضه تلقائياً
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
 });
 
-
-
-//builder.Services.AddAuthorization(options =>
-//{
-//    // This policy can be applied to specific routes in appsettings.json via "AuthorizationPolicy": "Anonymous"
-//    options.AddPolicy("allowed", policy => policy.RequireAssertion(c => true));
-
-//    // Default fallback policy (optional, but YARP routes specify policies explicitly)
-//    // options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-//});
-
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -111,22 +108,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// CORS
+// 1. CORS
 app.UseCors("AllowAll");
 
-// Auth
+// 2. Authentication & Authorization Middlewares
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Rate Limiting
-//app.UseRateLimiter();
+// 3. Rate Limiter Middleware (Must be after Auth)
+app.UseRateLimiter();
 
-// Health Check Endpoint
 app.MapHealthChecks("/health");
-
 app.MapControllers();
 
-// YARP
+// 4. Map YARP
 app.MapReverseProxy();
 
 app.Run();
