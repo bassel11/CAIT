@@ -57,7 +57,10 @@ namespace Audit.API.Controllers
         // -------------------------------------------------------
         [HttpGet("report")]
         [ProducesResponseType(typeof(Result<string>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetReport([FromQuery] string? committeeId, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        public async Task<IActionResult> GetReport(
+            [FromQuery] string? committeeId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
         {
             return Success("Report generation endpoint ready.");
         }
