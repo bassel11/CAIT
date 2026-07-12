@@ -10,7 +10,7 @@ The system's seeded administrative reference data is **Damascus governorate** (c
 
 - Docker Desktop (Windows), running.
 - .NET 8 SDK — only required for **Option B** (running the API outside Docker).
-- Project checked out at, for example: `C:\Users\VICTUS\Desktop\HLP\hlp-backend`
+- Project checked out at, for example: `C:\Users\....\backend`
 
 ---
 
@@ -19,7 +19,7 @@ The system's seeded administrative reference data is **Damascus governorate** (c
 This builds the API image and runs everything (`db`, `api`, `adminer`) as containers.
 
 ```powershell
-cd C:\Users\VICTUS\Desktop\HLP\hlp-backend
+cd C:\Users\....\backend
 docker compose up --build
 ```
 
