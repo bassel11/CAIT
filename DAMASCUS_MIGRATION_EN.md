@@ -54,7 +54,7 @@ Use this if building the API image via Docker is impractical (slow network) or f
 
 **Step 1 — Start only the database and Adminer:**
 ```powershell
-cd C:\Users\VICTUS\Desktop\HLP\hlp-backend
+cd C:\Users\....\backend
 docker compose up -d db adminer
 ```
 
@@ -70,7 +70,7 @@ docker compose up -d db adminer
 
 **Step 3 — Run the API** (use a dedicated terminal window; this command occupies it):
 ```powershell
-cd C:\Users\VICTUS\Desktop\HLP\hlp-backend\src\TRRCMS.WebAPI
+cd C:\Users\....\backend\src\TRRCMS.WebAPI
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --urls "http://localhost:5031"
 ```
